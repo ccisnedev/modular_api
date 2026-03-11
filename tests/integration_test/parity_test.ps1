@@ -1,0 +1,783 @@
+# =============================================================================
+# parity_test.ps1 — Cross-language parity integration tests
+#
+# Starts all three implementation servers (Dart, TypeScript, Python) in parallel
+# on separate ports, exercises every public endpoint, then compares responses to
+# verify identical behaviour across all three languages.
+#
+# Usage:
+#   pwsh .\tests\integration_test\parity_test.ps1
+#
+# Prerequisites:
+#   - Dart SDK on PATH
+#   - Node.js / npx on PATH
+#   - Python venv at py/.venv with modular_api installed
+# =============================================================================
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+# ── Paths & ports ────────────────────────────────────────────────────────────
+
+$repoRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
+$dartDir  = Join-Path $repoRoot 'dart'
+$tsDir    = Join-Path $repoRoot 'ts'
+$pyDir    = Join-Path $repoRoot 'py'
+
+# Each implementation runs on its own port so all three are alive simultaneously.
+$dartPort = 8081
+$tsPort   = 8082
+$pyPort   = 8083
+
+# Bypass corporate proxy for localhost — necessary in environments where the
+# PowerShell profile configures proxy bypass but -NoProfile skips it.
+$env:NO_PROXY = 'localhost,127.0.0.1'
+
+# ── Colour helpers ───────────────────────────────────────────────────────────
+
+function Write-Pass  { param([string]$Msg) Write-Host "  [PASS] $Msg" -ForegroundColor Green }
+function Write-Fail  { param([string]$Msg) Write-Host "  [FAIL] $Msg" -ForegroundColor Red }
+function Write-Title { param([string]$Msg) Write-Host "`n=== $Msg ===" -ForegroundColor Cyan }
+
+# ── Counters ─────────────────────────────────────────────────────────────────
+
+$script:totalTests  = 0
+$script:passedTests = 0
+$script:failedTests = 0
+$script:failures    = @()
+
+function Assert-True {
+    param(
+        [bool]$Condition,
+        [string]$Description
+    )
+    $script:totalTests++
+    if ($Condition) {
+        $script:passedTests++
+        Write-Pass $Description
+    } else {
+        $script:failedTests++
+        $script:failures += $Description
+        Write-Fail $Description
+    }
+}
+
+# ── Server lifecycle ─────────────────────────────────────────────────────────
+
+function Start-ExampleServer {
+    <#
+    .SYNOPSIS
+        Starts an example server and waits until it responds on /health.
+    .DESCRIPTION
+        Uses file-based redirection to avoid the .NET stdout/stderr buffer
+        deadlock that occurs with stream-based redirection.
+    #>
+    param(
+        [string]$Name,
+        [string]$WorkDir,
+        [string]$Command,
+        [string[]]$Arguments,
+        [int]$Port
+    )
+
+    Write-Host "  Starting $Name on port $Port..." -ForegroundColor Yellow
+
+    $stdoutLog = Join-Path $env:TEMP "modular_parity_${Name}_stdout.log"
+    $stderrLog = Join-Path $env:TEMP "modular_parity_${Name}_stderr.log"
+
+    $process = Start-Process -FilePath $Command `
+        -ArgumentList $Arguments `
+        -WorkingDirectory $WorkDir `
+        -NoNewWindow -PassThru `
+        -RedirectStandardOutput $stdoutLog `
+        -RedirectStandardError  $stderrLog
+
+    $healthUrl = "http://127.0.0.1:$Port/health"
+
+    # Wait for the server to become healthy (max 30 s).
+    $deadline  = (Get-Date).AddSeconds(30)
+    $isReady   = $false
+    $lastError = ''
+
+    while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Milliseconds 500
+
+        # Abort early if the process already exited (e.g. port conflict).
+        if ($process.HasExited) {
+            Write-Host "  $Name process exited with code $($process.ExitCode)." -ForegroundColor Red
+            break
+        }
+
+        try {
+            $code = & curl.exe -s -o NUL -w '%{http_code}' --max-time 3 $healthUrl 2>$null
+            if ($code -eq '200') {
+                $isReady = $true
+                break
+            }
+        } catch {
+            $lastError = $_.Exception.Message
+        }
+    }
+
+    if (-not $isReady) {
+        Write-Host "  $Name last poll error: $lastError" -ForegroundColor Red
+        Write-Host "  $Name stderr:" -ForegroundColor Red
+        if (Test-Path $stderrLog) { Get-Content $stderrLog | ForEach-Object { Write-Host "    $_" } }
+        Write-Host "  $Name stdout:" -ForegroundColor Red
+        if (Test-Path $stdoutLog) { Get-Content $stdoutLog | ForEach-Object { Write-Host "    $_" } }
+        Stop-ExampleServer -Process $process -Name $Name
+        throw "$Name server did not become healthy within 30 seconds."
+    }
+
+    Write-Host "  $Name server is ready on port $Port." -ForegroundColor Green
+    return $process
+}
+
+function Stop-ExampleServer {
+    <#
+    .SYNOPSIS
+        Kills the server process and its entire child process tree.
+    #>
+    param(
+        [System.Diagnostics.Process]$Process,
+        [string]$Name
+    )
+    try {
+        if (-not $Process.HasExited) {
+            # taskkill /T kills the whole process tree — necessary because
+            # some runtimes (dart, node) spawn child workers.
+            $null = & taskkill /PID $Process.Id /T /F 2>&1
+            $Process.WaitForExit(5000) | Out-Null
+        }
+    } catch {
+        # Process already exited — nothing to do.
+    }
+    Write-Host "  $Name server stopped." -ForegroundColor Yellow
+}
+
+# ── HTTP helpers ─────────────────────────────────────────────────────────────
+
+function Invoke-Endpoint {
+    <#
+    .SYNOPSIS
+        Calls an endpoint via curl.exe and returns status code, content-type, and body.
+        Does NOT throw on 4xx/5xx — captures the response as-is.
+        Uses curl.exe to avoid PowerShell byte-array / disposed-stream quirks.
+    #>
+    param(
+        [string]$Uri,
+        [string]$Method = 'GET',
+        [string]$Body   = $null
+    )
+
+    # -s  silent, -w  write metadata after body, -X  method
+    $curlArgs = @('-s', '-X', $Method, '-w', "`n%{http_code}`n%{content_type}")
+
+    if ($Body) {
+        $curlArgs += '-H'; $curlArgs += 'Content-Type: application/json'
+        $curlArgs += '-d'; $curlArgs += $Body
+    }
+
+    $curlArgs += $Uri
+
+    $raw = & curl.exe @curlArgs 2>$null
+    # Last two lines are http_code and content_type (from -w).
+    $lines = $raw -split "`n"
+    $contentType = $lines[-1]
+    $statusCode  = [int]$lines[-2]
+    $bodyText    = ($lines[0..($lines.Length - 3)]) -join "`n"
+
+    return @{
+        StatusCode  = $statusCode
+        ContentType = $contentType
+        Body        = $bodyText
+    }
+}
+
+# ── Endpoint test suites ─────────────────────────────────────────────────────
+#
+# Every test function receives $ImplName (for output) and $BaseUrl
+# (e.g. http://127.0.0.1:8081) so it is server-agnostic.
+
+function Test-DocsEndpoint {
+    <#
+    .SYNOPSIS
+        Verifies GET /docs returns Swagger UI HTML from CDN (PRD-003).
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/docs"
+
+    Assert-True ($response.StatusCode -eq 200) `
+        "$ImplName /docs → 200"
+
+    $contentType = "$($response.ContentType)"
+    Assert-True ($contentType -match 'text/html') `
+        "$ImplName /docs Content-Type contains text/html"
+
+    $body = $response.Body
+    Assert-True ($body -match 'swagger-ui-dist@5') `
+        "$ImplName /docs body contains swagger-ui-dist@5 CDN reference"
+
+    Assert-True ($body -match 'swagger-ui-bundle\.js') `
+        "$ImplName /docs body contains swagger-ui-bundle.js"
+
+    Assert-True ($body -match 'url:\s*"/openapi\.json"') `
+        "$ImplName /docs body points Swagger UI at /openapi.json"
+
+    Assert-True ($body -match '<title>Modular API') `
+        "$ImplName /docs title is 'Modular API'"
+
+    Assert-True ($body -notmatch 'scalar') `
+        "$ImplName /docs no Scalar regression (PRD-003)"
+
+    # PRD-004: dark mode CSS present
+    Assert-True ($body -match 'prefers-color-scheme: dark') `
+        "$ImplName /docs contains prefers-color-scheme media query (PRD-004)"
+
+    Assert-True ($body -match '--bg-primary') `
+        "$ImplName /docs contains --bg-primary CSS custom property (PRD-004)"
+
+    Assert-True ($body -match '#49cc90') `
+        "$ImplName /docs contains HTTP method accent color #49cc90 (PRD-004)"
+
+    return $body
+}
+
+function Test-HealthEndpoint {
+    <#
+    .SYNOPSIS
+        Verifies GET /health returns IETF Health Check format.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/health"
+
+    Assert-True ($response.StatusCode -eq 200) `
+        "$ImplName /health → 200"
+
+    $contentType = "$($response.ContentType)"
+    Assert-True ($contentType -match 'application/health\+json') `
+        "$ImplName /health Content-Type is application/health+json"
+
+    $bodyText = $response.Body
+    $json = $bodyText | ConvertFrom-Json
+
+    Assert-True ($json.status -eq 'pass') `
+        "$ImplName /health status is 'pass'"
+
+    Assert-True ($json.version -eq '1.0.0') `
+        "$ImplName /health version is '1.0.0'"
+
+    Assert-True ($json.releaseId -eq '1.0.0-debug') `
+        "$ImplName /health releaseId is '1.0.0-debug'"
+
+    Assert-True ($null -ne $json.checks.example) `
+        "$ImplName /health checks contains 'example'"
+
+    Assert-True ($json.checks.example.status -eq 'pass') `
+        "$ImplName /health checks.example.status is 'pass'"
+
+    return $json
+}
+
+function Test-MetricsEndpoint {
+    <#
+    .SYNOPSIS
+        Verifies GET /metrics returns Prometheus text exposition format.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    # Hit a use case first so metrics have at least one observation.
+    $null = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+        -Method POST -Body '{"name":"MetricsWarmup"}'
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/metrics"
+
+    Assert-True ($response.StatusCode -eq 200) `
+        "$ImplName /metrics → 200"
+
+    $contentType = "$($response.ContentType)"
+    Assert-True ($contentType -match 'text/plain') `
+        "$ImplName /metrics Content-Type contains text/plain"
+
+    $body = $response.Body
+
+    Assert-True ($body -match 'http_requests_total') `
+        "$ImplName /metrics contains http_requests_total"
+
+    Assert-True ($body -match 'http_request_duration_seconds') `
+        "$ImplName /metrics contains http_request_duration_seconds"
+
+    Assert-True ($body -match 'greetings_total') `
+        "$ImplName /metrics contains custom counter greetings_total"
+
+    return $body
+}
+
+function Test-UseCaseSuccess {
+    <#
+    .SYNOPSIS
+        POST /api/greetings/hello with valid input → 200.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+        -Method POST -Body '{"name":"World"}'
+
+    Assert-True ($response.StatusCode -eq 200) `
+        "$ImplName POST hello (valid) → 200"
+
+    if ($response.StatusCode -ne 200) {
+        Write-Host "    Body was: $($response.Body)" -ForegroundColor DarkGray
+        return $null
+    }
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($json.message -eq 'Hello, World!') `
+        "$ImplName POST hello (valid) message is 'Hello, World!'"
+
+    return $json
+}
+
+function Test-UseCaseValidationFailure {
+    <#
+    .SYNOPSIS
+        POST /api/greetings/hello with empty name → 400.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+        -Method POST -Body '{"name":""}'
+
+    Assert-True ($response.StatusCode -eq 400) `
+        "$ImplName POST hello (empty name) → 400"
+
+    if ($response.StatusCode -notin @(400, 422)) {
+        Write-Host "    Body was: $($response.Body)" -ForegroundColor DarkGray
+        return $null
+    }
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($json.error -eq 'name is required') `
+        "$ImplName POST hello (empty name) error is 'name is required'"
+
+    return $json
+}
+
+function Test-UseCaseMissingBody {
+    <#
+    .SYNOPSIS
+        POST /api/greetings/hello with empty object → 400.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+        -Method POST -Body '{}'
+
+    Assert-True ($response.StatusCode -eq 400) `
+        "$ImplName POST hello (empty object) → 400"
+
+    if ($response.StatusCode -notin @(400, 422)) {
+        Write-Host "    Body was: $($response.Body)" -ForegroundColor DarkGray
+        return $null
+    }
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($json.error -eq 'name is required') `
+        "$ImplName POST hello (empty object) error is 'name is required'"
+
+    return $json
+}
+
+function Test-OpenApiJson {
+    <#
+    .SYNOPSIS
+        GET /openapi.json returns a valid OpenAPI 3.0 spec with expected structure.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/openapi.json"
+
+    Assert-True ($response.StatusCode -eq 200) `
+        "$ImplName /openapi.json → 200"
+
+    $contentType = "$($response.ContentType)"
+    Assert-True ($contentType -match 'application/json') `
+        "$ImplName /openapi.json Content-Type is application/json"
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($json.openapi -eq '3.0.0') `
+        "$ImplName /openapi.json openapi version is '3.0.0'"
+
+    Assert-True ($json.info.title -eq 'Modular API') `
+        "$ImplName /openapi.json info.title is 'Modular API'"
+
+    Assert-True ($null -ne $json.paths) `
+        "$ImplName /openapi.json has paths object"
+
+    # The example registers POST /api/greetings/hello
+    $greetingsPath = $json.paths.'/api/greetings/hello'
+    Assert-True ($null -ne $greetingsPath) `
+        "$ImplName /openapi.json paths has /api/greetings/hello"
+
+    Assert-True ($null -ne $greetingsPath.post) `
+        "$ImplName /openapi.json /api/greetings/hello has POST operation"
+
+    # Request body schema
+    $requestBodySchema = $greetingsPath.post.requestBody.content.'application/json'.schema
+    Assert-True ($null -ne $requestBodySchema) `
+        "$ImplName /openapi.json POST hello has request body schema"
+
+    # Response 200 schema
+    $responseSchema = $greetingsPath.post.responses.'200'.content.'application/json'.schema
+    Assert-True ($null -ne $responseSchema) `
+        "$ImplName /openapi.json POST hello has 200 response schema"
+
+    # components.schemas — named schemas for Swagger UI Schemas section
+    Assert-True ($null -ne $json.components) `
+        "$ImplName /openapi.json has components object"
+
+    Assert-True ($null -ne $json.components.schemas) `
+        "$ImplName /openapi.json has components.schemas"
+
+    $schemaNames = $json.components.schemas.PSObject.Properties.Name | Sort-Object
+    Assert-True ($schemaNames -contains 'greetings_hello_Input') `
+        "$ImplName /openapi.json components.schemas has greetings_hello_Input"
+
+    Assert-True ($schemaNames -contains 'greetings_hello_Output') `
+        "$ImplName /openapi.json components.schemas has greetings_hello_Output"
+
+    # requestBody and response must use $ref to components.schemas
+    Assert-True ($requestBodySchema.'$ref' -match 'greetings_hello_Input') `
+        "$ImplName /openapi.json POST hello requestBody uses `$ref to Input schema"
+
+    Assert-True ($responseSchema.'$ref' -match 'greetings_hello_Output') `
+        "$ImplName /openapi.json POST hello response uses `$ref to Output schema"
+
+    # Schema content — Input must have properties.name with type string
+    $inputSchema = $json.components.schemas.greetings_hello_Input
+    $hasInputName = ($null -ne $inputSchema.properties) -and ($null -ne $inputSchema.properties.name)
+    Assert-True $hasInputName `
+        "$ImplName /openapi.json greetings_hello_Input has properties.name"
+
+    if ($hasInputName) {
+        Assert-True ($inputSchema.properties.name.type -eq 'string') `
+            "$ImplName /openapi.json greetings_hello_Input.name type is 'string'"
+    }
+
+    # Schema content — Output must have properties.message with type string
+    $outputSchema = $json.components.schemas.greetings_hello_Output
+    $hasOutputMessage = ($null -ne $outputSchema.properties) -and ($null -ne $outputSchema.properties.message)
+    Assert-True $hasOutputMessage `
+        "$ImplName /openapi.json greetings_hello_Output has properties.message"
+
+    if ($hasOutputMessage) {
+        Assert-True ($outputSchema.properties.message.type -eq 'string') `
+            "$ImplName /openapi.json greetings_hello_Output.message type is 'string'"
+    }
+
+    return $json
+}
+
+function Test-OpenApiYaml {
+    <#
+    .SYNOPSIS
+        GET /openapi.yaml returns a YAML representation of the OpenAPI spec.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/openapi.yaml"
+
+    Assert-True ($response.StatusCode -eq 200) `
+        "$ImplName /openapi.yaml → 200"
+
+    $body = $response.Body
+
+    Assert-True ($body -match 'openapi:') `
+        "$ImplName /openapi.yaml contains 'openapi:' key"
+
+    Assert-True ($body -match 'info:') `
+        "$ImplName /openapi.yaml contains 'info:' key"
+
+    Assert-True ($body -match 'paths:') `
+        "$ImplName /openapi.yaml contains 'paths:' key"
+
+    Assert-True ($body -match '/api/greetings/hello') `
+        "$ImplName /openapi.yaml contains /api/greetings/hello path"
+
+    Assert-True ($body -match 'components:') `
+        "$ImplName /openapi.yaml contains 'components:' section"
+
+    Assert-True ($body -match 'schemas:') `
+        "$ImplName /openapi.yaml contains 'schemas:' section"
+
+    return $body
+}
+
+# ── Per-implementation runner ────────────────────────────────────────────────
+
+function Test-Implementation {
+    <#
+    .SYNOPSIS
+        Exercises all endpoints for one implementation against an already-running server.
+    #>
+    param(
+        [string]$Name,
+        [string]$BaseUrl
+    )
+
+    Write-Title "Testing $Name"
+
+    $results = @{
+        Docs               = Test-DocsEndpoint            -ImplName $Name -BaseUrl $BaseUrl
+        Health             = Test-HealthEndpoint           -ImplName $Name -BaseUrl $BaseUrl
+        Metrics            = Test-MetricsEndpoint          -ImplName $Name -BaseUrl $BaseUrl
+        UseCaseSuccess     = Test-UseCaseSuccess           -ImplName $Name -BaseUrl $BaseUrl
+        UseCaseEmptyName   = Test-UseCaseValidationFailure -ImplName $Name -BaseUrl $BaseUrl
+        UseCaseMissingBody = Test-UseCaseMissingBody       -ImplName $Name -BaseUrl $BaseUrl
+        OpenApiJson        = Test-OpenApiJson              -ImplName $Name -BaseUrl $BaseUrl
+        OpenApiYaml        = Test-OpenApiYaml              -ImplName $Name -BaseUrl $BaseUrl
+    }
+    return $results
+}
+
+# ── Cross-comparison ─────────────────────────────────────────────────────────
+
+function Compare-Implementations {
+    <#
+    .SYNOPSIS
+        Compares collected results from all implementations and asserts
+        structural parity on every endpoint response.
+    #>
+    param(
+        [hashtable]$Dart,
+        [hashtable]$TypeScript,
+        [hashtable]$Python
+    )
+
+    Write-Title 'Cross-implementation parity'
+
+    # ── Health fields ────────────────────────────────────────────────────────
+
+    Assert-True (
+        ($Dart.Health.status -eq $TypeScript.Health.status) -and
+        ($Dart.Health.status -eq $Python.Health.status)
+    ) 'Health status identical across implementations'
+
+    Assert-True (
+        ($Dart.Health.version -eq $TypeScript.Health.version) -and
+        ($Dart.Health.version -eq $Python.Health.version)
+    ) 'Health version identical across implementations'
+
+    Assert-True (
+        ($Dart.Health.releaseId -eq $TypeScript.Health.releaseId) -and
+        ($Dart.Health.releaseId -eq $Python.Health.releaseId)
+    ) 'Health releaseId identical across implementations'
+
+    # ── UseCase success ──────────────────────────────────────────────────────
+
+    if ($Dart.UseCaseSuccess -and $TypeScript.UseCaseSuccess -and $Python.UseCaseSuccess) {
+        Assert-True (
+            ($Dart.UseCaseSuccess.message -eq $TypeScript.UseCaseSuccess.message) -and
+            ($Dart.UseCaseSuccess.message -eq $Python.UseCaseSuccess.message)
+        ) 'UseCase success response identical across implementations'
+    } else {
+        Write-Fail 'UseCase success response identical across implementations (skipped — missing data)'
+        $script:totalTests++; $script:failedTests++
+        $script:failures += 'UseCase success parity skipped — missing data'
+    }
+
+    # ── UseCase validation error ─────────────────────────────────────────────
+
+    if ($Dart.UseCaseEmptyName -and $TypeScript.UseCaseEmptyName -and $Python.UseCaseEmptyName) {
+        Assert-True (
+            ($Dart.UseCaseEmptyName.error -eq $TypeScript.UseCaseEmptyName.error) -and
+            ($Dart.UseCaseEmptyName.error -eq $Python.UseCaseEmptyName.error)
+        ) 'UseCase validation error identical across implementations'
+    } else {
+        Write-Fail 'UseCase validation error identical across implementations (skipped — missing data)'
+        $script:totalTests++; $script:failedTests++
+        $script:failures += 'UseCase validation error parity skipped — missing data'
+    }
+
+    if ($Dart.UseCaseMissingBody -and $TypeScript.UseCaseMissingBody -and $Python.UseCaseMissingBody) {
+        Assert-True (
+            ($Dart.UseCaseMissingBody.error -eq $TypeScript.UseCaseMissingBody.error) -and
+            ($Dart.UseCaseMissingBody.error -eq $Python.UseCaseMissingBody.error)
+        ) 'UseCase missing-body error identical across implementations'
+    } else {
+        Write-Fail 'UseCase missing-body error identical across implementations (skipped — missing data)'
+        $script:totalTests++; $script:failedTests++
+        $script:failures += 'UseCase missing-body error parity skipped — missing data'
+    }
+
+    # ── OpenAPI JSON structural parity ───────────────────────────────────────
+
+    Assert-True (
+        ($Dart.OpenApiJson.openapi -eq $TypeScript.OpenApiJson.openapi) -and
+        ($Dart.OpenApiJson.openapi -eq $Python.OpenApiJson.openapi)
+    ) 'OpenAPI version identical across implementations'
+
+    Assert-True (
+        ($Dart.OpenApiJson.info.title -eq $TypeScript.OpenApiJson.info.title) -and
+        ($Dart.OpenApiJson.info.title -eq $Python.OpenApiJson.info.title)
+    ) 'OpenAPI info.title identical across implementations'
+
+    # All three must expose the same paths.
+    $dartPaths = ($Dart.OpenApiJson.paths.PSObject.Properties.Name       | Sort-Object) -join ','
+    $tsPaths   = ($TypeScript.OpenApiJson.paths.PSObject.Properties.Name | Sort-Object) -join ','
+    $pyPaths   = ($Python.OpenApiJson.paths.PSObject.Properties.Name     | Sort-Object) -join ','
+
+    Assert-True (
+        ($dartPaths -eq $tsPaths) -and ($dartPaths -eq $pyPaths)
+    ) "OpenAPI paths identical across implementations ($dartPaths)"
+
+    # ── Swagger UI docs parity (PRD-003) ──────────────────────────────────────
+
+    $swaggerKeywords = @('swagger-ui-dist@5', 'swagger-ui-bundle.js', '<title>Modular API', 'prefers-color-scheme: dark', '--bg-primary', '#49cc90')
+    foreach ($keyword in $swaggerKeywords) {
+        $dartHas = $Dart.Docs       -match [regex]::Escape($keyword)
+        $tsHas   = $TypeScript.Docs -match [regex]::Escape($keyword)
+        $pyHas   = $Python.Docs     -match [regex]::Escape($keyword)
+        Assert-True ($dartHas -and $tsHas -and $pyHas) `
+            "Docs keyword '$keyword' present in all implementations"
+    }
+
+    # ── /docs HTML byte-identical across implementations ─────────────────────
+    # All three templates must produce the same HTML (after title interpolation).
+
+    Assert-True (
+        ($Dart.Docs -eq $TypeScript.Docs) -and ($Dart.Docs -eq $Python.Docs)
+    ) '/docs HTML identical across all three implementations'
+
+    # ── OpenAPI components.schemas parity ─────────────────────────────────────
+    # All three must expose the same named schemas in components.schemas.
+
+    $dartSchemas  = ($Dart.OpenApiJson.components.schemas.PSObject.Properties.Name       | Sort-Object) -join ','
+    $tsSchemas    = ($TypeScript.OpenApiJson.components.schemas.PSObject.Properties.Name  | Sort-Object) -join ','
+    $pySchemas    = ($Python.OpenApiJson.components.schemas.PSObject.Properties.Name      | Sort-Object) -join ','
+
+    Assert-True (
+        ($dartSchemas -eq $tsSchemas) -and ($dartSchemas -eq $pySchemas)
+    ) "OpenAPI components.schemas identical across implementations ($dartSchemas)"
+
+    # ── Schema content parity (properties, types, required) ──────────────────
+    # Dart is the reference — TS and Python must produce identical schema content.
+
+    $dartInputJson  = $Dart.OpenApiJson.components.schemas.greetings_hello_Input       | ConvertTo-Json -Depth 10 -Compress
+    $tsInputJson    = $TypeScript.OpenApiJson.components.schemas.greetings_hello_Input  | ConvertTo-Json -Depth 10 -Compress
+    $pyInputJson    = $Python.OpenApiJson.components.schemas.greetings_hello_Input      | ConvertTo-Json -Depth 10 -Compress
+
+    Assert-True (
+        ($dartInputJson -eq $tsInputJson) -and ($dartInputJson -eq $pyInputJson)
+    ) 'OpenAPI greetings_hello_Input schema content identical across implementations'
+
+    $dartOutputJson  = $Dart.OpenApiJson.components.schemas.greetings_hello_Output       | ConvertTo-Json -Depth 10 -Compress
+    $tsOutputJson    = $TypeScript.OpenApiJson.components.schemas.greetings_hello_Output  | ConvertTo-Json -Depth 10 -Compress
+    $pyOutputJson    = $Python.OpenApiJson.components.schemas.greetings_hello_Output      | ConvertTo-Json -Depth 10 -Compress
+
+    Assert-True (
+        ($dartOutputJson -eq $tsOutputJson) -and ($dartOutputJson -eq $pyOutputJson)
+    ) 'OpenAPI greetings_hello_Output schema content identical across implementations'
+
+    # ── Metrics format parity ────────────────────────────────────────────────
+
+    $metricsKeywords = @('http_requests_total', 'http_request_duration_seconds', 'greetings_total')
+    foreach ($keyword in $metricsKeywords) {
+        $dartHas = $Dart.Metrics       -match $keyword
+        $tsHas   = $TypeScript.Metrics -match $keyword
+        $pyHas   = $Python.Metrics     -match $keyword
+        Assert-True ($dartHas -and $tsHas -and $pyHas) `
+            "Metric '$keyword' present in all implementations"
+    }
+
+    # ── OpenAPI YAML parity ──────────────────────────────────────────────────
+
+    $yamlKeywords = @('openapi:', 'info:', 'paths:', '/api/greetings/hello')
+    foreach ($keyword in $yamlKeywords) {
+        $dartHas = $Dart.OpenApiYaml       -match [regex]::Escape($keyword)
+        $tsHas   = $TypeScript.OpenApiYaml -match [regex]::Escape($keyword)
+        $pyHas   = $Python.OpenApiYaml     -match [regex]::Escape($keyword)
+        Assert-True ($dartHas -and $tsHas -and $pyHas) `
+            "YAML keyword '$keyword' present in all implementations"
+    }
+}
+
+# ════════════════════════════════════════════════════════════════════════════
+# Main
+# ════════════════════════════════════════════════════════════════════════════
+
+Write-Host "`n╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
+Write-Host   "║   Modular API — Cross-Language Parity Integration Tests     ║" -ForegroundColor Magenta
+Write-Host   "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
+
+$pyVenv = Join-Path $pyDir '.venv\Scripts\python.exe'
+
+# npx is a .ps1 wrapper on some Node managers (fnm, nvm) which Start-Process
+# cannot launch directly. Resolve the .cmd companion next to node.exe instead.
+$nodeDir = Split-Path (Get-Command node).Source
+$npxCmd  = Join-Path $nodeDir 'npx.cmd'
+
+$dartProcess = $null
+$tsProcess   = $null
+$pyProcess   = $null
+
+try {
+    # ── Start all three servers in parallel ──────────────────────────────────
+
+    Write-Title 'Starting servers'
+
+    $dartProcess = Start-ExampleServer -Name 'Dart' -WorkDir $dartDir `
+        -Command 'dart' -Arguments @('run', 'example/example.dart', $dartPort) `
+        -Port $dartPort
+
+    $tsProcess = Start-ExampleServer -Name 'TypeScript' -WorkDir $tsDir `
+        -Command $npxCmd -Arguments @('tsx', 'example/example.ts', $tsPort) `
+        -Port $tsPort
+
+    $pyProcess = Start-ExampleServer -Name 'Python' -WorkDir $pyDir `
+        -Command $pyVenv -Arguments @('-m', 'example.example', $pyPort) `
+        -Port $pyPort
+
+    # ── Exercise each implementation ─────────────────────────────────────────
+
+    $dartResults = Test-Implementation -Name 'Dart'       -BaseUrl "http://127.0.0.1:$dartPort"
+    $tsResults   = Test-Implementation -Name 'TypeScript' -BaseUrl "http://127.0.0.1:$tsPort"
+    $pyResults   = Test-Implementation -Name 'Python'     -BaseUrl "http://127.0.0.1:$pyPort"
+
+    # ── Cross-compare results ────────────────────────────────────────────────
+
+    Compare-Implementations -Dart $dartResults -TypeScript $tsResults -Python $pyResults
+
+} finally {
+    # ── Tear down all servers ────────────────────────────────────────────────
+
+    Write-Title 'Stopping servers'
+
+    if ($dartProcess) { Stop-ExampleServer -Process $dartProcess -Name 'Dart' }
+    if ($tsProcess)   { Stop-ExampleServer -Process $tsProcess   -Name 'TypeScript' }
+    if ($pyProcess)   { Stop-ExampleServer -Process $pyProcess   -Name 'Python' }
+}
+
+# ── Summary ──────────────────────────────────────────────────────────────────
+
+Write-Host "`n──────────────────────────────────────────────────────────────" -ForegroundColor Magenta
+
+if ($script:failedTests -eq 0) {
+    Write-Host "ALL $($script:totalTests) TESTS PASSED" -ForegroundColor Green
+} else {
+    Write-Host "$($script:passedTests)/$($script:totalTests) passed, $($script:failedTests) FAILED:" -ForegroundColor Red
+    foreach ($failure in $script:failures) {
+        Write-Host "  - $failure" -ForegroundColor Red
+    }
+}
+
+Write-Host "──────────────────────────────────────────────────────────────`n" -ForegroundColor Magenta
+
+# Exit with non-zero if any test failed — useful for CI pipelines.
+exit $script:failedTests
