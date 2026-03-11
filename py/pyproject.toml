@@ -38,10 +38,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/macss-dev/modular_api_py"
-Repository = "https://github.com/macss-dev/modular_api_py"
-Issues = "https://github.com/macss-dev/modular_api_py/issues"
-Documentation = "https://github.com/macss-dev/modular_api_py#readme"
+Homepage = "https://github.com/macss-dev/modular_api"
+Repository = "https://github.com/macss-dev/modular_api/tree/main/py"
+Issues = "https://github.com/macss-dev/modular_api/issues"
+Documentation = "https://github.com/macss-dev/modular_api/tree/main/py#readme"
 
 [tool.setuptools.packages.find]
 where = ["src"]
