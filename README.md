@@ -1,40 +1,208 @@
-# Modular API — Meta Repository
+# modular_api
 
-Use-case-centric toolkit for building modular HTTP APIs.
-One specification, multiple language implementations.
+> *The theoretical and practical core of the MACSS ecosystem.*
 
-## Implementations
+A methodology for building modular, contract-first, AI-ready APIs — distributed as official SDKs in three languages, extensible through a plugin interface that anyone can implement.
 
-| Package | Language | Framework | Registry |
-|---------|----------|-----------|----------|
-| [modular_api_dart](https://github.com/macss-dev/modular_api_dart) | Dart | [shelf](https://pub.dev/packages/shelf) | [pub.dev](https://pub.dev/packages/modular_api) |
-| [modular_api_ts](https://github.com/macss-dev/modular_api_ts) | TypeScript | [Express](https://expressjs.com/) | [npm](https://www.npmjs.com/package/@macss/modular-api) |
-| [modular_api_py](https://github.com/macss-dev/modular_api_py) | Python | [Starlette](https://www.starlette.io/) | [PyPI](https://pypi.org/project/macss-modular-api/) |
+---
 
-All implementations conform to the same [Architecture Specification](docs/architecture.md).
+## What is modular_api
 
+`modular_api` is simultaneously three things:
 
-## Repository Structure
+- **A methodology** — part of MACSS (Modular Architecture for Comprehensive Software Solutions). A way of thinking about API design that is modular, contract-first, and AI-ready by default.
+- **A specification** — a set of conventions and contracts that define how modules, plugins, DTOs, repositories, and use cases relate to each other. The spec is the source of truth. The SDKs are its expression.
+- **A set of SDKs** — official implementations in three languages, each producing structurally identical `openapi.json` outputs from the same conceptual model.
+
+---
+
+## Monorepo Structure
 
 ```
 modular_api/
-├── .meta                 # meta tool config (sub-repo mapping)
-├── docs/                 # Language-agnostic specification and architecture
-│   └── architecture.md   # Canonical reference (the spec)
-├── dart/                 # → modular_api_dart
-├── ts/                   # → modular_api_ts
-└── py/                   # → modular_api_py
+  dart/          →  pub.dev: modular_api
+  ts/            →  npm: @macss/modular-api
+  py/            →  PyPI: macss-modular-api
+  docs/          →  specification and methodology
+  tests/         →  cross-language parity tests
+  README.md
 ```
 
-## Documentation
+Each SDK is independently versioned and published. The methodology they implement is identical.
 
-| Document | Description |
-|----------|-------------|
-| [Architecture Specification](docs/architecture.md) | Canonical, language-agnostic spec for all implementations |
+---
 
-Each implementation also carries its own `README.md`, `doc/` folder, and `CHANGELOG.md`
-with language-specific guides and examples.
+## SDKs
+
+| SDK | Package | Registry | Status |
+|---|---|---|---|
+| `dart/` | `modular_api` | [pub.dev](https://pub.dev/packages/modular_api) | ✅ Published |
+| `ts/` | `@macss/modular-api` | [npm](https://www.npmjs.com/package/@macss/modular-api) | ✅ Published |
+| `py/` | `macss-modular-api` | [PyPI](https://pypi.org/project/macss-modular-api/) | ✅ Published |
+
+---
+
+## Core Concepts
+
+### Modules
+
+Modules are written by the user. Each module owns exactly one domain — `imc/`, `patients/`, `billing/` — and is self-contained: use cases, DTOs, repository ports, and adapters. Modules do not call each other directly.
+
+### Built-in Endpoints
+
+Every SDK ships with the following endpoints out of the box, zero configuration:
+
+| Endpoint | Description |
+|---|---|
+| `GET /docs` | Interactive Swagger UI from `openapi.json` |
+| `GET /health` | IETF Health Check Response Format |
+| `GET /metrics` | Prometheus text exposition format (opt-in) |
+| `GET /openapi.json` | OpenAPI 3.0 specification |
+| `GET /openapi.yaml` | OpenAPI 3.0 specification (YAML) |
+
+### Plugins *(roadmap)*
+
+Plugins will extend `modular_api` without modifying it. They will implement a single interface and integrate through lifecycle hooks. The core stays lean; the developer composes what they need.
+
+**Ecosystem** — planned packages developed by MACSS:
+
+| Package | Description |
+|---|---|
+| `pragma_spec` | Spec Driven Development + MCP bridge |
+| `modular_api_oauth2` | Standards-compliant OAuth2 flows |
+| `modular_api_graphql` | Auto-generated GraphQL from DTOs |
+
+**Community** — anyone will be able to build and publish a plugin. The interface is the only contract.
+
+---
+
+## Quick Start
+
+### Dart
+
+```dart
+import 'package:modular_api/modular_api.dart';
+
+Future<void> main() async {
+  final api = ModularApi(
+    basePath: '/api',
+    title: 'Modular API',
+    version: '1.0.0',
+    metricsEnabled: true,
+  );
+
+  api.module('greetings', (m) {
+    m.usecase('hello', HelloWorld.fromJson);
+  });
+
+  await api.serve(port: 8080);
+}
+```
+
+### TypeScript
+
+```typescript
+import { ModularApi, ModuleBuilder } from '@macss/modular-api';
+
+const api = new ModularApi({
+  basePath: '/api',
+  title: 'Modular API',
+  version: '1.0.0',
+  metricsEnabled: true,
+});
+
+api.module('greetings', (m: ModuleBuilder) => {
+  m.usecase('hello', HelloWorld.fromJson);
+});
+
+api.serve({ port: 8080 });
+```
+
+### Python
+
+```python
+from modular_api import ModularApi
+
+api = ModularApi(
+    base_path="/api",
+    title="Modular API",
+    version="1.0.0",
+    metrics_enabled=True,
+)
+
+api.module("greetings", lambda m: m.usecase("hello", HelloWorld))
+
+api.serve(port=8080)
+```
+
+```bash
+# All three respond identically:
+curl -X POST http://localhost:8080/api/greetings/hello \
+  -H "Content-Type: application/json" \
+  -d '{"name":"World"}'
+ 
+# → {"message": "Hello, World!"}
+```
+
+See `dart/example/`, `ts/example/`, `py/example/` for full implementations including Input, Output, UseCase with `validate()`, health checks, and custom metrics.
+
+---
+
+## The Plugin Interface *(roadmap)*
+
+Any package that implements this interface will be a valid plugin:
+
+```dart
+// Dart
+abstract class ModularApiPlugin {
+  String get name;
+  List<String> get endpoints;
+  void onModulesLoaded(List<MacssModule> modules);
+  void onOpenApiGenerated(OpenApiSpec spec);
+}
+```
+
+```typescript
+// TypeScript
+interface ModularApiPlugin {
+  name: string;
+  endpoints: string[];
+  onModulesLoaded(modules: MacssModule[]): void;
+  onOpenApiGenerated(spec: OpenApiSpec): void;
+}
+```
+
+---
+
+## Ecosystem
+
+```
+modular_api           →  this repo — core SDKs (Dart, TS, Python)
+modular_api_plugins   →  base package for building community plugins  (planned)
+pragma_spec           →  Spec Driven Development plugin               (planned)
+pragma_mcp            →  MCP server from /pragma.yaml                 (planned)
+modular_api_oauth2    →  OAuth2 plugin                                (planned)
+modular_api_graphql   →  GraphQL plugin                               (planned)
+```
+
+All packages will live under the `macss-dev` organization on GitHub.
+
+---
+
+## MACSS & Spec Driven Development
+
+`modular_api` implements the MACSS methodology. Every module begins at Momento Zero — a `pragma_spec.yaml` written by the engineer before any code exists. This file is the single source of truth: it defines states, transitions, workflows, and business intent. The code must honor it. If it does not, the build fails.
+
+```
+pragma_spec.yaml   →  Momento Zero (human writes the spec)
+code               →  must honor the spec
+openapi.json       →  generated by modular_api
+pragma.yaml        →  generated by pragma_spec plugin  (planned)
+MCP server         →  generated by pragma_mcp          (planned)
+```
+
+---
 
 ## License
 
-See [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](./LICENSE)
