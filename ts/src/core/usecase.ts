@@ -49,6 +49,10 @@ function serializeFromMetadata(instance: Record<string, unknown>, fields: FieldM
   return result;
 }
 
+// Track classes that have already emitted a deprecation warning (once per class)
+const _warnedInputClasses = new Set<Function>();
+const _warnedOutputClasses = new Set<Function>();
+
 /**
  * **Contract** — use `extends Input`.
  *
@@ -70,6 +74,19 @@ function serializeFromMetadata(instance: Record<string, unknown>, fields: FieldM
  * ```
  */
 export abstract class Input {
+  constructor() {
+    const cls = this.constructor;
+    if (
+      !_warnedInputClasses.has(cls) &&
+      cls.prototype.toSchema !== Input.prototype.toSchema
+    ) {
+      _warnedInputClasses.add(cls);
+      console.warn(
+        `${cls.name}.toSchema() is deprecated. Remove it — schema is derived automatically from @Field decorators.`,
+      );
+    }
+  }
+
   toJson(): Record<string, unknown> {
     const fields = getFieldMetadata(this.constructor as abstract new (...args: unknown[]) => unknown);
     if (fields.length > 0) {
@@ -111,6 +128,19 @@ export abstract class Input {
  * ```
  */
 export abstract class Output {
+  constructor() {
+    const cls = this.constructor;
+    if (
+      !_warnedOutputClasses.has(cls) &&
+      cls.prototype.toSchema !== Output.prototype.toSchema
+    ) {
+      _warnedOutputClasses.add(cls);
+      console.warn(
+        `${cls.name}.toSchema() is deprecated. Remove it — schema is derived automatically from @Field decorators.`,
+      );
+    }
+  }
+
   toJson(): Record<string, unknown> {
     const fields = getFieldMetadata(this.constructor as abstract new (...args: unknown[]) => unknown);
     if (fields.length > 0) {
