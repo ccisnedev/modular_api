@@ -1,4 +1,20 @@
+/// example/example.dart
+/// Minimal runnable example — mirrors example/example.dart from the Dart version.
+///
+/// Run:
+///   dart run example/example.dart
+///
+/// Then test:
+///   curl -X POST http://localhost:8080/api/greetings/hello \
+///        -H "Content-Type: application/json" \
+///        -d '{"name":"World"}'
+///
+/// Docs:
+///   http://localhost:8080/docs
+library;
+
 import 'package:modular_api/modular_api.dart';
+
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 
