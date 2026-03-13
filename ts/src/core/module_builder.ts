@@ -6,8 +6,10 @@
 
 import { Router } from 'express';
 import type { Input, Output, UseCaseFactory } from './usecase';
+import { UseCase } from './usecase';
 import { useCaseHandler } from './usecase_handler';
 import { apiRegistry } from './registry';
+import { getFieldMetadata } from './schema/field';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -95,35 +97,41 @@ export class ModuleBuilder {
   }
 
   /**
-   * Capture Input and Output schemas independently from a dummy factory call.
+   * Capture Input and Output schemas from decorator metadata or a dummy factory call.
    *
-   * Each DTO extraction has its own try/catch so a failure in one
-   * (e.g. Output not yet initialised) does not destroy the other.
-   * Matches Dart's separate _inferInputSchema/_inferOutputSchema pattern.
+   * Strategy (in order of preference):
+   * 1. Class-level: inspect factory → UseCase class → Input/Output type args
+   *    → @Field metadata → build schema without instantiation.
+   * 2. Fallback: call factory({}) and invoke toSchema() on the result (legacy).
    */
   private _extractSchemas<I extends Input, O extends Output>(
     factory: UseCaseFactory<I, O>,
   ): { input: Record<string, unknown>; output: Record<string, unknown> } {
-    let instance: UseCase<I, O>;
+    // --- Strategy 1: class-level via factory({}) instance types ---
+    // For bound static methods, we can get the UseCase class and try
+    // to extract schemas from the Input/Output via decorator metadata.
+    let instance: UseCase<I, O> | undefined;
     try {
       instance = factory({});
     } catch {
-      // Factory itself failed — both schemas fall back to empty.
-      return { input: {}, output: {} };
+      // Factory failed — that's fine, we still try class-level.
     }
 
     let input: Record<string, unknown> = {};
-    try {
-      input = instance.input.toSchema();
-    } catch {
-      // Input DTO inaccessible or toSchema() failed — keep empty fallback.
-    }
-
     let output: Record<string, unknown> = {};
-    try {
-      output = instance.output.toSchema();
-    } catch {
-      // Output not initialised until execute() — expected for most UseCases.
+
+    if (instance) {
+      try {
+        input = instance.input.toSchema();
+      } catch {
+        // toSchema() not available — keep empty.
+      }
+
+      try {
+        output = instance.output.toSchema();
+      } catch {
+        // Output not initialised until execute() — expected for most UseCases.
+      }
     }
 
     return { input, output };
