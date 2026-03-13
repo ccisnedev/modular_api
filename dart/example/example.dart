@@ -40,10 +40,7 @@ Future<void> main(List<String> args) async {
 //   lib/modules/greetings/greetings_builder.dart
 
 void buildGreetingsModule(ModuleBuilder m) {
-  m.usecase('hello', HelloWorld.fromJson,
-    inputFields: HelloInput.schema,
-    outputFields: HelloOutput.schema,
-  );
+  m.usecase('hello', HelloWorld.fromJson);
 }
 
 // ─── Input DTO ────────────────────────────────────────────────────────────────
@@ -52,26 +49,19 @@ class HelloInput extends Input {
   @Field(description: 'Name to greet')
   final String name;
 
-  /// Schema — shared between validation and OpenAPI generation.
-  static final List<SchemaField> schema = [
-    SchemaField.string('name', description: 'Name to greet'),
-  ];
-
   HelloInput({required this.name});
 
-  /// Validates required fields and correct types before construction.
-  /// Throws [InputValidationException] on structural violations.
-  /// Business-rule validation belongs in [HelloWorld.validate].
-  factory HelloInput.fromJson(Map<String, dynamic> json) {
-    validateJsonFields(json, schema);
-    return HelloInput(name: json['name'] as String);
-  }
+  factory HelloInput.fromJson(Map<String, dynamic> json) => HelloInput(
+        name: (json['name'] ?? '').toString(),
+      );
 
   @override
   Map<String, dynamic> toJson() => {'name': name};
 
   @override
-  List<SchemaField> get schemaFields => schema;
+  List<SchemaField> get schemaFields => [
+        SchemaField.string('name', description: 'Name to greet'),
+      ];
 }
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
@@ -80,15 +70,10 @@ class HelloOutput extends Output {
   @Field(description: 'Greeting message')
   final String message;
 
-  /// Schema — shared between OpenAPI generation and optional validation.
-  static final List<SchemaField> schema = [
-    SchemaField.string('message', description: 'Greeting message'),
-  ];
-
   HelloOutput({this.message = ''});
 
   factory HelloOutput.fromJson(Map<String, dynamic> json) =>
-      HelloOutput(message: (json['message'] ?? '') as String);
+      HelloOutput(message: (json['message'] ?? '').toString());
 
   @override
   int get statusCode => 200;
@@ -97,7 +82,9 @@ class HelloOutput extends Output {
   Map<String, dynamic> toJson() => {'message': message};
 
   @override
-  List<SchemaField> get schemaFields => schema;
+  List<SchemaField> get schemaFields => [
+        SchemaField.string('message', description: 'Greeting message'),
+      ];
 }
 
 // ─── UseCase ──────────────────────────────────────────────────────────────────

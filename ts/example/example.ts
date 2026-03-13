@@ -24,7 +24,6 @@ import {
   HealthCheckResult,
   LogLevel,
   Field,
-  InputValidationError,
 } from '../src/index';
 
 // ─── Module Builder ───────────────────────────────────────────────────────────
@@ -32,10 +31,7 @@ import {
 //   src/modules/greetings/greetings_builder.ts
 
 function buildGreetingsModule(m: ModuleBuilder): void {
-  m.usecase('hello', HelloWorld.fromJson, {
-    inputType: HelloInput,
-    outputType: HelloOutput,
-  });
+  m.usecase('hello', HelloWorld.fromJson);
 }
 
 // ─── Input DTO ────────────────────────────────────────────────────────────────
@@ -44,15 +40,9 @@ class HelloInput extends Input {
   @Field.string({ description: 'Name to greet' })
   name!: string;
 
-  /**
-   * Validates required fields and correct types before assignment.
-   * Throws {@link InputValidationError} on structural violations.
-   * Business-rule validation belongs in {@link HelloWorld.validate}.
-   */
   static fromJson(json: Record<string, unknown>): HelloInput {
-    Input.validateJson(json, HelloInput);
     const instance = new HelloInput();
-    instance.name = json['name'] as string;
+    instance.name = (json['name'] ?? '').toString();
     return instance;
   }
 }
@@ -69,7 +59,7 @@ class HelloOutput extends Output {
 
   static fromJson(json: Record<string, unknown>): HelloOutput {
     const instance = new HelloOutput();
-    instance.message = (json['message'] ?? '') as string;
+    instance.message = (json['message'] ?? '').toString();
     return instance;
   }
 }
