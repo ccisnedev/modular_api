@@ -95,7 +95,7 @@ abstract class Input {
       return buildSchema(fields);
     }
     throw UnimplementedError(
-      '${runtimeType}.toSchema() not implemented. '
+      '$runtimeType.toSchema() not implemented. '
       'Override schemaFields or toSchema().',
     );
   }
@@ -123,7 +123,7 @@ abstract class Output {
       return buildSchema(fields);
     }
     throw UnimplementedError(
-      '${runtimeType}.toSchema() not implemented. '
+      '$runtimeType.toSchema() not implemented. '
       'Override schemaFields or toSchema().',
     );
   }

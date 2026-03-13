@@ -23,6 +23,7 @@
 ///   // toSchema() → auto-derived from schemaFields!
 /// }
 /// ```
+library;
 
 /// Decorative annotation for field metadata.
 ///
