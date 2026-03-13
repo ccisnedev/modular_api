@@ -17,7 +17,12 @@
 // ============================================================
 
 // Polyfill for runtimes that lack Symbol.metadata (Node < 22)
-(Symbol as Record<string, unknown>).metadata ??= Symbol('Symbol.metadata');
+declare global {
+  interface SymbolConstructor {
+    readonly metadata: unique symbol;
+  }
+}
+(Symbol as unknown as Record<string, unknown>).metadata ??= Symbol('Symbol.metadata');
 
 /** Metadata stored per decorated field. */
 export interface FieldMeta {
@@ -139,6 +144,6 @@ export const Field = {
  * Returns an empty array if the class has no decorated fields.
  */
 export function getFieldMetadata(target: abstract new (...args: unknown[]) => unknown): FieldMeta[] {
-  const metadata = (target as Record<symbol, Record<symbol, FieldMeta[]>>)[Symbol.metadata];
+  const metadata = (target as unknown as Record<symbol, Record<symbol, FieldMeta[]>>)[Symbol.metadata];
   return metadata?.[FIELD_KEY] ?? [];
 }
