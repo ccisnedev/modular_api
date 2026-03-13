@@ -46,7 +46,7 @@ See `example/example.py` for the full implementation including Input, Output, Us
 ## Features
 
 - `UseCase[I, O]` — pure business logic, no HTTP concerns
-- `Input` / `Output` — DTOs with `to_json()` and `to_schema()` for automatic OpenAPI
+- `Input` / `Output` — DTOs with automatic OpenAPI schema generation via Pydantic `Field()`
 - `Output.status_code` — custom HTTP status codes per response
 - `UseCaseException` — structured error handling (status_code, message, error_code, details)
 - `ModularApi` + `ModuleBuilder` — module registration and routing
