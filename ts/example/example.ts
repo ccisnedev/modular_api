@@ -136,8 +136,4 @@ if (api.metrics) {
 
 api.module('greetings', buildGreetingsModule);
 
-api.serve({ port }).then(() => {
-  console.log('====================================');
-  console.log(`API  → http://localhost:${port}/api/greetings/hello`);
-  console.log('====================================');
-});
+api.serve({ port });

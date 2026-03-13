@@ -45,10 +45,6 @@ Future<void> main(List<String> args) async {
   api.module('greetings', buildGreetingsModule);
 
   await api.serve(port: port);
-
-  print('====================================');
-  print('API     → http://localhost:$port/api/greetings/hello');
-  print('====================================');
 }
 
 // ─── Module Builder ───────────────────────────────────────────────────────────

@@ -134,13 +134,8 @@ def main() -> None:
 
     api.module("greetings", build_greetings_module)
 
-    print("====================================")
-    print(f"API  → http://localhost:{port}/api/greetings/hello")
-    print(f"Docs → http://localhost:{port}/docs")
-    print("====================================")
-
     api.serve(port=port)
-
+    
 
 if __name__ == "__main__":
     main()
