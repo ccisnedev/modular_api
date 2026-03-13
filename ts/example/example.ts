@@ -41,9 +41,8 @@ class HelloInput extends Input {
   name!: string;
 
   static fromJson(json: Record<string, unknown>): HelloInput {
-    Input.validateJson(json, HelloInput);
     const instance = new HelloInput();
-    instance.name = json['name'] as string;
+    instance.name = (json['name'] ?? '').toString();
     return instance;
   }
 }
@@ -59,9 +58,8 @@ class HelloOutput extends Output {
   }
 
   static fromJson(json: Record<string, unknown>): HelloOutput {
-    Input.validateJson(json, HelloOutput);
     const instance = new HelloOutput();
-    instance.message = json['message'] as string;
+    instance.message = (json['message'] ?? '').toString();
     return instance;
   }
 }

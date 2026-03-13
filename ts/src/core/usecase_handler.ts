@@ -5,7 +5,8 @@
 // ============================================================
 
 import type { Request, Response, RequestHandler } from 'express';
-import type { UseCaseFactory, Input, Output } from './usecase';
+import type { UseCaseFactory, Output } from './usecase';
+import { Input } from './usecase';
 import { UseCaseException } from './use_case_exception';
 import { InputValidationError } from './input_validation_error';
 import { LOGGER_LOCALS_KEY } from './logger/logging_middleware';
@@ -45,6 +46,13 @@ export function useCaseHandler<I extends Input, O extends Output>(
 
       // 2. Build use case
       const useCase = factory(data);
+
+      // 2a. Auto-validate raw JSON against @Field metadata on the Input DTO.
+      // Runs after fromJson (which may coerce) — validates the ORIGINAL payload.
+      Input.validateJson(
+        data,
+        useCase.input.constructor as abstract new (...args: unknown[]) => unknown,
+      );
 
       // 2b. Inject request-scoped logger (if logging middleware is active)
       const logger = res.locals[LOGGER_LOCALS_KEY] as ModularLogger | undefined;

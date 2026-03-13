@@ -55,10 +55,8 @@ class HelloInput extends Input {
     SchemaField.string('name', description: 'Name to greet'),
   ];
 
-  factory HelloInput.fromJson(Map<String, dynamic> json) {
-    validateJsonFields(json, schema);
-    return HelloInput(name: json['name'] as String);
-  }
+  factory HelloInput.fromJson(Map<String, dynamic> json) =>
+      HelloInput(name: (json['name'] ?? '').toString());
 
   @override
   Map<String, dynamic> toJson() => {'name': name};
@@ -79,10 +77,8 @@ class HelloOutput extends Output {
     SchemaField.string('message', description: 'Greeting message'),
   ];
 
-  factory HelloOutput.fromJson(Map<String, dynamic> json) {
-    validateJsonFields(json, schema);
-    return HelloOutput(message: json['message'] as String);
-  }
+  factory HelloOutput.fromJson(Map<String, dynamic> json) =>
+      HelloOutput(message: (json['message'] ?? '').toString());
 
   @override
   int get statusCode => 200;

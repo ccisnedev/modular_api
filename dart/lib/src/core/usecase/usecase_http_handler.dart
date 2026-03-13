@@ -22,6 +22,14 @@ Handler useCaseHttpHandler(UseCase Function(Map<String, dynamic>) fromJson) {
 
       // 2. Build and validate the UseCase
       final useCase = fromJson(data);
+
+      // 2a. Auto-validate raw JSON against schemaFields on the Input DTO.
+      // Runs after fromJson (which may coerce) — validates the ORIGINAL payload.
+      final inputFields = useCase.input.schemaFields;
+      if (inputFields != null) {
+        validateJsonFields(data, inputFields);
+      }
+
       final validationError = useCase.validate();
       if (validationError != null) {
         return Response(
