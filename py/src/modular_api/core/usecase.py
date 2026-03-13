@@ -43,8 +43,8 @@ def _normalize_schema(raw: dict[str, Any]) -> dict[str, object]:
                     required.remove(name)
                 continue
 
-        # Strip Pydantic's auto-generated ``title`` from properties
-        cleaned = {k: v for k, v in prop.items() if k != "title"}
+        # Strip Pydantic's auto-generated ``title`` and ``default`` from properties
+        cleaned = {k: v for k, v in prop.items() if k not in ("title", "default")}
         normalized_props[name] = cleaned
 
     result: dict[str, object] = {"type": "object", "properties": normalized_props}

@@ -5,12 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
-# Import the example DTOs directly from the example module
 import sys
 
-# Add the example directory so we can import from it
 _EXAMPLE_DIR = Path(__file__).resolve().parent.parent / "example"
 sys.path.insert(0, str(_EXAMPLE_DIR))
 
@@ -28,10 +24,27 @@ class TestSchemaConformance:
 
     def test_hello_input_schema_matches_fixture(self) -> None:
         fixture = _load_fixture("hello_input_schema.json")
-        instance = HelloInput(name="test")
-        assert instance.to_schema() == fixture
+        # to_schema() is now a classmethod — call on class, not instance
+        assert HelloInput.to_schema() == fixture
 
     def test_hello_output_schema_matches_fixture(self) -> None:
         fixture = _load_fixture("hello_output_schema.json")
-        instance = HelloOutput(message="test")
-        assert instance.to_schema() == fixture
+        assert HelloOutput.to_schema() == fixture
+
+    def test_hello_input_from_json(self) -> None:
+        """from_json populates fields correctly."""
+        instance = HelloInput.from_json({"name": "Carlos"})
+        assert instance.name == "Carlos"
+
+    def test_hello_input_to_json(self) -> None:
+        """to_json serializes correctly."""
+        instance = HelloInput(name="Carlos")
+        assert instance.to_json() == {"name": "Carlos"}
+
+    def test_hello_output_from_json(self) -> None:
+        instance = HelloOutput.from_json({"message": "Hello!"})
+        assert instance.message == "Hello!"
+
+    def test_hello_output_to_json(self) -> None:
+        instance = HelloOutput(message="Hello!")
+        assert instance.to_json() == {"message": "Hello!"}

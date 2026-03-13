@@ -31,6 +31,7 @@ from modular_api import (
     ModuleBuilder,
     Output,
     UseCase,
+    Field,
 )
 
 
@@ -45,52 +46,18 @@ def build_greetings_module(m: ModuleBuilder) -> None:
 
 
 class HelloInput(Input):
-    def __init__(self, *, name: str) -> None:
-        self._name = name
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @classmethod
-    def from_json(cls, json: dict[str, object]) -> HelloInput:
-        return cls(name=str(json.get("name", "")))
-
-    def to_json(self) -> dict[str, object]:
-        return {"name": self._name}
-
-    def to_schema(self) -> dict[str, object]:
-        return {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string", "description": "Name to greet"},
-            },
-            "required": ["name"],
-        }
+    name: str = Field(description="Name to greet")
 
 
 # ── Output DTO ────────────────────────────────────────────────
 
 
 class HelloOutput(Output):
-    def __init__(self, *, message: str) -> None:
-        self._message = message
+    message: str = Field(description="Greeting message")
 
     @property
     def status_code(self) -> int:
         return 200
-
-    def to_json(self) -> dict[str, object]:
-        return {"message": self._message}
-
-    def to_schema(self) -> dict[str, object]:
-        return {
-            "type": "object",
-            "properties": {
-                "message": {"type": "string", "description": "Greeting message"},
-            },
-            "required": ["message"],
-        }
 
 
 # ── UseCase ───────────────────────────────────────────────────
