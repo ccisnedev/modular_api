@@ -117,3 +117,58 @@ Map<String, dynamic> buildSchema(List<SchemaField> fields) {
   }
   return schema;
 }
+
+/// Thrown by [validateJsonFields] when a required field is missing
+/// or has the wrong JSON type.
+///
+/// Error messages follow the cross-SDK parity contract:
+///   - `"Missing required field: {name}"`
+///   - `"Field '{name}' must be of type {type}"`
+class InputValidationException implements Exception {
+  final String message;
+
+  InputValidationException(this.message);
+
+  @override
+  String toString() => 'InputValidationException: $message';
+}
+
+/// Validates raw JSON against a list of [SchemaField] entries.
+///
+/// Throws [InputValidationException] when a required field is missing
+/// or has the wrong JSON type. The handler catches this and returns 400.
+///
+/// Business-rule validation belongs in `UseCase.validate()` instead.
+void validateJsonFields(Map<String, dynamic> json, List<SchemaField> fields) {
+  for (final field in fields) {
+    if (!field.required) continue;
+
+    if (!json.containsKey(field.name) || json[field.name] == null) {
+      throw InputValidationException('Missing required field: ${field.name}');
+    }
+
+    if (!_isJsonTypeValid(json[field.name], field.type)) {
+      throw InputValidationException(
+        "Field '${field.name}' must be of type ${field.type}",
+      );
+    }
+  }
+}
+
+/// Checks whether a JSON value matches the expected OpenAPI type.
+bool _isJsonTypeValid(dynamic value, String expectedType) {
+  switch (expectedType) {
+    case 'string':
+      return value is String;
+    case 'integer':
+      return value is int;
+    case 'number':
+      return value is num;
+    case 'boolean':
+      return value is bool;
+    case 'array':
+      return value is List;
+    default:
+      return true;
+  }
+}

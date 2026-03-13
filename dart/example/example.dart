@@ -51,16 +51,20 @@ class HelloInput extends Input {
 
   HelloInput({required this.name});
 
-  factory HelloInput.fromJson(Map<String, dynamic> json) =>
-      HelloInput(name: (json['name'] ?? '').toString());
+  static final List<SchemaField> schema = [
+    SchemaField.string('name', description: 'Name to greet'),
+  ];
+
+  factory HelloInput.fromJson(Map<String, dynamic> json) {
+    validateJsonFields(json, schema);
+    return HelloInput(name: json['name'] as String);
+  }
 
   @override
   Map<String, dynamic> toJson() => {'name': name};
 
   @override
-  List<SchemaField> get schemaFields => [
-        SchemaField.string('name', description: 'Name to greet'),
-      ];
+  List<SchemaField> get schemaFields => schema;
 }
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
@@ -71,8 +75,14 @@ class HelloOutput extends Output {
 
   HelloOutput({this.message = ''});
 
-  factory HelloOutput.fromJson(Map<String, dynamic> json) =>
-      HelloOutput(message: (json['message'] ?? '').toString());
+  static final List<SchemaField> schema = [
+    SchemaField.string('message', description: 'Greeting message'),
+  ];
+
+  factory HelloOutput.fromJson(Map<String, dynamic> json) {
+    validateJsonFields(json, schema);
+    return HelloOutput(message: json['message'] as String);
+  }
 
   @override
   int get statusCode => 200;
@@ -81,9 +91,7 @@ class HelloOutput extends Output {
   Map<String, dynamic> toJson() => {'message': message};
 
   @override
-  List<SchemaField> get schemaFields => [
-        SchemaField.string('message', description: 'Greeting message'),
-      ];
+  List<SchemaField> get schemaFields => schema;
 }
 
 // ─── UseCase ──────────────────────────────────────────────────────────────────

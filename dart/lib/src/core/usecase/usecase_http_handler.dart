@@ -5,6 +5,7 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '../logger/logger.dart';
 import '../logger/logging_middleware.dart';
+import '../schema/field.dart';
 import 'usecase.dart';
 import 'use_case_exception.dart';
 
@@ -50,6 +51,12 @@ Handler useCaseHttpHandler(UseCase Function(Map<String, dynamic>) fromJson) {
         e.statusCode,
         headers: jsonHeaders,
         body: jsonEncode(e.toJson()),
+      );
+    } on InputValidationException catch (e) {
+      return Response(
+        400,
+        headers: jsonHeaders,
+        body: jsonEncode({'error': e.message}),
       );
     } catch (e) {
       // Handle unexpected errors
