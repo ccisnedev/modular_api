@@ -7,6 +7,7 @@
 import type { Request, Response, RequestHandler } from 'express';
 import type { UseCaseFactory, Input, Output } from './usecase';
 import { UseCaseException } from './use_case_exception';
+import { InputValidationError } from './input_validation_error';
 import { LOGGER_LOCALS_KEY } from './logger/logging_middleware';
 import type { ModularLogger } from './logger/logger';
 
@@ -64,6 +65,10 @@ export function useCaseHandler<I extends Input, O extends Output>(
       // 5. Respond
       res.status(useCase.output.statusCode).set(JSON_HEADERS).json(useCase.toJson());
     } catch (err) {
+      if (err instanceof InputValidationError) {
+        res.status(400).set(JSON_HEADERS).json({ error: err.message });
+        return;
+      }
       if (err instanceof UseCaseException) {
         console.error('UseCaseException:', err.toString());
         res.status(err.statusCode).set(JSON_HEADERS).json(err.toJson());

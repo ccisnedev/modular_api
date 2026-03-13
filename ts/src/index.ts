@@ -14,6 +14,7 @@ export type { FieldMeta, FieldOptions } from './core/schema/field';
 
 // Controlled error responses
 export { UseCaseException } from './core/use_case_exception';
+export { InputValidationError } from './core/input_validation_error';
 
 // Main orchestrator
 export { ModularApi } from './core/modular_api';

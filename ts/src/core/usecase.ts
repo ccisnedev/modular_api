@@ -6,6 +6,7 @@
 
 import type { ModularLogger } from './logger/logger';
 import { getFieldMetadata, type FieldMeta } from './schema/field';
+import { InputValidationError } from './input_validation_error';
 
 /**
  * Build an OpenAPI 3.0.3 JSON Schema from `@Field` decorator metadata.
@@ -52,6 +53,18 @@ function serializeFromMetadata(instance: Record<string, unknown>, fields: FieldM
 // Track classes that have already emitted a deprecation warning (once per class)
 const _warnedInputClasses = new Set<Function>();
 const _warnedOutputClasses = new Set<Function>();
+
+/** Checks whether a JSON value matches the expected OpenAPI type. */
+function isJsonTypeValid(value: unknown, expectedType: string): boolean {
+  switch (expectedType) {
+    case 'string':  return typeof value === 'string';
+    case 'integer': return typeof value === 'number' && Number.isInteger(value);
+    case 'number':  return typeof value === 'number';
+    case 'boolean': return typeof value === 'boolean';
+    case 'array':   return Array.isArray(value);
+    default:        return true;
+  }
+}
 
 /**
  * **Contract** — use `extends Input`.
@@ -107,6 +120,34 @@ export abstract class Input {
     }
     // No decorator metadata — subclass must override (legacy path)
     throw new Error(`${this.constructor.name}.toSchema() not implemented. Use @Field decorators or override toSchema().`);
+  }
+
+  /**
+   * Validates raw JSON against `@Field` metadata of `targetClass`.
+   *
+   * Throws {@link InputValidationError} when a required field is missing
+   * or has the wrong JSON type. The handler catches this and returns 400.
+   *
+   * Error messages follow the cross-SDK parity contract:
+   *   - `"Missing required field: {name}"`
+   *   - `"Field '{name}' must be of type {type}"`
+   */
+  static validateJson(
+    json: Record<string, unknown>,
+    targetClass: abstract new (...args: unknown[]) => unknown,
+  ): void {
+    const fields = getFieldMetadata(targetClass);
+    for (const field of fields) {
+      if (!field.required) continue;
+
+      if (!(field.name in json) || json[field.name] === undefined || json[field.name] === null) {
+        throw new InputValidationError(`Missing required field: ${field.name}`);
+      }
+
+      if (!isJsonTypeValid(json[field.name], field.type)) {
+        throw new InputValidationError(`Field '${field.name}' must be of type ${field.type}`);
+      }
+    }
   }
 }
 
