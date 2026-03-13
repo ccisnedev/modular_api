@@ -2,54 +2,34 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-// Import example DTOs — we need their toSchema() output
-// The example file doesn't export, so we replicate the DTO definitions here
-// to test against the shared fixture. Once auto-schema lands, these become
-// the @Field-decorated versions.
+// Input/Output with @Field decorators — the new auto-schema pattern
 
-import { Input, Output } from '../../src/core/usecase';
+import { Input, Output } from '../src/core/usecase';
+import { Field } from '../src/core/schema/field';
 
-class HelloInput implements Input {
-  constructor(readonly name: string) {}
+class HelloInput extends Input {
+  @Field.string({ description: 'Name to greet' })
+  name!: string;
 
   static fromJson(json: Record<string, unknown>): HelloInput {
-    return new HelloInput((json['name'] ?? '').toString());
-  }
-
-  toJson() {
-    return { name: this.name };
-  }
-
-  toSchema() {
-    return {
-      type: 'object',
-      properties: {
-        name: { type: 'string', description: 'Name to greet' },
-      },
-      required: ['name'],
-    };
+    const instance = new HelloInput();
+    instance.name = (json['name'] ?? '').toString();
+    return instance;
   }
 }
 
-class HelloOutput implements Output {
-  constructor(readonly message: string) {}
+class HelloOutput extends Output {
+  @Field.string({ description: 'Greeting message' })
+  message!: string;
 
   get statusCode() {
     return 200;
   }
 
-  toJson() {
-    return { message: this.message };
-  }
-
-  toSchema() {
-    return {
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Greeting message' },
-      },
-      required: ['message'],
-    };
+  static fromJson(json: Record<string, unknown>): HelloOutput {
+    const instance = new HelloOutput();
+    instance.message = (json['message'] ?? '').toString();
+    return instance;
   }
 }
 
@@ -62,13 +42,13 @@ function loadFixture(name: string): Record<string, unknown> {
 describe('Schema Conformance', () => {
   it('HelloInput schema matches shared fixture', () => {
     const fixture = loadFixture('hello_input_schema.json');
-    const input = new HelloInput('test');
+    const input = new HelloInput();
     expect(input.toSchema()).toEqual(fixture);
   });
 
   it('HelloOutput schema matches shared fixture', () => {
     const fixture = loadFixture('hello_output_schema.json');
-    const output = new HelloOutput('test');
+    const output = new HelloOutput();
     expect(output.toSchema()).toEqual(fixture);
   });
 });

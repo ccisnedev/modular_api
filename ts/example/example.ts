@@ -23,6 +23,7 @@ import {
   HealthCheck,
   HealthCheckResult,
   LogLevel,
+  Field,
 } from '../src/index';
 
 // ─── Module Builder ───────────────────────────────────────────────────────────
@@ -35,50 +36,31 @@ function buildGreetingsModule(m: ModuleBuilder): void {
 
 // ─── Input DTO ────────────────────────────────────────────────────────────────
 
-class HelloInput implements Input {
-  constructor(readonly name: string) {}
+class HelloInput extends Input {
+  @Field.string({ description: 'Name to greet' })
+  name!: string;
 
   static fromJson(json: Record<string, unknown>): HelloInput {
-    const name = (json['name'] ?? '').toString();
-    return new HelloInput(name);
-  }
-
-  toJson() {
-    return { name: this.name };
-  }
-
-  toSchema() {
-    return {
-      type: 'object',
-      properties: {
-        name: { type: 'string', description: 'Name to greet' },
-      },
-      required: ['name'],
-    };
+    const instance = new HelloInput();
+    instance.name = (json['name'] ?? '').toString();
+    return instance;
   }
 }
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
 
-class HelloOutput implements Output {
-  constructor(readonly message: string) {}
+class HelloOutput extends Output {
+  @Field.string({ description: 'Greeting message' })
+  message!: string;
 
   get statusCode() {
     return 200;
   }
 
-  toJson() {
-    return { message: this.message };
-  }
-
-  toSchema() {
-    return {
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Greeting message' },
-      },
-      required: ['message'],
-    };
+  static fromJson(json: Record<string, unknown>): HelloOutput {
+    const instance = new HelloOutput();
+    instance.message = (json['message'] ?? '').toString();
+    return instance;
   }
 }
 
@@ -91,7 +73,7 @@ class HelloWorld implements UseCase<HelloInput, HelloOutput> {
 
   constructor(input: HelloInput) {
     this.input = input;
-    this.output = new HelloOutput('');
+    this.output = new HelloOutput();
   }
 
   static fromJson(json: Record<string, unknown>): HelloWorld {
@@ -107,7 +89,9 @@ class HelloWorld implements UseCase<HelloInput, HelloOutput> {
 
   async execute(): Promise<void> {
     this.logger?.info(`Greeting user: ${this.input.name}`);
-    this.output = new HelloOutput(`Hello, ${this.input.name}!`);
+    const output = new HelloOutput();
+    output.message = `Hello, ${this.input.name}!`;
+    this.output = output;
   }
 
   toJson(): Record<string, unknown> {

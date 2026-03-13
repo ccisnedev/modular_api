@@ -8,6 +8,10 @@
 export { Input, Output, UseCase } from './core/usecase';
 export type { UseCaseFactory } from './core/usecase';
 
+// Schema decorators
+export { Field, getFieldMetadata } from './core/schema/field';
+export type { FieldMeta, FieldOptions } from './core/schema/field';
+
 // Controlled error responses
 export { UseCaseException } from './core/use_case_exception';
 
