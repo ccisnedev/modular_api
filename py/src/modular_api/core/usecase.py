@@ -9,6 +9,7 @@ Lifecycle (handled by the framework):
 
 from __future__ import annotations
 
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
@@ -66,6 +67,16 @@ class Input(BaseModel):
 
     model_config = {"extra": "ignore"}
 
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        super().__init_subclass__(**kwargs)
+        if "to_schema" in cls.__dict__:
+            warnings.warn(
+                f"{cls.__name__}.to_schema() is deprecated. "
+                "Remove it — schema is derived automatically from field declarations.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
     @classmethod
     def from_json(cls, json: dict[str, object]) -> Input:
         """Deserialize from a plain dict. Type coercion handled by Pydantic."""
@@ -93,6 +104,16 @@ class Output(BaseModel):
     """
 
     model_config = {"extra": "ignore"}
+
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        super().__init_subclass__(**kwargs)
+        if "to_schema" in cls.__dict__:
+            warnings.warn(
+                f"{cls.__name__}.to_schema() is deprecated. "
+                "Remove it — schema is derived automatically from field declarations.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
     @classmethod
     def from_json(cls, json: dict[str, object]) -> Output:

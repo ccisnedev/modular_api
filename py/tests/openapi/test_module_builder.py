@@ -15,19 +15,11 @@ from modular_api.core.usecase import Input, Output, UseCase
 
 
 class _StubInput(Input):
-    def to_json(self) -> dict:
-        return {}
-
-    def to_schema(self) -> dict:
-        return {"type": "object", "properties": {"name": {"type": "string"}}}
+    name: str = ""
 
 
 class _StubOutput(Output):
-    def to_json(self) -> dict:
-        return {"ok": True}
-
-    def to_schema(self) -> dict:
-        return {"type": "object", "properties": {"ok": {"type": "boolean"}}}
+    ok: bool = True
 
     @property
     def status_code(self) -> int:
@@ -189,7 +181,7 @@ class TestModuleBuilderSchemaExtraction:
         assert schemas["output"] == {"type": "object", "properties": {"ok": {"type": "boolean"}}}
 
     def test_fallback_when_factory_raises(self) -> None:
-        """If the dummy factory call fails, empty fallback schemas are used."""
+        """Class-level extraction works even when factory raises."""
 
         def exploding_factory(json: dict) -> _StubUseCase:
             raise RuntimeError("cannot build from empty json")
@@ -198,8 +190,10 @@ class TestModuleBuilderSchemaExtraction:
         builder.usecase("create", exploding_factory)
 
         schemas = api_registry.routes[0].schemas
-        assert schemas["input"] == {}
-        assert schemas["output"] == {}
+        # Strategy 1 (class-level) resolves schemas from the return type hint,
+        # so the factory never needs to be instantiated.
+        assert schemas["input"] == {"type": "object", "properties": {"name": {"type": "string"}}}
+        assert schemas["output"] == {"type": "object", "properties": {"ok": {"type": "boolean"}}}
 
 
 class TestModuleBuilderFluent:
