@@ -148,8 +148,8 @@ using the language's native type system.
 | Language | Mechanism | Example |
 |---|---|---|
 | Python | Pydantic `BaseModel` | `class HelloInput(BaseModel): name: str` |
-| Dart | `@MacssSchema()` macro | `@MacssSchema() class HelloInput implements Input { ... }` |
-| TypeScript | TypeBox `Type.Object()` | `const HelloInputSchema = Type.Object({ name: Type.String() })` |
+| Dart | `@Field` annotations + `schemaFields` getter | `class HelloInput extends Input { @Field(...) final String name; ... }` |
+| TypeScript | Stage 3 `@Field` decorators | `class HelloInput extends Input { @Field.string() name!: string; }` |
 
 **Rules:**
 
@@ -736,7 +736,7 @@ opt-in authentication middleware.
 | **HTTP framework** | [shelf](https://pub.dev/packages/shelf) | [Express](https://expressjs.com/) | [Starlette](https://www.starlette.io/) |
 | **Package** | `modular_api` (pub.dev) | `@macss/modular-api` (npm) | `modular-api` (PyPI) |
 | **Version** | 0.4.0 | 0.4.0 | — |
-| **Schema generation** | `@MacssSchema()` macro | TypeBox `Type.Object()` | Pydantic `BaseModel` |
+| **Schema generation** | `@Field` + `schemaFields` getter | Stage 3 `@Field` decorators | Pydantic `BaseModel` |
 | **Metrics** | Native implementation | Native implementation | Native implementation |
 | **Swagger UI** | `shelf_swagger_ui` | `swagger-ui-express` | Native or `starlette-swagger-ui` |
 | **YAML serializer** | Native (zero-dep) | Native (zero-dep) | Native (zero-dep) |
