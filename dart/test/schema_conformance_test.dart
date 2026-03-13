@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-// Replicate the example DTOs to test schema conformance.
-// Once @MacssSchema() lands, these become the macro-decorated versions.
 import 'package:modular_api/src/core/usecase/usecase.dart';
+import 'package:modular_api/src/core/schema/field.dart';
 
 class HelloInput extends Input {
+  @Field(description: 'Name to greet')
   final String name;
   HelloInput({required this.name});
 
@@ -18,16 +18,13 @@ class HelloInput extends Input {
   Map<String, dynamic> toJson() => {'name': name};
 
   @override
-  Map<String, dynamic> toSchema() => {
-        'type': 'object',
-        'properties': {
-          'name': {'type': 'string', 'description': 'Name to greet'},
-        },
-        'required': ['name'],
-      };
+  List<SchemaField> get schemaFields => [
+        SchemaField.string('name', description: 'Name to greet'),
+      ];
 }
 
 class HelloOutput extends Output {
+  @Field(description: 'Greeting message')
   final String message;
   HelloOutput({this.message = ''});
 
@@ -38,13 +35,9 @@ class HelloOutput extends Output {
   Map<String, dynamic> toJson() => {'message': message};
 
   @override
-  Map<String, dynamic> toSchema() => {
-        'type': 'object',
-        'properties': {
-          'message': {'type': 'string', 'description': 'Greeting message'},
-        },
-        'required': ['message'],
-      };
+  List<SchemaField> get schemaFields => [
+        SchemaField.string('message', description: 'Greeting message'),
+      ];
 }
 
 /// Loads a JSON fixture relative to the monorepo root.
