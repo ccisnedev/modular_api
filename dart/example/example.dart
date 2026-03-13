@@ -45,7 +45,7 @@ void buildGreetingsModule(ModuleBuilder m) {
 
 // ─── Input DTO ────────────────────────────────────────────────────────────────
 
-class HelloInput implements Input {
+class HelloInput extends Input {
   final String name;
 
   HelloInput({required this.name});
@@ -68,7 +68,7 @@ class HelloInput implements Input {
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
 
-class HelloOutput implements Output {
+class HelloOutput extends Output {
   final String message;
 
   HelloOutput({this.message = ''});

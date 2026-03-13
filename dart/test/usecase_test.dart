@@ -42,7 +42,7 @@ class SumUseCase implements UseCase<SumInput, SumOutput> {
   Map<String, dynamic> toJson() => output.toJson();
 }
 
-class SumInput implements Input {
+class SumInput extends Input {
   final int? a;
   final int? b;
 
@@ -72,7 +72,7 @@ class SumInput implements Input {
       };
 }
 
-class SumOutput implements Output {
+class SumOutput extends Output {
   final int resultado;
 
   SumOutput({required this.resultado});

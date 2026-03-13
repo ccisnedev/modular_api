@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 // Once @MacssSchema() lands, these become the macro-decorated versions.
 import 'package:modular_api/src/core/usecase/usecase.dart';
 
-class HelloInput implements Input {
+class HelloInput extends Input {
   final String name;
   HelloInput({required this.name});
 
@@ -27,7 +27,7 @@ class HelloInput implements Input {
       };
 }
 
-class HelloOutput implements Output {
+class HelloOutput extends Output {
   final String message;
   HelloOutput({this.message = ''});
 
