@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import type { Input, Output, UseCaseFactory } from './usecase';
-import { UseCase } from './usecase';
+import { UseCase, buildSchemaFromMetadata } from './usecase';
 import { useCaseHandler } from './usecase_handler';
 import { apiRegistry } from './registry';
 import { getFieldMetadata } from './schema/field';
@@ -18,6 +18,21 @@ export interface UseCaseOptions {
   method?: HttpMethod;
   summary?: string;
   description?: string;
+
+  /**
+   * Input DTO class constructor (e.g. `HelloInput`).
+   * When provided, schema is extracted from `@Field` decorator metadata
+   * without calling `factory({})` — zero instantiation, zero concurrency risk.
+   *
+   * Required when `fromJson` validates input (the recommended pattern).
+   */
+  inputType?: abstract new (...args: unknown[]) => Input;
+  /**
+   * Output DTO class constructor (e.g. `HelloOutput`).
+   * Same benefit as `inputType` — schema extracted from class metadata.
+   */
+  outputType?: abstract new (...args: unknown[]) => Output;
+
   /** Override input schema for OpenAPI (if fromJson fails with empty data) */
   inputSchema?: Record<string, unknown>;
   /** Override output schema for OpenAPI (if fromJson fails with empty data) */
@@ -61,7 +76,7 @@ export class ModuleBuilder {
     factory: UseCaseFactory<I, O>,
     options: UseCaseOptions = {},
   ): this {
-    const { method = 'POST', summary, description, inputSchema, outputSchema } = options;
+    const { method = 'POST', summary, description, inputType, outputType, inputSchema, outputSchema } = options;
 
     // Normalize name: trim and remove leading slash
     const cleanName = name.trim().replace(/^\//, '');
@@ -71,8 +86,8 @@ export class ModuleBuilder {
     // Mount the Express handler
     this.router[methodL](subPath, useCaseHandler(factory));
 
-    // Try to capture schemas via dummy factory call, or use overrides
-    const extracted = this._extractSchemas(factory);
+    // Try to capture schemas: explicit types → decorator metadata → factory({}) fallback
+    const extracted = this._extractSchemas(factory, inputType, outputType);
     const schemas = {
       input: inputSchema ?? extracted.input,
       output: outputSchema ?? extracted.output,
@@ -100,37 +115,46 @@ export class ModuleBuilder {
    * Capture Input and Output schemas from decorator metadata or a dummy factory call.
    *
    * Strategy (in order of preference):
-   * 1. Class-level: inspect factory → UseCase class → Input/Output type args
-   *    → @Field metadata → build schema without instantiation.
-   * 2. Fallback: call factory({}) and invoke toSchema() on the result (legacy).
+   * 1. Class metadata: use `@Field` decorator metadata from the explicit
+   *    inputType/outputType class constructors — no instantiation needed.
+   *    Required when `fromJson` validates input (the recommended pattern).
+   * 2. Fallback: call factory({}) and invoke toSchema() on the result.
+   *    Works when `fromJson` is tolerant of empty data (legacy pattern).
    */
   private _extractSchemas<I extends Input, O extends Output>(
     factory: UseCaseFactory<I, O>,
+    inputType?: abstract new (...args: unknown[]) => Input,
+    outputType?: abstract new (...args: unknown[]) => Output,
   ): { input: Record<string, unknown>; output: Record<string, unknown> } {
-    // --- Strategy 1: class-level via factory({}) instance types ---
-    // For bound static methods, we can get the UseCase class and try
-    // to extract schemas from the Input/Output via decorator metadata.
-    let instance: UseCase<I, O> | undefined;
-    try {
-      instance = factory({});
-    } catch {
-      // Factory failed — that's fine, we still try class-level.
-    }
-
     let input: Record<string, unknown> = {};
     let output: Record<string, unknown> = {};
 
-    if (instance) {
+    // --- Strategy 1: class metadata — zero instantiation, zero concurrency risk ---
+    if (inputType) {
+      const fields = getFieldMetadata(inputType);
+      if (fields.length > 0) input = buildSchemaFromMetadata(fields);
+    }
+    if (outputType) {
+      const fields = getFieldMetadata(outputType);
+      if (fields.length > 0) output = buildSchemaFromMetadata(fields);
+    }
+
+    // --- Strategy 2: factory({}) fallback for backward compatibility ---
+    if (Object.keys(input).length === 0 || Object.keys(output).length === 0) {
+      let instance: UseCase<I, O> | undefined;
       try {
-        input = instance.input.toSchema();
+        instance = factory({});
       } catch {
-        // toSchema() not available — keep empty.
+        // factory({}) failed — keep partial results from Strategy 1.
       }
 
-      try {
-        output = instance.output.toSchema();
-      } catch {
-        // Output not initialised until execute() — expected for most UseCases.
+      if (instance) {
+        if (Object.keys(input).length === 0) {
+          try { input = instance.input.toSchema(); } catch { /* keep empty */ }
+        }
+        if (Object.keys(output).length === 0) {
+          try { output = instance.output.toSchema(); } catch { /* keep empty */ }
+        }
       }
     }
 

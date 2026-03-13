@@ -11,8 +11,12 @@ import { InputValidationError } from './input_validation_error';
 /**
  * Build an OpenAPI 3.0.3 JSON Schema from `@Field` decorator metadata.
  * Shared by both Input and Output base classes.
+ *
+ * Also used by ModuleBuilder to extract schemas from class metadata
+ * without instantiation — eliminating the need for `factory({})`
+ * when input/output types are registered explicitly.
  */
-function buildSchemaFromMetadata(fields: FieldMeta[]): Record<string, unknown> {
+export function buildSchemaFromMetadata(fields: FieldMeta[]): Record<string, unknown> {
   const properties: Record<string, Record<string, unknown>> = {};
   const required: string[] = [];
 

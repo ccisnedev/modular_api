@@ -1,6 +1,7 @@
 // lib/src/swagger/swagger.dart
 import 'dart:convert';
 import 'package:modular_api/src/core/modular_api.dart';
+import 'package:modular_api/src/core/schema/field.dart';
 import 'package:shelf/shelf.dart';
 
 class OpenApi {
@@ -246,34 +247,49 @@ class OpenApi {
     return const JsonEncoder.withIndent('  ').convert(spec);
   }
 
-  /// Attempts to construct the UseCase with {} and read input.toSchema()
-  /// Requires fromJson to be tolerant (not throw).
+  /// Extracts the Input schema for OpenAPI generation.
+  ///
+  /// Strategy (in order of preference):
+  /// 1. Pre-registered [SchemaField] list — no instantiation needed.
+  ///    Required when `fromJson` validates input (the recommended pattern).
+  /// 2. Fallback: call `factory({})` and read `input.toSchema()` (legacy).
   static Map<String, dynamic> _inferInputSchema(UseCaseRegistration r) {
+    // Strategy 1: pre-registered schema fields — zero instantiation
+    if (r.inputFields != null && r.inputFields!.isNotEmpty) {
+      return buildSchema(r.inputFields!);
+    }
+
+    // Strategy 2: factory({}) fallback for backward compatibility
     try {
       final uc = r.factory(<String, dynamic>{});
       final schema = uc.input.toSchema();
-      // Sanitize: ensure at least 'type: object'
       if (schema['type'] == null) {
         schema['type'] = 'object';
       }
       return schema;
     } catch (_) {
-      // Fallback si fromJson lanza
       return {'type': 'object', 'properties': {}};
     }
   }
 
+  /// Extracts the Output schema for OpenAPI generation.
+  ///
+  /// Same dual strategy as [_inferInputSchema].
   static Map<String, dynamic> _inferOutputSchema(UseCaseRegistration r) {
+    // Strategy 1: pre-registered schema fields — zero instantiation
+    if (r.outputFields != null && r.outputFields!.isNotEmpty) {
+      return buildSchema(r.outputFields!);
+    }
+
+    // Strategy 2: factory({}) fallback for backward compatibility
     try {
       final uc = r.factory(<String, dynamic>{});
       final schema = uc.output.toSchema();
-      // Sanitize: ensure at least 'type: object'
       if (schema['type'] == null) {
         schema['type'] = 'object';
       }
       return schema;
     } catch (_) {
-      // Fallback if fromJson throws
       return {'type': 'object', 'properties': {}};
     }
   }

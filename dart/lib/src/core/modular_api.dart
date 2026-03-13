@@ -206,13 +206,19 @@ class ModuleBuilder {
     required Router root,
   }) : _root = root;
 
-  /// POST by default
+  /// Registers a use case as an HTTP endpoint.
+  ///
+  /// When [inputFields] or [outputFields] are provided, schema extraction
+  /// uses them directly — no `factory({})` instantiation needed.
+  /// Required when `fromJson` validates input (the recommended pattern).
   ModuleBuilder usecase(
     String usecaseName,
     UseCaseFactory usecaseFactory, {
     String method = 'POST',
     String? summary,
     String? description,
+    List<SchemaField>? inputFields,
+    List<SchemaField>? outputFields,
   }) {
     Handler h = useCaseHttpHandler(usecaseFactory);
 
@@ -260,6 +266,8 @@ class ModuleBuilder {
         path: '${_normalizeBase(basePath)}/$moduleName/$usecaseName',
         factory: usecaseFactory,
         doc: doc,
+        inputFields: inputFields,
+        outputFields: outputFields,
       ),
     );
 
@@ -296,6 +304,13 @@ class UseCaseRegistration {
   final UseCaseFactory factory;
   final UseCaseDocMeta? doc;
 
+  /// Pre-registered schema fields for the Input DTO.
+  /// When provided, OpenAPI schema is derived directly — no `factory({})` needed.
+  final List<SchemaField>? inputFields;
+
+  /// Pre-registered schema fields for the Output DTO.
+  final List<SchemaField>? outputFields;
+
   UseCaseRegistration({
     required this.module,
     required this.name,
@@ -303,6 +318,8 @@ class UseCaseRegistration {
     required this.path,
     required this.factory,
     this.doc,
+    this.inputFields,
+    this.outputFields,
   });
 }
 
