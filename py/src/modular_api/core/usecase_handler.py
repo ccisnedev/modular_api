@@ -11,6 +11,7 @@ import json
 import sys
 from typing import Any, Callable
 
+from pydantic import ValidationError
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -91,6 +92,16 @@ def usecase_handler(factory: UseCaseFactory) -> Any:
             return Response(
                 content=json.dumps(exc.to_json()),
                 status_code=exc.status_code,
+                media_type=_JSON_CONTENT_TYPE,
+            )
+        except ValidationError as exc:
+            # Pydantic validation failure during from_json — missing/invalid fields.
+            # Return 400 with the first error message, matching Dart/TS behavior.
+            first_error = exc.errors()[0]
+            field = ".".join(str(loc) for loc in first_error["loc"])
+            return Response(
+                content=json.dumps({"error": f"{field} is required"}),
+                status_code=400,
                 media_type=_JSON_CONTENT_TYPE,
             )
         except Exception as exc:

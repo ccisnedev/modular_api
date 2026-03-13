@@ -16,6 +16,13 @@ from typing import Any, Generic, TypeVar
 from pydantic import BaseModel
 
 
+def _reorder_type_first(prop: dict[str, Any]) -> dict[str, Any]:
+    """Ensure ``type`` is the first key — matches Dart/TS property order."""
+    if "type" not in prop:
+        return prop
+    return {"type": prop["type"], **{k: v for k, v in prop.items() if k != "type"}}
+
+
 def _normalize_schema(raw: dict[str, Any]) -> dict[str, object]:
     """Normalize Pydantic JSON Schema (Draft 2020-12) to OpenAPI 3.0.3.
 
@@ -39,14 +46,14 @@ def _normalize_schema(raw: dict[str, Any]) -> dict[str, object]:
                 # Preserve description if present on the outer property
                 if "description" in prop:
                     collapsed["description"] = prop["description"]
-                normalized_props[name] = collapsed
+                normalized_props[name] = _reorder_type_first(collapsed)
                 if name in required:
                     required.remove(name)
                 continue
 
         # Strip Pydantic's auto-generated ``title`` and ``default`` from properties
         cleaned = {k: v for k, v in prop.items() if k not in ("title", "default")}
-        normalized_props[name] = cleaned
+        normalized_props[name] = _reorder_type_first(cleaned)
 
     result: dict[str, object] = {"type": "object", "properties": normalized_props}
     if required:
