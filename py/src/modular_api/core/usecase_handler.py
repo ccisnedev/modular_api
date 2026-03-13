@@ -26,6 +26,32 @@ _JSON_CONTENT_TYPE = "application/json; charset=utf-8"
 # Type for the factory function that builds a UseCase from parsed JSON.
 UseCaseFactory = Callable[[dict[str, Any]], UseCase[Any, Any]]
 
+# Maps Pydantic error types to OpenAPI type names for the error message
+# "Field '{name}' must be of type {openapi_type}".
+_PYDANTIC_ERROR_TO_OPENAPI_TYPE: dict[str, str] = {
+    "string_type": "string",
+    "int_type": "integer",
+    "int_parsing": "integer",
+    "float_type": "number",
+    "float_parsing": "number",
+    "bool_type": "boolean",
+    "bool_parsing": "boolean",
+    "list_type": "array",
+}
+
+
+def _format_validation_message(field: str, error_type: str) -> str:
+    """Produce a parity-safe error message from a Pydantic validation error.
+
+    Returns one of two canonical forms (identical across all 3 SDKs):
+      - ``"Missing required field: {name}"``
+      - ``"Field '{name}' must be of type {type}"``
+    """
+    if error_type == "missing":
+        return f"Missing required field: {field}"
+    openapi_type = _PYDANTIC_ERROR_TO_OPENAPI_TYPE.get(error_type, "the correct type")
+    return f"Field '{field}' must be of type {openapi_type}"
+
 
 def usecase_handler(factory: UseCaseFactory) -> Any:
     """Wraps a UseCase factory into an async Starlette endpoint.
@@ -95,12 +121,12 @@ def usecase_handler(factory: UseCaseFactory) -> Any:
                 media_type=_JSON_CONTENT_TYPE,
             )
         except ValidationError as exc:
-            # Pydantic validation failure during from_json — missing/invalid fields.
-            # Return 400 with the first error message, matching Dart/TS behavior.
+            # Pydantic validation failure during from_json — missing or wrong type.
             first_error = exc.errors()[0]
             field = ".".join(str(loc) for loc in first_error["loc"])
+            message = _format_validation_message(field, first_error["type"])
             return Response(
-                content=json.dumps({"error": f"{field} is required"}),
+                content=json.dumps({"error": message}),
                 status_code=400,
                 media_type=_JSON_CONTENT_TYPE,
             )

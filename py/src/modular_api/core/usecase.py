@@ -86,8 +86,13 @@ class Input(BaseModel):
 
     @classmethod
     def from_json(cls, json: dict[str, object]) -> Input:
-        """Deserialize from a plain dict. Type coercion handled by Pydantic."""
-        return cls.model_validate(json)
+        """Deserialize from a plain dict with strict type validation.
+
+        Uses Pydantic strict mode so JSON types must match field declarations
+        exactly — no implicit coercion (e.g. int → str is rejected).
+        Raises ``ValidationError`` for missing or wrongly-typed fields.
+        """
+        return cls.model_validate(json, strict=True)
 
     def to_json(self) -> dict[str, object]:
         """Serialize to a plain dict."""
@@ -124,8 +129,8 @@ class Output(BaseModel):
 
     @classmethod
     def from_json(cls, json: dict[str, object]) -> Output:
-        """Deserialize from a plain dict. Type coercion handled by Pydantic."""
-        return cls.model_validate(json)
+        """Deserialize from a plain dict with strict type validation."""
+        return cls.model_validate(json, strict=True)
 
     def to_json(self) -> dict[str, object]:
         """Serialize to a plain dict."""
