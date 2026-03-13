@@ -51,8 +51,9 @@ class HelloInput extends Input {
 
   HelloInput({required this.name});
 
-  factory HelloInput.fromJson(Map<String, dynamic> json) =>
-      HelloInput(name: (json['name'] ?? '').toString());
+  factory HelloInput.fromJson(Map<String, dynamic> json) => HelloInput(
+        name: (json['name'] ?? '').toString(),
+      );
 
   @override
   Map<String, dynamic> toJson() => {'name': name};

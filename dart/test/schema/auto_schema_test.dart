@@ -125,8 +125,8 @@ void main() {
         SchemaField.optional(SchemaField.string('nick')),
       ]);
       expect(schema['required'], ['name']);
-      expect(
-          (schema['properties'] as Map)['nick'], {'type': 'string', 'nullable': true});
+      expect((schema['properties'] as Map)['nick'],
+          {'type': 'string', 'nullable': true});
     });
   });
 
@@ -146,13 +146,11 @@ void main() {
       final input = OptionalInput(name: 'Carlos');
       final schema = input.toSchema();
       expect(schema['required'], ['name']);
-      expect(
-          (schema['properties'] as Map)['nickname'],
-          {
-            'type': 'string',
-            'description': 'Optional nickname',
-            'nullable': true,
-          });
+      expect((schema['properties'] as Map)['nickname'], {
+        'type': 'string',
+        'description': 'Optional nickname',
+        'nullable': true,
+      });
     });
   });
 

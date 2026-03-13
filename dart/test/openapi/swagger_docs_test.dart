@@ -87,7 +87,8 @@ void main() {
       expect(resp.body, contains('--bg-primary'));
     });
 
-    test('preserves HTTP method accent colors in dark mode (PRD-004)', () async {
+    test('preserves HTTP method accent colors in dark mode (PRD-004)',
+        () async {
       final resp = await http.get(Uri.parse('http://localhost:$port/docs'));
       expect(resp.body, contains('#49cc90'));
     });

@@ -53,7 +53,8 @@ void main() {
 
     test('throws for wrong type — string where integer expected', () {
       expect(
-        () => validateJsonFields({'name': 'Alice', 'age': 'twenty-five'}, fields),
+        () =>
+            validateJsonFields({'name': 'Alice', 'age': 'twenty-five'}, fields),
         throwsA(isA<InputValidationException>().having(
           (e) => e.message,
           'message',
