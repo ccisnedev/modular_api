@@ -16,11 +16,17 @@ function buildSchemaFromMetadata(fields: FieldMeta[]): Record<string, unknown> {
   const properties: Record<string, Record<string, unknown>> = {};
   const required: string[] = [];
 
+  const exampleValues: Record<string, unknown> = {};
+
   for (const field of fields) {
     const prop: Record<string, unknown> = { type: field.type };
     if (field.description) prop.description = field.description;
     if (field.nullable) prop.nullable = true;
     if (field.items) prop.items = field.items;
+    if (field.example !== undefined) {
+      prop.example = field.example;
+      exampleValues[field.name] = field.example;
+    }
     properties[field.name] = prop;
 
     if (field.required) {
@@ -31,6 +37,9 @@ function buildSchemaFromMetadata(fields: FieldMeta[]): Record<string, unknown> {
   const schema: Record<string, unknown> = { type: 'object', properties };
   if (required.length > 0) {
     schema.required = required;
+  }
+  if (Object.keys(exampleValues).length > 0) {
+    schema.example = exampleValues;
   }
   return schema;
 }

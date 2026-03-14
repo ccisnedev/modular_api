@@ -32,11 +32,13 @@ export interface FieldMeta {
   required: boolean;
   nullable: boolean;
   items?: { type: string };
+  example?: unknown;
 }
 
 /** Options accepted by every primitive Field decorator. */
 export interface FieldOptions {
   description?: string;
+  example?: unknown;
 }
 
 // ── Internal storage key ─────────────────────────────────────
@@ -64,6 +66,9 @@ function makeFieldDecorator(
       nullable: false,
       ...extra,
     };
+    if (options.example !== undefined) {
+      meta.example = options.example;
+    }
 
     const metadata = context.metadata as Record<symbol, FieldMeta[]>;
     if (!metadata[FIELD_KEY]) {
