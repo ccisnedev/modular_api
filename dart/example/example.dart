@@ -5,10 +5,10 @@
 ///   dart run example/example.dart
 ///
 /// Then test:
-///   curl -X POST http://localhost:8080/api/greetings/hello \
+///   curl -X POST http://localhost:8080/api/v1/greetings/hello \
 ///        -H "Content-Type: application/json" \
 ///        -d '{"name":"World"}'
-///   curl http://localhost:8080/api/time/now?tz=utc-5
+///   curl http://localhost:8080/api/v1/time/now?tz=utc-5
 ///
 /// Docs:
 ///   http://localhost:8080/docs
@@ -27,7 +27,7 @@ Future<void> main(List<String> args) async {
   final port = args.isNotEmpty ? int.parse(args.first) : 8080;
 
   final api = ModularApi(
-    basePath: '/api',
+    basePath: '/api/v1',
     title: 'Modular API',
     version: '1.0.0',
     // Opt-in Prometheus metrics at GET /metrics
