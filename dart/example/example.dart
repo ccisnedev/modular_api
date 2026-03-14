@@ -62,7 +62,6 @@ void buildGreetingsModule(ModuleBuilder m) {
 // ─── Input DTO ────────────────────────────────────────────────────────────────
 
 class HelloInput extends Input {
-  @Field(description: 'Name to greet')
   final String name;
 
   HelloInput({required this.name});
@@ -83,7 +82,6 @@ class HelloInput extends Input {
 // ─── Output DTO ───────────────────────────────────────────────────────────────
 
 class HelloOutput extends Output {
-  @Field(description: 'Greeting message')
   final String message;
 
   HelloOutput({required this.message});

@@ -7,7 +7,6 @@ import 'package:modular_api/src/core/usecase/usecase.dart';
 import 'package:modular_api/src/core/schema/field.dart';
 
 class HelloInput extends Input {
-  @Field(description: 'Name to greet')
   final String name;
   HelloInput({required this.name});
 
@@ -25,7 +24,6 @@ class HelloInput extends Input {
 }
 
 class HelloOutput extends Output {
-  @Field(description: 'Greeting message')
   final String message;
   HelloOutput({this.message = ''});
 

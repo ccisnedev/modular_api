@@ -1,21 +1,20 @@
-"""example/example.py — Minimal runnable example.
+# example/example.py — Minimal runnable example.
 
-Mirrors ``example/example.dart`` (Dart) and ``example/example.ts`` (TypeScript).
+# Mirrors ``example/example.dart`` (Dart) and ``example/example.ts`` (TypeScript).
 
-Run::
+# Run::
 
-    python -m example.example
+#     python -m example.example
 
-Then test::
+# Then test::
 
-    curl -X POST http://localhost:8080/api/greetings/hello \
-         -H "Content-Type: application/json" \
-         -d '{"name":"World"}'
+#     curl -X POST http://localhost:8080/api/greetings/hello \
+#          -H "Content-Type: application/json" \
+#          -d '{"name":"World"}'
 
-Docs::
+# Docs::
 
-    http://localhost:8080/docs
-"""
+#     http://localhost:8080/docs
 
 from __future__ import annotations
 

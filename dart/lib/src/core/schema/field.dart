@@ -6,12 +6,8 @@
 /// The base class `Input.toSchema()` / `Output.toSchema()` builds the
 /// OpenAPI 3.0.3-compatible JSON Schema automatically from this list.
 ///
-/// The `@Field` annotation is decorative — it documents the field's purpose
-/// and will be consumed by `@MacssSchema()` macro when macros stabilize.
-///
 /// ```dart
 /// class HelloInput extends Input {
-///   @Field(description: 'Name to greet')
 ///   final String name;
 ///
 ///   HelloInput({required this.name});
@@ -24,16 +20,6 @@
 /// }
 /// ```
 library;
-
-/// Decorative annotation for field metadata.
-///
-/// Used for documentation, IDE support, and future macro consumption.
-/// Does NOT affect runtime behavior in the current version.
-class Field {
-  final String? description;
-
-  const Field({this.description});
-}
 
 /// Metadata for a single schema field.
 ///

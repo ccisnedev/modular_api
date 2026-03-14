@@ -8,7 +8,6 @@ import 'package:test/test.dart';
 // ── UseCase with examples (strict fromJson — no coercion) ────────────────
 
 class _GreetInput extends Input {
-  @Field(description: 'Name to greet')
   final String name;
   final int age;
   final double score;
