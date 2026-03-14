@@ -38,9 +38,9 @@ class UseCaseRegistration:
     """
 
     module: str
-    name: str
+    command: str  # route segment and operationId root, e.g. 'hello-world'
     method: str  # uppercase: "POST" | "GET" | "PUT" | "PATCH" | "DELETE"
-    path: str  # e.g. "/api/users/create"
+    path: str  # e.g. "/api/v1/greetings/hello-world"
     factory: UseCaseFactory
     schemas: dict[str, dict[str, Any]] = field(default_factory=dict)
     doc: UseCaseDocMeta | None = None

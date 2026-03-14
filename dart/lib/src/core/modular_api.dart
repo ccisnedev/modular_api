@@ -206,9 +206,13 @@ class ModuleBuilder {
     required Router root,
   }) : _root = root;
 
-  /// POST by default
+  /// Registers a use case as an HTTP endpoint on this module.
+  ///
+  /// [command] becomes the route segment and the OpenAPI operationId root.
+  /// Convention: command, class name, and file name share the same root.
+  /// Example: command `'hello-world'` → class `HelloWorld` → file `hello_world.dart`.
   ModuleBuilder usecase(
-    String usecaseName,
+    String command,
     UseCaseFactory usecaseFactory, {
     String method = 'POST',
     String? summary,
@@ -218,15 +222,12 @@ class ModuleBuilder {
   }) {
     Handler h = useCaseHttpHandler(usecaseFactory, inputExample: inputExample);
 
-    /// Clean usecase name
-    usecaseName = usecaseName.trim();
-
-    /// if starts with '/', remove it
-    if (usecaseName.startsWith('/')) {
-      usecaseName = usecaseName.substring(1);
+    command = command.trim();
+    if (command.startsWith('/')) {
+      command = command.substring(1);
     }
 
-    final String subPath = '/$usecaseName';
+    final String subPath = '/$command';
     final String methodU = method.toUpperCase();
 
     switch (methodU) {
@@ -248,18 +249,18 @@ class ModuleBuilder {
 
     // Register metadata for Swagger
     UseCaseDocMeta doc = UseCaseDocMeta(
-      summary: summary ?? 'Use case $usecaseName in module $moduleName',
+      summary: summary ?? 'Use case $command in module $moduleName',
       description:
-          description ?? 'Auto-generated documentation for $usecaseName',
+          description ?? 'Auto-generated documentation for $command',
       tags: [moduleName],
     );
 
     apiRegistry.routes.add(
       UseCaseRegistration(
         module: moduleName,
-        name: usecaseName,
+        command: command,
         method: methodU,
-        path: '${_normalizeBase(basePath)}/$moduleName/$usecaseName',
+        path: '${_normalizeBase(basePath)}/$moduleName/$command',
         factory: usecaseFactory,
         doc: doc,
         inputExample: inputExample,
@@ -294,9 +295,9 @@ class UseCaseDocMeta {
 
 class UseCaseRegistration {
   final String module;
-  final String name;
+  final String command;
   final String method; // "POST" | "GET" | ...
-  final String path; // p.ej. "/api/ligo/example"
+  final String path; // e.g. "/api/v1/greetings/hello-world"
   final UseCaseFactory factory;
   final UseCaseDocMeta? doc;
 
@@ -309,7 +310,7 @@ class UseCaseRegistration {
 
   UseCaseRegistration({
     required this.module,
-    required this.name,
+    required this.command,
     required this.method,
     required this.path,
     required this.factory,

@@ -56,20 +56,20 @@ export class ModuleBuilder {
   /**
    * Registers a use case as an HTTP endpoint.
    *
-   * @param name     Route segment, e.g. 'create' → POST /api/users/create
+   * @param command  Route segment and operationId root, e.g. 'hello-world' → POST /api/greetings/hello-world.
+   *                  Convention: command, class name, and file name share the same root.
    * @param factory  The static `fromJson` of your UseCase class
-   * @param options  Optional HTTP method, summary and description for OpenAPI
+   * @param options  HTTP method, inputClass/outputClass, and optional OpenAPI metadata
    */
   usecase<I extends Input, O extends Output>(
-    name: string,
+    command: string,
     factory: UseCaseFactory<I, O>,
     options: UseCaseOptions,
   ): this {
     const { method = 'POST', summary, description, inputSchema, outputSchema, inputClass, outputClass } = options;
 
-    // Normalize name: trim and remove leading slash
-    const cleanName = name.trim().replace(/^\//g, '');
-    const subPath = `/${cleanName}`;
+    const cleanCommand = command.trim().replace(/^\//g, '');
+    const subPath = `/${cleanCommand}`;
     const methodL = method.toLowerCase() as Lowercase<HttpMethod>;
 
     // Mount the Express handler (with optional pre-validation)
@@ -85,14 +85,14 @@ export class ModuleBuilder {
     // Register in the global registry for OpenAPI generation
     apiRegistry.routes.push({
       module: this.moduleName,
-      name: cleanName,
+      command: cleanCommand,
       method: method,
-      path: `${this._normalizeBase(this.basePath)}/${this.moduleName}/${cleanName}`,
+      path: `${this._normalizeBase(this.basePath)}/${this.moduleName}/${cleanCommand}`,
       factory: factory as UseCaseFactory<Input, Output>,
       schemas,
       doc: {
-        summary: summary ?? `Use case ${cleanName} in module ${this.moduleName}`,
-        description: description ?? `Auto-generated documentation for ${cleanName}`,
+        summary: summary ?? `Use case ${cleanCommand} in module ${this.moduleName}`,
+        description: description ?? `Auto-generated documentation for ${cleanCommand}`,
         tags: [this.moduleName],
       },
     });
