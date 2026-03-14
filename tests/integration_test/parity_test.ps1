@@ -571,7 +571,7 @@ function Test-OpenApiJson {
         "$ImplName /openapi.json POST hello response uses `$ref to Output schema"
 
     # Schema content — Input must have properties.name with type string
-    $inputSchema = $json.components.schemas.greetings_hello-world_Input
+    $inputSchema = $json.components.schemas['greetings_hello-world_Input']
     $hasInputName = ($null -ne $inputSchema.properties) -and ($null -ne $inputSchema.properties.name)
     Assert-True $hasInputName `
         "$ImplName /openapi.json greetings_hello-world_Input has properties.name"
@@ -582,7 +582,7 @@ function Test-OpenApiJson {
     }
 
     # Schema content — Output must have properties.message with type string
-    $outputSchema = $json.components.schemas.greetings_hello-world_Output
+    $outputSchema = $json.components.schemas['greetings_hello-world_Output']
     $hasOutputMessage = ($null -ne $outputSchema.properties) -and ($null -ne $outputSchema.properties.message)
     Assert-True $hasOutputMessage `
         "$ImplName /openapi.json greetings_hello-world_Output has properties.message"
@@ -833,17 +833,17 @@ function Compare-Implementations {
     # ── Schema content parity (properties, types, required) ──────────────────
     # Dart is the reference — TS and Python must produce identical schema content.
 
-    $dartInputJson  = $Dart.OpenApiJson.components.schemas.greetings_hello-world_Input       | ConvertTo-Json -Depth 10 -Compress
-    $tsInputJson    = $TypeScript.OpenApiJson.components.schemas.greetings_hello-world_Input  | ConvertTo-Json -Depth 10 -Compress
-    $pyInputJson    = $Python.OpenApiJson.components.schemas.greetings_hello-world_Input      | ConvertTo-Json -Depth 10 -Compress
+    $dartInputJson  = $Dart.OpenApiJson.components.schemas['greetings_hello-world_Input']       | ConvertTo-Json -Depth 10 -Compress
+    $tsInputJson    = $TypeScript.OpenApiJson.components.schemas['greetings_hello-world_Input']  | ConvertTo-Json -Depth 10 -Compress
+    $pyInputJson    = $Python.OpenApiJson.components.schemas['greetings_hello-world_Input']      | ConvertTo-Json -Depth 10 -Compress
 
     Assert-True (
         ($dartInputJson -eq $tsInputJson) -and ($dartInputJson -eq $pyInputJson)
     ) 'OpenAPI greetings_hello-world_Input schema content identical across implementations'
 
-    $dartOutputJson  = $Dart.OpenApiJson.components.schemas.greetings_hello-world_Output       | ConvertTo-Json -Depth 10 -Compress
-    $tsOutputJson    = $TypeScript.OpenApiJson.components.schemas.greetings_hello-world_Output  | ConvertTo-Json -Depth 10 -Compress
-    $pyOutputJson    = $Python.OpenApiJson.components.schemas.greetings_hello-world_Output      | ConvertTo-Json -Depth 10 -Compress
+    $dartOutputJson  = $Dart.OpenApiJson.components.schemas['greetings_hello-world_Output']       | ConvertTo-Json -Depth 10 -Compress
+    $tsOutputJson    = $TypeScript.OpenApiJson.components.schemas['greetings_hello-world_Output']  | ConvertTo-Json -Depth 10 -Compress
+    $pyOutputJson    = $Python.OpenApiJson.components.schemas['greetings_hello-world_Output']      | ConvertTo-Json -Depth 10 -Compress
 
     Assert-True (
         ($dartOutputJson -eq $tsOutputJson) -and ($dartOutputJson -eq $pyOutputJson)
