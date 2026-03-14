@@ -99,8 +99,8 @@ void main() {
         ThrowExceptionInput(shouldThrow: false),
       );
 
-      await useCase.execute();
-      expect(useCase.output.success, isTrue);
+      final output = await useCase.execute();
+      expect(output.success, isTrue);
     });
   });
 }
@@ -163,9 +163,6 @@ class ThrowExceptionUseCase
   final ThrowExceptionInput input;
 
   @override
-  late ThrowExceptionOutput output;
-
-  @override
   ModularLogger? logger;
 
   ThrowExceptionUseCase(this.input);
@@ -178,7 +175,7 @@ class ThrowExceptionUseCase
   String? validate() => null;
 
   @override
-  Future<void> execute() async {
+  Future<ThrowExceptionOutput> execute() async {
     if (input.shouldThrow) {
       throw UseCaseException(
         statusCode: 404,
@@ -187,9 +184,6 @@ class ThrowExceptionUseCase
       );
     }
 
-    output = ThrowExceptionOutput(success: true);
+    return ThrowExceptionOutput(success: true);
   }
-
-  @override
-  Map<String, dynamic> toJson() => output.toJson();
 }

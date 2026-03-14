@@ -84,13 +84,9 @@ class _GreetUseCase implements UseCase<_GreetInput, _GreetOutput> {
   @override
   final _GreetInput input;
   @override
-  late _GreetOutput output;
-  @override
   ModularLogger? logger;
 
-  _GreetUseCase({required this.input}) {
-    output = _GreetOutput();
-  }
+  _GreetUseCase({required this.input});
 
   static _GreetUseCase fromJson(Map<String, dynamic> json) =>
       _GreetUseCase(input: _GreetInput.fromJson(json));
@@ -99,12 +95,9 @@ class _GreetUseCase implements UseCase<_GreetInput, _GreetOutput> {
   String? validate() => null;
 
   @override
-  Future<void> execute() async {
-    output = _GreetOutput(message: 'Hello, ${input.name}!');
+  Future<_GreetOutput> execute() async {
+    return _GreetOutput(message: 'Hello, ${input.name}!');
   }
-
-  @override
-  Map<String, dynamic> toJson() => output.toJson();
 }
 
 void main() {
