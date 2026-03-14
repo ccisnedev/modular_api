@@ -118,6 +118,58 @@ Map<String, dynamic> buildSchema(List<SchemaField> fields) {
   return schema;
 }
 
+/// Infers an OpenAPI 3.0.3 JSON Schema from example values in a `toJson()` map.
+///
+/// Maps Dart runtime types to OpenAPI types:
+///   - `String` → `string`
+///   - `int` → `integer`
+///   - `double` → `number`
+///   - `bool` → `boolean`
+///   - `List` → `array` (item type inferred from first element)
+///   - `null` → `string` + `nullable: true` (excluded from required)
+///
+/// Used as fallback when [schemaFields] is not provided on an Input/Output.
+Map<String, dynamic> inferSchemaFromExample(Map<String, dynamic> exampleJson) {
+  final properties = <String, Map<String, dynamic>>{};
+  final required = <String>[];
+
+  for (final entry in exampleJson.entries) {
+    final value = entry.value;
+    if (value == null) {
+      properties[entry.key] = {'type': 'string', 'nullable': true};
+      continue;
+    }
+
+    final prop = <String, dynamic>{'type': _inferOpenApiType(value)};
+    if (value is List) {
+      prop['items'] = {
+        'type': value.isEmpty ? 'string' : _inferOpenApiType(value.first),
+      };
+    }
+    properties[entry.key] = prop;
+    required.add(entry.key);
+  }
+
+  final schema = <String, dynamic>{
+    'type': 'object',
+    'properties': properties,
+  };
+  if (required.isNotEmpty) {
+    schema['required'] = required;
+  }
+  return schema;
+}
+
+/// Maps a Dart runtime value to its OpenAPI 3.0.3 type string.
+String _inferOpenApiType(dynamic value) {
+  if (value is String) return 'string';
+  if (value is int) return 'integer';
+  if (value is double) return 'number';
+  if (value is bool) return 'boolean';
+  if (value is List) return 'array';
+  return 'string';
+}
+
 /// Thrown by [validateJsonFields] when a required field is missing
 /// or has the wrong JSON type.
 ///
