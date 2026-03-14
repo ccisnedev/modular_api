@@ -11,6 +11,16 @@
   --input-border: #d9d9d9;
 }
 
+/* ── Layout fix: align Servers box with content ──────────── */
+.swagger-ui .scheme-container {
+  max-width: 1460px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
+  box-shadow: none;
+}
+
 /* ── Dark mode overrides ─────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
