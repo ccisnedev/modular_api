@@ -89,15 +89,14 @@ abstract class Input {
 
   /// Schema — required for OpenAPI specification.
   /// When [schemaFields] is provided, the schema is derived automatically.
+  /// Otherwise, infers types from [toJson] values (less detail, no descriptions).
   Map<String, dynamic> toSchema() {
     final fields = schemaFields;
     if (fields != null) {
       return buildSchema(fields);
     }
-    throw UnimplementedError(
-      '$runtimeType.toSchema() not implemented. '
-      'Override schemaFields or toSchema().',
-    );
+    // Fallback: infer schema from toJson() value types
+    return inferSchemaFromExample(toJson());
   }
 }
 
@@ -117,15 +116,14 @@ abstract class Output {
 
   /// Schema — required for OpenAPI specification.
   /// When [schemaFields] is provided, the schema is derived automatically.
+  /// Otherwise, infers types from [toJson] values (less detail, no descriptions).
   Map<String, dynamic> toSchema() {
     final fields = schemaFields;
     if (fields != null) {
       return buildSchema(fields);
     }
-    throw UnimplementedError(
-      '$runtimeType.toSchema() not implemented. '
-      'Override schemaFields or toSchema().',
-    );
+    // Fallback: infer schema from toJson() value types
+    return inferSchemaFromExample(toJson());
   }
 
   /// HTTP status code to return.
