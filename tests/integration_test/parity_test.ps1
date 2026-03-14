@@ -421,6 +421,89 @@ function Test-UseCaseWrongType {
     return $json
 }
 
+# ── Time/Now UseCase tests ───────────────────────────────────────────────────
+
+function Test-TimeNowDefault {
+    <#
+    .SYNOPSIS
+        GET /api/v1/time/now (no tz param) → 200 with datetime and offset.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/time/now"
+
+    Assert-True ($response.StatusCode -eq 200) `
+        "$ImplName GET time/now (default) → 200"
+
+    if ($response.StatusCode -ne 200) {
+        Write-Host "    Body was: $($response.Body)" -ForegroundColor DarkGray
+        return $null
+    }
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($null -ne $json.datetime) `
+        "$ImplName GET time/now (default) has datetime field"
+
+    Assert-True ($null -ne $json.offset) `
+        "$ImplName GET time/now (default) has offset field"
+
+    return $json
+}
+
+function Test-TimeNowWithOffset {
+    <#
+    .SYNOPSIS
+        GET /api/v1/time/now?tz=utc-5 → 200 with offset == -5.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/time/now?tz=utc-5"
+
+    Assert-True ($response.StatusCode -eq 200) `
+        "$ImplName GET time/now?tz=utc-5 → 200"
+
+    if ($response.StatusCode -ne 200) {
+        Write-Host "    Body was: $($response.Body)" -ForegroundColor DarkGray
+        return $null
+    }
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($json.offset -eq -5) `
+        "$ImplName GET time/now?tz=utc-5 offset is -5"
+
+    Assert-True ($null -ne $json.datetime) `
+        "$ImplName GET time/now?tz=utc-5 has datetime field"
+
+    return $json
+}
+
+function Test-TimeNowInvalidTz {
+    <#
+    .SYNOPSIS
+        GET /api/v1/time/now?tz=invalid → 400 validation error.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/time/now?tz=invalid"
+
+    Assert-True ($response.StatusCode -eq 400) `
+        "$ImplName GET time/now?tz=invalid → 400"
+
+    if ($response.StatusCode -notin @(400, 422)) {
+        Write-Host "    Body was: $($response.Body)" -ForegroundColor DarkGray
+        return $null
+    }
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($json.error -eq 'invalid timezone format, use utc, utc-5, utc+3') `
+        "$ImplName GET time/now?tz=invalid error message is correct"
+
+    return $json
+}
+
 function Test-OpenApiJson {
     <#
     .SYNOPSIS
@@ -509,6 +592,18 @@ function Test-OpenApiJson {
             "$ImplName /openapi.json greetings_hello_Output.message type is 'string'"
     }
 
+    # ── Time/Now endpoint in OpenAPI ─────────────────────────────────────────
+
+    $timePath = $json.paths.'/api/v1/time/now'
+    Assert-True ($null -ne $timePath) `
+        "$ImplName /openapi.json paths has /api/v1/time/now"
+
+    Assert-True ($null -ne $timePath.get) `
+        "$ImplName /openapi.json /api/v1/time/now has GET operation"
+
+    Assert-True ($schemaNames -contains 'time_now_Output') `
+        "$ImplName /openapi.json components.schemas has time_now_Output"
+
     return $json
 }
 
@@ -569,6 +664,9 @@ function Test-Implementation {
         UseCaseEmptyName   = Test-UseCaseValidationFailure -ImplName $Name -BaseUrl $BaseUrl
         UseCaseMissingBody = Test-UseCaseMissingBody       -ImplName $Name -BaseUrl $BaseUrl
         UseCaseWrongType   = Test-UseCaseWrongType         -ImplName $Name -BaseUrl $BaseUrl
+        TimeNowDefault     = Test-TimeNowDefault           -ImplName $Name -BaseUrl $BaseUrl
+        TimeNowWithOffset  = Test-TimeNowWithOffset        -ImplName $Name -BaseUrl $BaseUrl
+        TimeNowInvalidTz   = Test-TimeNowInvalidTz         -ImplName $Name -BaseUrl $BaseUrl
         OpenApiJson        = Test-OpenApiJson              -ImplName $Name -BaseUrl $BaseUrl
         OpenApiYaml        = Test-OpenApiYaml              -ImplName $Name -BaseUrl $BaseUrl
     }
@@ -656,6 +754,32 @@ function Compare-Implementations {
         $script:failures += 'UseCase wrong-type error parity skipped — missing data'
     }
 
+    # ── Time/Now parity ──────────────────────────────────────────────────────
+    # Offset must be identical when a fixed tz param is used.
+    # Datetime values are NOT compared — each server's clock may differ by milliseconds.
+
+    if ($Dart.TimeNowWithOffset -and $TypeScript.TimeNowWithOffset -and $Python.TimeNowWithOffset) {
+        Assert-True (
+            ($Dart.TimeNowWithOffset.offset -eq $TypeScript.TimeNowWithOffset.offset) -and
+            ($Dart.TimeNowWithOffset.offset -eq $Python.TimeNowWithOffset.offset)
+        ) 'Time/now offset identical across implementations (utc-5)'
+    } else {
+        Write-Fail 'Time/now offset identical across implementations (skipped — missing data)'
+        $script:totalTests++; $script:failedTests++
+        $script:failures += 'Time/now offset parity skipped — missing data'
+    }
+
+    if ($Dart.TimeNowInvalidTz -and $TypeScript.TimeNowInvalidTz -and $Python.TimeNowInvalidTz) {
+        Assert-True (
+            ($Dart.TimeNowInvalidTz.error -eq $TypeScript.TimeNowInvalidTz.error) -and
+            ($Dart.TimeNowInvalidTz.error -eq $Python.TimeNowInvalidTz.error)
+        ) 'Time/now invalid tz error identical across implementations'
+    } else {
+        Write-Fail 'Time/now invalid tz error identical across implementations (skipped — missing data)'
+        $script:totalTests++; $script:failedTests++
+        $script:failures += 'Time/now invalid tz error parity skipped — missing data'
+    }
+
     # ── OpenAPI JSON structural parity ───────────────────────────────────────
 
     Assert-True (
@@ -738,7 +862,7 @@ function Compare-Implementations {
 
     # ── OpenAPI YAML parity ──────────────────────────────────────────────────
 
-    $yamlKeywords = @('openapi:', 'info:', 'paths:', '/api/v1/greetings/hello')
+    $yamlKeywords = @('openapi:', 'info:', 'paths:', '/api/v1/greetings/hello', '/api/v1/time/now')
     foreach ($keyword in $yamlKeywords) {
         $dartHas = $Dart.OpenApiYaml       -match [regex]::Escape($keyword)
         $tsHas   = $TypeScript.OpenApiYaml -match [regex]::Escape($keyword)
