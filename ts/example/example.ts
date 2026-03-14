@@ -43,13 +43,6 @@ class HelloInput extends Input {
   @Field.string({ description: 'Name to greet', example: 'World' })
   name!: string;
 
-  /// Strict factory — no coercion, no defaults.
-  /// Pre-validation in the handler ensures data is valid before this runs.
-  static fromJson(json: Record<string, unknown>): HelloInput {
-    const instance = new HelloInput();
-    instance.name = json['name'] as string;
-    return instance;
-  }
 }
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
@@ -74,7 +67,9 @@ class HelloWorld implements UseCase<HelloInput, HelloOutput> {
   }
 
   static fromJson(json: Record<string, unknown>): HelloWorld {
-    return new HelloWorld(HelloInput.fromJson(json));
+      const input = new HelloInput();
+      input.name = json['name'] as string;
+      return new HelloWorld(input);
   }
 
   validate(): string | null {

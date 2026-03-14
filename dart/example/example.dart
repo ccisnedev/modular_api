@@ -67,12 +67,6 @@ class HelloInput extends Input {
 
   HelloInput({required this.name});
 
-  /// Strict factory — no coercion, no defaults.
-  /// Pre-validation in the handler ensures data is valid before this runs.
-  factory HelloInput.fromJson(Map<String, dynamic> json) => HelloInput(
-        name: json['name'] as String,
-      );
-
   @override
   Map<String, dynamic> toJson() => {'name': name};
 
@@ -93,9 +87,6 @@ class HelloOutput extends Output {
   final String message;
 
   HelloOutput({required this.message});
-
-  factory HelloOutput.fromJson(Map<String, dynamic> json) =>
-      HelloOutput(message: json['message'] as String);
 
   @override
   int get statusCode => 200;
@@ -125,7 +116,11 @@ class HelloWorld implements UseCase<HelloInput, HelloOutput> {
   HelloWorld({required this.input});
 
   static HelloWorld fromJson(Map<String, dynamic> json) {
-    return HelloWorld(input: HelloInput.fromJson(json));
+    return HelloWorld(
+      input: HelloInput(
+        name: json['name'],
+      )
+    );
   }
 
   @override
