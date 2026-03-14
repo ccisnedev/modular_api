@@ -85,9 +85,6 @@ class StrictUseCase implements UseCase<StrictInput, StrictOutput> {
   final StrictInput input;
 
   @override
-  late StrictOutput output;
-
-  @override
   ModularLogger? logger;
 
   StrictUseCase({required this.input});
@@ -100,12 +97,9 @@ class StrictUseCase implements UseCase<StrictInput, StrictOutput> {
   String? validate() => null;
 
   @override
-  Future<void> execute() async {
-    output = StrictOutput(greeting: 'Hello ${input.name}');
+  Future<StrictOutput> execute() async {
+    return StrictOutput(greeting: 'Hello ${input.name}');
   }
-
-  @override
-  Map<String, dynamic> toJson() => output.toJson();
 }
 
 // ── Helpers ──

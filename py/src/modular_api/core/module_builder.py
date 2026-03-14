@@ -91,7 +91,7 @@ class ModuleBuilder:
 
     def usecase(
         self,
-        name: str,
+        command: str,
         factory: UseCaseFactory,
         *,
         method: str = "POST",
@@ -100,15 +100,19 @@ class ModuleBuilder:
     ) -> ModuleBuilder:
         """Register a use case as an HTTP endpoint on this module.
 
+        ``command`` becomes the route segment and the OpenAPI operationId root.
+        Convention: command, class name, and file name share the same root.
+        Example: command ``'hello-world'`` → class ``HelloWorld`` → file ``hello_world.py``.
+
         Returns ``self`` for fluent chaining.
         """
-        clean_name = name.strip().lstrip("/")
+        clean_command = command.strip().lstrip("/")
         method_upper = method.upper()
-        full_path = f"{self._normalize_base(self._base_path)}/{self._module_name}/{clean_name}"
+        full_path = f"{self._normalize_base(self._base_path)}/{self._module_name}/{clean_command}"
 
         # Mount endpoint on internal route list
         self._routes.append(
-            Route(f"/{clean_name}", endpoint=usecase_handler(factory), methods=[method_upper]),
+            Route(f"/{clean_command}", endpoint=usecase_handler(factory), methods=[method_upper]),
         )
 
         # Capture schemas via a dummy factory call (fail-safe)
@@ -116,15 +120,15 @@ class ModuleBuilder:
 
         # Register metadata for OpenAPI generation
         doc = UseCaseDocMeta(
-            summary=summary or f"Use case {clean_name} in module {self._module_name}",
-            description=description or f"Auto-generated documentation for {clean_name}",
+            summary=summary or f"Use case {clean_command} in module {self._module_name}",
+            description=description or f"Auto-generated documentation for {clean_command}",
             tags=[self._module_name],
         )
 
         api_registry.routes.append(
             UseCaseRegistration(
                 module=self._module_name,
-                name=clean_name,
+                command=clean_command,
                 method=method_upper,
                 path=full_path,
                 factory=factory,
@@ -145,16 +149,12 @@ class ModuleBuilder:
     def _extract_schemas(factory: UseCaseFactory) -> dict[str, dict[str, Any]]:
         """Capture Input and Output schemas from a UseCase factory.
 
-        Strategy (in order of preference):
-        1. Class-level extraction via ``to_schema()`` classmethod on BaseModel DTOs.
-           Inspects the factory's type hints to find the Input/Output classes.
-        2. Fallback: instantiate via ``factory({})`` and call ``to_schema()``
-           on the resulting UseCase's input/output (legacy pattern).
+        Uses class-level extraction via ``to_schema()`` classmethod on BaseModel DTOs.
+        Inspects the factory's type hints to find the Input/Output classes.
         """
         input_schema: dict[str, Any] = {}
         output_schema: dict[str, Any] = {}
 
-        # --- Strategy 1: class-level extraction from type hints ---
         return_hint = _get_return_type_hint(factory)
 
         if return_hint is not None:
@@ -171,25 +171,6 @@ class ModuleBuilder:
                     output_schema = output_cls.to_schema()
                 except Exception:
                     pass
-
-            if input_schema or output_schema:
-                return {"input": input_schema, "output": output_schema}
-
-        # --- Strategy 2: legacy factory({}) fallback ---
-        try:
-            instance = factory({})
-        except Exception:
-            return {"input": input_schema, "output": output_schema}
-
-        try:
-            input_schema = instance.input.to_schema()
-        except Exception:
-            pass
-
-        try:
-            output_schema = instance.output.to_schema()
-        except Exception:
-            pass
 
         return {"input": input_schema, "output": output_schema}
 

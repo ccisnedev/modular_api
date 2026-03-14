@@ -5,7 +5,6 @@ import 'package:modular_api/src/core/usecase/usecase.dart';
 // ── Test DTOs with schemaFields ──────────────────────────────
 
 class NameInput extends Input {
-  @Field(description: 'Name to greet')
   final String name;
 
   NameInput({required this.name});
@@ -23,7 +22,6 @@ class NameInput extends Input {
 }
 
 class GreetOutput extends Output {
-  @Field(description: 'Greeting message')
   final String message;
 
   GreetOutput({this.message = ''});
@@ -41,10 +39,8 @@ class GreetOutput extends Output {
 }
 
 class OptionalInput extends Input {
-  @Field(description: 'Required name')
   final String name;
 
-  @Field(description: 'Optional nickname')
   final String? nickname;
 
   OptionalInput({required this.name, this.nickname});

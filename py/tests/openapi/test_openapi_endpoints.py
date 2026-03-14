@@ -28,7 +28,7 @@ def _register_ping_usecase() -> None:
     api_registry.routes.append(
         UseCaseRegistration(
             module="test",
-            name="ping",
+            command="ping",
             method="POST",
             path="/api/test/ping",
             factory=_dummy_factory,

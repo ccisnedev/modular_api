@@ -36,24 +36,16 @@ class _StubUseCase(UseCase[_StubInput, _StubOutput]):
 
     def __init__(self, inp: _StubInput) -> None:
         self._input = inp
-        self._output = _StubOutput()
 
     @property
     def input(self) -> _StubInput:
         return self._input
 
-    @property
-    def output(self) -> _StubOutput:
-        return self._output
-
     def validate(self) -> str | None:
         return None
 
-    async def execute(self) -> None:
-        self._output = _StubOutput()
-
-    def to_json(self) -> dict:
-        return self.output.to_json()
+    async def execute(self) -> _StubOutput:
+        return _StubOutput()
 
     @staticmethod
     def from_json(json: dict) -> _StubUseCase:
@@ -81,7 +73,7 @@ class TestModuleBuilderRegistration:
         assert len(api_registry.routes) == 1
         reg = api_registry.routes[0]
         assert reg.module == "users"
-        assert reg.name == "create"
+        assert reg.command == "create"
 
     def test_default_method_is_post(self) -> None:
         builder = ModuleBuilder(base_path="/api", module_name="users")
@@ -100,7 +92,7 @@ class TestModuleBuilderRegistration:
         builder.usecase("/create", _StubUseCase.from_json)
 
         reg = api_registry.routes[0]
-        assert reg.name == "create"
+        assert reg.command == "create"
         assert reg.path == "/api/users/create"
 
     def test_strips_whitespace_from_usecase_name(self) -> None:
@@ -108,7 +100,7 @@ class TestModuleBuilderRegistration:
         builder.usecase("  create  ", _StubUseCase.from_json)
 
         reg = api_registry.routes[0]
-        assert reg.name == "create"
+        assert reg.command == "create"
 
     def test_method_override_get(self) -> None:
         builder = ModuleBuilder(base_path="/api", module_name="users")

@@ -18,7 +18,7 @@ def _make_registration(**overrides: object) -> UseCaseRegistration:
     """Builds a UseCaseRegistration with sensible defaults, overridable per field."""
     defaults: dict = {
         "module": "users",
-        "name": "create",
+        "command": "create",
         "method": "POST",
         "path": "/api/users/create",
         "factory": _dummy_factory,
@@ -37,7 +37,7 @@ class TestUseCaseRegistration:
     def test_fields_are_accessible(self) -> None:
         reg = _make_registration()
         assert reg.module == "users"
-        assert reg.name == "create"
+        assert reg.command == "create"
         assert reg.method == "POST"
         assert reg.path == "/api/users/create"
         assert reg.factory is _dummy_factory
@@ -68,20 +68,20 @@ class TestApiRegistry:
 
     def test_stores_registrations(self) -> None:
         registry = ApiRegistry()
-        reg1 = _make_registration(name="create")
-        reg2 = _make_registration(name="delete", method="DELETE", path="/api/users/delete")
+        reg1 = _make_registration(command="create")
+        reg2 = _make_registration(command="delete", method="DELETE", path="/api/users/delete")
 
         registry.routes.append(reg1)
         registry.routes.append(reg2)
 
         assert len(registry.routes) == 2
-        assert registry.routes[0].name == "create"
-        assert registry.routes[1].name == "delete"
+        assert registry.routes[0].command == "create"
+        assert registry.routes[1].command == "delete"
 
     def test_clear_empties_all_routes(self) -> None:
         registry = ApiRegistry()
         registry.routes.append(_make_registration())
-        registry.routes.append(_make_registration(name="list"))
+        registry.routes.append(_make_registration(command="list"))
         assert len(registry.routes) == 2
 
         registry.clear()

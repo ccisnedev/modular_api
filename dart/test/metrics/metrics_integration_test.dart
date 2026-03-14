@@ -35,8 +35,6 @@ class _PingUseCase implements UseCase<_PingInput, _PingOutput> {
   @override
   final _PingInput input;
   @override
-  late _PingOutput output;
-  @override
   ModularLogger? logger;
 
   _PingUseCase(this.input);
@@ -47,12 +45,9 @@ class _PingUseCase implements UseCase<_PingInput, _PingOutput> {
   String? validate() => null;
 
   @override
-  Future<void> execute() async {
-    output = _PingOutput();
+  Future<_PingOutput> execute() async {
+    return _PingOutput();
   }
-
-  @override
-  Map<String, dynamic> toJson() => output.toJson();
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────
@@ -76,7 +71,8 @@ void main() {
         metricsEnabled: metricsEnabled,
       );
       api.module('test', (m) {
-        m.usecase('ping', _PingUseCase.fromJson);
+        m.usecase('ping', _PingUseCase.fromJson,
+            inputExample: _PingInput(), outputExample: _PingOutput());
       });
       server = await api.serve(port: 0);
       baseUrl = 'http://localhost:${server.port}';
@@ -161,7 +157,8 @@ void main() {
         metricsEnabled: true,
       );
       api.module('test', (m) {
-        m.usecase('ping', _PingUseCase.fromJson);
+        m.usecase('ping', _PingUseCase.fromJson,
+            inputExample: _PingInput(), outputExample: _PingOutput());
       });
 
       // Register a custom metric

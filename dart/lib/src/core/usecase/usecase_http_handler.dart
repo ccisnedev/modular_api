@@ -56,14 +56,13 @@ Handler useCaseHttpHandler(
       useCase.logger = req.context[loggerContextKey] as ModularLogger?;
 
       // 4. Execute the use case
-      await useCase.execute();
+      final output = await useCase.execute();
 
       // 5. Serialize the response and return with the appropriate status code
-      final statusCode = useCase.output.statusCode;
       return Response(
-        statusCode,
+        output.statusCode,
         headers: jsonHeaders,
-        body: jsonEncode(useCase.toJson()),
+        body: jsonEncode(output.toJson()),
       );
     } on UseCaseException catch (e) {
       // Handle known business logic exceptions with custom status codes

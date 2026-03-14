@@ -41,26 +41,18 @@ class StrictUseCase(UseCase[StrictInput, StrictOutput]):
 
     def __init__(self, data: dict) -> None:
         self._input = StrictInput.from_json(data)
-        self._output = StrictOutput()
 
     @property
     def input(self) -> StrictInput:
         return self._input
-
-    @property
-    def output(self) -> StrictOutput:
-        return self._output
 
     def validate(self) -> str | None:
         if not self.input.name:
             return "name is required"
         return None
 
-    async def execute(self) -> None:
-        self._output = StrictOutput(greeting=f"Hi {self.input.name}, age {self.input.age}")
-
-    def to_json(self) -> dict:
-        return self._output.to_json()
+    async def execute(self) -> StrictOutput:
+        return StrictOutput(greeting=f"Hi {self.input.name}, age {self.input.age}")
 
 
 def _app():

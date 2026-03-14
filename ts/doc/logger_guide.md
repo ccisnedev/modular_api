@@ -68,7 +68,7 @@ class CreateUser extends UseCase<CreateUserInput, CreateUserOutput> {
     return null;
   }
 
-  async execute(): Promise<void> {
+  async execute(): Promise<CreateUserOutput> {
     this.logger?.info(`Creating user: ${this.input.email}`);
 
     // ... business logic ...
@@ -78,11 +78,7 @@ class CreateUser extends UseCase<CreateUserInput, CreateUserOutput> {
       email: this.input.email,
     });
 
-    this.output = new CreateUserOutput(newUser.id);
-  }
-
-  toJson() {
-    return this.output.toJson();
+    return new CreateUserOutput(newUser.id);
   }
 }
 ```

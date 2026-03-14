@@ -15,7 +15,9 @@ Each DTO must implement:
 2. `toJson` — method to serialize to JSON
 3. `schemaFields` — getter that returns field metadata for automatic OpenAPI schema generation
 
-The `@Field` annotation is decorative — it documents intent per field. Schema generation is driven by the `schemaFields` getter and `SchemaField` metadata.
+The `schemaFields` getter returns field metadata for automatic OpenAPI schema generation.
+
+Schema generation is driven by the `schemaFields` getter and `SchemaField` metadata.
 
 ---
 
@@ -46,13 +48,10 @@ class CasoOutput {
 import 'package:modular_api/modular_api.dart';
 
 class CasoInput extends Input {
-  @Field(description: 'Integer value')
   final int valor;
 
-  @Field(description: 'String value')
   final String valor2;
 
-  @Field(description: 'Double value')
   final double valor3;
 
   CasoInput({
@@ -93,13 +92,10 @@ class CasoInput extends Input {
 import 'package:modular_api/modular_api.dart';
 
 class CasoOutput extends Output {
-  @Field(description: 'Integer value')
   final int valor;
 
-  @Field(description: 'String value')
   final String valor2;
 
-  @Field(description: 'Double value')
   final double valor3;
 
   CasoOutput({
@@ -160,16 +156,12 @@ Use this table to map Dart types to `SchemaField` factories:
 
 ```dart
 class ProductInput extends Input {
-  @Field(description: 'Product name')
   final String name;
 
-  @Field(description: 'Product price')
   final double price;
 
-  @Field(description: 'Product description (optional)')
   final String? description;
 
-  @Field(description: 'Available stock (optional)')
   final int? stock;
 
   ProductInput({
@@ -212,10 +204,8 @@ class ProductInput extends Input {
 
 ```dart
 class UserInput extends Input {
-  @Field(description: 'User name')
   final String name;
 
-  @Field(description: 'User roles')
   final List<String> roles;
 
   UserInput({required this.name, required this.roles});
@@ -246,8 +236,7 @@ If your DTOs currently override `toSchema()` manually, you can migrate to the `s
 
 1. **Add `schemaFields` getter** — Declare each field as a `SchemaField` with the appropriate factory
 2. **Remove `toSchema()` override** — The base class `toSchema()` calls `buildSchema(schemaFields)` automatically
-3. **Add `@Field` annotations** (optional) — Document intent per field
-4. **Change `implements` to `extends`** — Use `extends Input`/`extends Output` instead of `implements`
+3. **Change `implements` to `extends`** — Use `extends Input`/`extends Output` instead of `implements`
 
 **Before (manual):**
 ```dart
@@ -271,7 +260,6 @@ class MyInput implements Input {
 **After (auto-schema):**
 ```dart
 class MyInput extends Input {
-  @Field(description: 'User name')
   final String name;
   // ... fromJson, toJson ...
 
@@ -282,7 +270,7 @@ class MyInput extends Input {
 }
 ```
 
-> **Note:** Manual `toSchema()` overrides still work in v0.4.2 — they are deprecated but not removed. When Dart macros stabilize, `@MacssSchema()` will replace the `schemaFields` getter entirely.
+> **Note:** Manual `toSchema()` overrides still work but are deprecated. Use the `schemaFields` getter instead.
 
 ---
 
@@ -295,7 +283,6 @@ When creating or updating Input/Output DTOs, ensure:
 - [ ] `fromJson` factory constructor is implemented
 - [ ] `toJson` method is implemented and overrides base class
 - [ ] `schemaFields` getter is implemented with `SchemaField` entries for each field
-- [ ] `@Field` annotation is present on each property (optional but recommended)
 - [ ] SchemaField factory matches Dart type (see Type Mapping Reference)
 - [ ] Nullable fields use `nullable: true` in their `SchemaField`
 - [ ] Optional fields use nullable Dart types (`Type?`)
@@ -314,7 +301,6 @@ Copy and adapt this template for new DTOs:
 import 'package:modular_api/modular_api.dart';
 
 class MyUseCaseInput extends Input {
-  @Field(description: 'Description here')
   final String myField;
 
   MyUseCaseInput({required this.myField});
@@ -333,7 +319,6 @@ class MyUseCaseInput extends Input {
 }
 
 class MyUseCaseOutput extends Output {
-  @Field(description: 'Description here')
   final String result;
 
   MyUseCaseOutput({required this.result});
