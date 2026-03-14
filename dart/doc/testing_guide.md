@@ -103,14 +103,11 @@ class SumNumbers implements UseCase<SumInput, SumOutput> {
   }
 
   @override
-  Future<void> execute() async {
+  Future<SumOutput> execute() async {
     final result = input.a + input.b;
     await repository.saveResult(result);
-    output = SumOutput(result: result);
+    return SumOutput(result: result);
   }
-
-  @override
-  Map<String, dynamic> toJson() => output.toJson();
 }
 ```
 
