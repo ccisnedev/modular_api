@@ -8,12 +8,17 @@
 ///   curl -X POST http://localhost:8080/api/greetings/hello \
 ///        -H "Content-Type: application/json" \
 ///        -d '{"name":"World"}'
+///   curl http://localhost:8080/api/time/now?tz=utc-5
 ///
 /// Docs:
 ///   http://localhost:8080/docs
 library;
 
 import 'package:modular_api/modular_api.dart';
+
+import 'health/always_pass_health_check.dart';
+import 'modules/greetings/greetings_builder.dart';
+import 'modules/time/now_builder.dart';
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 
@@ -42,109 +47,9 @@ Future<void> main(List<String> args) async {
   );
 
   api.module('greetings', buildGreetingsModule);
+  api.module('time', buildTimeModule);
 
   await api.serve(port: port);
 }
 
-// ─── Module Builder ───────────────────────────────────────────────────────────
-// In a real project, this would live in its own file:
-//   lib/modules/greetings/greetings_builder.dart
 
-void buildGreetingsModule(ModuleBuilder m) {
-  m.usecase(
-    'hello',
-    HelloWorld.fromJson,
-    inputExample: HelloInput.example,
-    outputExample: HelloOutput.example,
-  );
-}
-
-// ─── Input DTO ────────────────────────────────────────────────────────────────
-
-class HelloInput extends Input {
-  final String name;
-
-  HelloInput({required this.name});
-
-  @override
-  Map<String, dynamic> toJson() => {'name': name};
-
-  @override
-  List<SchemaField> get schemaFields => [
-        SchemaField.string('name',
-            description: 'Name to greet', example: 'World'),
-      ];
-
-  /// Example instance for schema extraction and Swagger UI.
-  static HelloInput get example => HelloInput(name: 'World');
-}
-
-// ─── Output DTO ───────────────────────────────────────────────────────────────
-
-class HelloOutput extends Output {
-  final String message;
-
-  HelloOutput({required this.message});
-
-  @override
-  int get statusCode => 200;
-
-  @override
-  Map<String, dynamic> toJson() => {'message': message};
-
-  @override
-  List<SchemaField> get schemaFields => [
-        SchemaField.string('message',
-            description: 'Greeting message', example: 'Hello, World!'),
-      ];
-
-  /// Example instance for schema extraction and Swagger UI.
-  static HelloOutput get example => HelloOutput(message: 'Hello, World!');
-}
-
-// ─── UseCase ──────────────────────────────────────────────────────────────────
-
-class HelloWorld implements UseCase<HelloInput, HelloOutput> {
-  @override
-  final HelloInput input;
-
-  @override
-  ModularLogger? logger;
-
-  HelloWorld({required this.input});
-
-  static HelloWorld fromJson(Map<String, dynamic> json) {
-    return HelloWorld(
-      input: HelloInput(
-        name: json['name'],
-      )
-    );
-  }
-
-  @override
-  String? validate() {
-    if (input.name.isEmpty) {
-      return 'name is required';
-    }
-    return null;
-  }
-
-  @override
-  Future<HelloOutput> execute() async {
-    logger?.info('Greeting user: ${input.name}');
-    return HelloOutput(message: 'Hello, ${input.name}!');
-  }
-}
-
-// ─── Example Health Check ─────────────────────────────────────────────────────
-// In a real project you'd check a database connection, external service, etc.
-
-class AlwaysPassHealthCheck extends HealthCheck {
-  @override
-  final String name = 'example';
-
-  @override
-  Future<HealthCheckResult> check() async {
-    return HealthCheckResult(status: HealthStatus.pass);
-  }
-}
