@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.1.1 — 2026-03-14
+
+### Fixed
+
+- Text legibility in dark mode — added missing selectors for endpoint path, summary
+  description, operation description, "No parameters", "Links" column, and rendered
+  Markdown paragraphs.
+- CSS cascade order — embed styles in JS bundle and inject after swagger-ui.css
+  to guarantee dark-mode overrides win.
+- Servers box layout — constrain `.scheme-container` to `max-width: 1460px` so it
+  aligns with the info header and operation blocks.
+
 ## 0.1.0 — 2026-03-14
 
 First release. Extracts the duplicated Swagger UI HTML/CSS/JS from the three
