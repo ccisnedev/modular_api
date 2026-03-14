@@ -8,9 +8,10 @@
 
 # Then test::
 
-#     curl -X POST http://localhost:8080/api/greetings/hello \
+#     curl -X POST http://localhost:8080/api/v1/greetings/hello \
 #          -H "Content-Type: application/json" \
 #          -d '{"name":"World"}'
+#     curl http://localhost:8080/api/v1/time/now?tz=utc-5
 
 # Docs::
 
@@ -104,7 +105,7 @@ def main() -> None:
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
 
     api = ModularApi(
-        base_path="/api",
+        base_path="/api/v1",
         title="Modular API",
         version="1.0.0",
         metrics_enabled=True,

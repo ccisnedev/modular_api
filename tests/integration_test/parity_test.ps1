@@ -289,7 +289,7 @@ function Test-MetricsEndpoint {
     param([string]$ImplName, [string]$BaseUrl)
 
     # Hit a use case first so metrics have at least one observation.
-    $null = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+    $null = Invoke-Endpoint -Uri "$BaseUrl/api/v1/greetings/hello" `
         -Method POST -Body '{"name":"MetricsWarmup"}'
 
     $response = Invoke-Endpoint -Uri "$BaseUrl/metrics"
@@ -318,11 +318,11 @@ function Test-MetricsEndpoint {
 function Test-UseCaseSuccess {
     <#
     .SYNOPSIS
-        POST /api/greetings/hello with valid input → 200.
+        POST /api/v1/greetings/hello with valid input → 200.
     #>
     param([string]$ImplName, [string]$BaseUrl)
 
-    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/greetings/hello" `
         -Method POST -Body '{"name":"World"}'
 
     Assert-True ($response.StatusCode -eq 200) `
@@ -344,11 +344,11 @@ function Test-UseCaseSuccess {
 function Test-UseCaseValidationFailure {
     <#
     .SYNOPSIS
-        POST /api/greetings/hello with empty name → 400.
+        POST /api/v1/greetings/hello with empty name → 400.
     #>
     param([string]$ImplName, [string]$BaseUrl)
 
-    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/greetings/hello" `
         -Method POST -Body '{"name":""}'
 
     Assert-True ($response.StatusCode -eq 400) `
@@ -370,12 +370,12 @@ function Test-UseCaseValidationFailure {
 function Test-UseCaseMissingBody {
     <#
     .SYNOPSIS
-        POST /api/greetings/hello with empty object → 400.
+        POST /api/v1/greetings/hello with empty object → 400.
         fromJson validates required fields — returns "Missing required field: name".
     #>
     param([string]$ImplName, [string]$BaseUrl)
 
-    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/greetings/hello" `
         -Method POST -Body '{}'
 
     Assert-True ($response.StatusCode -eq 400) `
@@ -397,12 +397,12 @@ function Test-UseCaseMissingBody {
 function Test-UseCaseWrongType {
     <#
     .SYNOPSIS
-        POST /api/greetings/hello with wrong type → 400.
+        POST /api/v1/greetings/hello with wrong type → 400.
         fromJson validates JSON types — returns "Field 'name' must be of type string".
     #>
     param([string]$ImplName, [string]$BaseUrl)
 
-    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/greetings/hello" `
         -Method POST -Body '{"name":123}'
 
     Assert-True ($response.StatusCode -eq 400) `
@@ -448,13 +448,13 @@ function Test-OpenApiJson {
     Assert-True ($null -ne $json.paths) `
         "$ImplName /openapi.json has paths object"
 
-    # The example registers POST /api/greetings/hello
-    $greetingsPath = $json.paths.'/api/greetings/hello'
+    # The example registers POST /api/v1/greetings/hello
+    $greetingsPath = $json.paths.'/api/v1/greetings/hello'
     Assert-True ($null -ne $greetingsPath) `
-        "$ImplName /openapi.json paths has /api/greetings/hello"
+        "$ImplName /openapi.json paths has /api/v1/greetings/hello"
 
     Assert-True ($null -ne $greetingsPath.post) `
-        "$ImplName /openapi.json /api/greetings/hello has POST operation"
+        "$ImplName /openapi.json /api/v1/greetings/hello has POST operation"
 
     # Request body schema
     $requestBodySchema = $greetingsPath.post.requestBody.content.'application/json'.schema
@@ -535,8 +535,8 @@ function Test-OpenApiYaml {
     Assert-True ($body -match 'paths:') `
         "$ImplName /openapi.yaml contains 'paths:' key"
 
-    Assert-True ($body -match '/api/greetings/hello') `
-        "$ImplName /openapi.yaml contains /api/greetings/hello path"
+    Assert-True ($body -match '/api/v1/greetings/hello') `
+        "$ImplName /openapi.yaml contains /api/v1/greetings/hello path"
 
     Assert-True ($body -match 'components:') `
         "$ImplName /openapi.yaml contains 'components:' section"
@@ -738,7 +738,7 @@ function Compare-Implementations {
 
     # ── OpenAPI YAML parity ──────────────────────────────────────────────────
 
-    $yamlKeywords = @('openapi:', 'info:', 'paths:', '/api/greetings/hello')
+    $yamlKeywords = @('openapi:', 'info:', 'paths:', '/api/v1/greetings/hello')
     foreach ($keyword in $yamlKeywords) {
         $dartHas = $Dart.OpenApiYaml       -match [regex]::Escape($keyword)
         $tsHas   = $TypeScript.OpenApiYaml -match [regex]::Escape($keyword)
