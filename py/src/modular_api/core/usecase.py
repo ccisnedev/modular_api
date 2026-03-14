@@ -46,6 +46,9 @@ def _normalize_schema(raw: dict[str, Any]) -> dict[str, object]:
                 # Preserve description if present on the outer property
                 if "description" in prop:
                     collapsed["description"] = prop["description"]
+                # Convert examples → example (nullable fields)
+                if "examples" in prop and prop["examples"]:
+                    collapsed["example"] = prop["examples"][0]
                 normalized_props[name] = _reorder_type_first(collapsed)
                 if name in required:
                     required.remove(name)
@@ -53,11 +56,25 @@ def _normalize_schema(raw: dict[str, Any]) -> dict[str, object]:
 
         # Strip Pydantic's auto-generated ``title`` and ``default`` from properties
         cleaned = {k: v for k, v in prop.items() if k not in ("title", "default")}
+
+        # Convert Pydantic ``examples`` (list, Draft 2020-12) → OpenAPI ``example`` (singular)
+        if "examples" in cleaned and cleaned["examples"]:
+            cleaned["example"] = cleaned["examples"][0]
+            del cleaned["examples"]
+
         normalized_props[name] = _reorder_type_first(cleaned)
+
+    # Compose top-level example from per-field examples
+    example_values: dict[str, Any] = {}
+    for name, prop in normalized_props.items():
+        if "example" in prop:
+            example_values[name] = prop["example"]
 
     result: dict[str, object] = {"type": "object", "properties": normalized_props}
     if required:
         result["required"] = required
+    if example_values:
+        result["example"] = example_values
     return result
 
 
