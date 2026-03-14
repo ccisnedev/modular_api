@@ -29,7 +29,6 @@ class PingOutput implements Output {
 
 class PingUseCase extends UseCase<PingInput, PingOutput> {
   readonly input: PingInput;
-  output!: PingOutput;
 
   constructor(input: PingInput) {
     super();
@@ -45,11 +44,7 @@ class PingUseCase extends UseCase<PingInput, PingOutput> {
   }
 
   async execute() {
-    this.output = new PingOutput();
-  }
-
-  toJson() {
-    return this.output.toJson();
+    return new PingOutput();
   }
 }
 
@@ -57,7 +52,6 @@ class PingUseCase extends UseCase<PingInput, PingOutput> {
 
 class LoggingUseCase extends UseCase<PingInput, PingOutput> {
   readonly input: PingInput;
-  output!: PingOutput;
 
   constructor(input: PingInput) {
     super();
@@ -74,11 +68,7 @@ class LoggingUseCase extends UseCase<PingInput, PingOutput> {
 
   async execute() {
     this.logger?.info('executing inside use case', { custom: 'field' });
-    this.output = new PingOutput();
-  }
-
-  toJson() {
-    return this.output.toJson();
+    return new PingOutput();
   }
 }
 
@@ -125,7 +115,7 @@ describe('Logger integration (TypeScript)', () => {
       title: 'Logger Test',
       logLevel: LogLevel.debug,
     });
-    api.module('test', (m) => m.usecase('ping', PingUseCase.fromJson));
+    api.module('test', (m) => m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput }));
     server = await api.serve({ port: 0 });
 
     const res = await request(server).post('/api/test/ping').send({});
@@ -140,7 +130,7 @@ describe('Logger integration (TypeScript)', () => {
       title: 'Logger Test',
       logLevel: LogLevel.debug,
     });
-    api.module('test', (m) => m.usecase('ping', PingUseCase.fromJson));
+    api.module('test', (m) => m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput }));
     server = await api.serve({ port: 0 });
 
     const res = await request(server)
@@ -158,7 +148,7 @@ describe('Logger integration (TypeScript)', () => {
       title: 'Logger Test',
       logLevel: LogLevel.debug,
     });
-    api.module('test', (m) => m.usecase('log', LoggingUseCase.fromJson));
+    api.module('test', (m) => m.usecase('log', LoggingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput }));
     server = await api.serve({ port: 0 });
 
     const res = await request(server).post('/api/test/log').send({});
@@ -174,7 +164,7 @@ describe('Logger integration (TypeScript)', () => {
       title: 'Logger Test',
       logLevel: LogLevel.debug,
     });
-    api.module('test', (m) => m.usecase('ping', PingUseCase.fromJson));
+    api.module('test', (m) => m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput }));
     server = await api.serve({ port: 0 });
 
     const res = await request(server).get('/health');

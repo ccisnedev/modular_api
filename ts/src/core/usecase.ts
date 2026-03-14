@@ -265,9 +265,6 @@ export abstract class UseCase<I extends Input, O extends Output> {
   /** Input DTO — set in constructor. */
   abstract readonly input: I;
 
-  /** Output DTO — set in execute(). */
-  abstract output: O;
-
   /**
    * Request-scoped logger injected by the framework's logging middleware.
    * Available inside `execute()`. Undefined when running without middleware
@@ -283,14 +280,8 @@ export abstract class UseCase<I extends Input, O extends Output> {
   abstract validate(): string | null;
 
   /**
-   * Business logic. Must set `this.output` before returning.
+   * Business logic. Returns the Output DTO.
    * Keep this method free of HTTP concerns.
    */
-  abstract execute(): Promise<void>;
-
-  /**
-   * Serializes the output DTO to a plain object for the HTTP response.
-   * Typically implemented as `return this.output.toJson();`
-   */
-  abstract toJson(): Record<string, unknown>;
+  abstract execute(): Promise<O>;
 }

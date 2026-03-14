@@ -32,7 +32,6 @@ class PingOutput extends Output {
 
 class PingUseCase extends UseCase<PingInput, PingOutput> {
   readonly input: PingInput;
-  output!: PingOutput;
 
   constructor(input: PingInput) {
     super();
@@ -48,11 +47,7 @@ class PingUseCase extends UseCase<PingInput, PingOutput> {
   }
 
   async execute() {
-    this.output = new PingOutput();
-  }
-
-  toJson() {
-    return this.output.toJson();
+    return new PingOutput();
   }
 }
 
@@ -76,7 +71,7 @@ describe('ModularApi metrics integration', () => {
       metricsEnabled: opts.metricsEnabled ?? false,
     });
     api.module('test', (m) => {
-      m.usecase('ping', PingUseCase.fromJson);
+      m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput });
     });
     server = await api.serve({ port: 0 });
     return server;
@@ -143,7 +138,7 @@ describe('ModularApi metrics integration', () => {
       metricsEnabled: true,
     });
     api.module('test', (m) => {
-      m.usecase('ping', PingUseCase.fromJson);
+      m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput });
     });
 
     // Register custom metric

@@ -6,8 +6,11 @@ import { Router } from 'express';
 // ── Stubs: mirrors the example HelloWorld pattern ────────────
 
 class GreetInput extends Input {
-  constructor(readonly name: string) {
+  readonly name: string;
+
+  constructor(name = '') {
     super();
+    this.name = name;
   }
 
   static fromJson(json: Record<string, unknown>): GreetInput {
@@ -30,8 +33,11 @@ class GreetInput extends Input {
 }
 
 class GreetOutput extends Output {
-  constructor(readonly message: string) {
+  readonly message: string;
+
+  constructor(message = '') {
     super();
+    this.message = message;
   }
 
   get statusCode() {
@@ -59,12 +65,10 @@ class GreetOutput extends Output {
  */
 class UninitOutputUseCase extends UseCase<GreetInput, GreetOutput> {
   readonly input: GreetInput;
-  output: GreetOutput;
 
   constructor(input: GreetInput) {
     super();
     this.input = input;
-    this.output = new GreetOutput('');
   }
 
   static fromJson(json: Record<string, unknown>): UninitOutputUseCase {
@@ -76,11 +80,7 @@ class UninitOutputUseCase extends UseCase<GreetInput, GreetOutput> {
   }
 
   async execute() {
-    this.output = new GreetOutput(`Hello, ${this.input.name}!`);
-  }
-
-  toJson() {
-    return this.output.toJson();
+    return new GreetOutput(`Hello, ${this.input.name}!`);
   }
 }
 
@@ -91,9 +91,14 @@ describe('ModuleBuilder schema extraction', () => {
     apiRegistry.clear();
   });
 
-  it('captures Input schema even when Output is uninitialized', () => {
+  it('captures Input schema from inputSchema override', () => {
     const builder = new ModuleBuilder('/api', 'greetings', Router());
-    builder.usecase('hello', UninitOutputUseCase.fromJson);
+    builder.usecase('hello', UninitOutputUseCase.fromJson, {
+      inputClass: GreetInput as any,
+      outputClass: GreetOutput as any,
+      inputSchema: new GreetInput('').toSchema(),
+      outputSchema: new GreetOutput('').toSchema(),
+    });
 
     const registration = apiRegistry.routes[0];
     expect(registration.schemas.input).toHaveProperty('properties');
@@ -102,16 +107,26 @@ describe('ModuleBuilder schema extraction', () => {
 
   it('input schema properties.name.type is string', () => {
     const builder = new ModuleBuilder('/api', 'greetings', Router());
-    builder.usecase('hello', UninitOutputUseCase.fromJson);
+    builder.usecase('hello', UninitOutputUseCase.fromJson, {
+      inputClass: GreetInput as any,
+      outputClass: GreetOutput as any,
+      inputSchema: new GreetInput('').toSchema(),
+      outputSchema: new GreetOutput('').toSchema(),
+    });
 
     const inputSchema = apiRegistry.routes[0].schemas.input as Record<string, unknown>;
     const properties = inputSchema.properties as Record<string, Record<string, unknown>>;
     expect(properties.name.type).toBe('string');
   });
 
-  it('captures Output schema even when output is uninitialized in constructor', () => {
+  it('captures Output schema from outputSchema override', () => {
     const builder = new ModuleBuilder('/api', 'greetings', Router());
-    builder.usecase('hello', UninitOutputUseCase.fromJson);
+    builder.usecase('hello', UninitOutputUseCase.fromJson, {
+      inputClass: GreetInput as any,
+      outputClass: GreetOutput as any,
+      inputSchema: new GreetInput('').toSchema(),
+      outputSchema: new GreetOutput('').toSchema(),
+    });
 
     const outputSchema = apiRegistry.routes[0].schemas.output as Record<string, unknown>;
     expect(outputSchema).toHaveProperty('properties');
