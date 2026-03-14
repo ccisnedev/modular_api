@@ -41,7 +41,7 @@ file:     hello_world.dart
 class:    HelloWorld
 input:    HelloWorldInput
 output:   HelloWorldOutput
-schema:   greetings_hello-world_Input / greetings_hello-world_Output
+schema:   greetings_hello_world_Input / greetings_hello_world_Output
 ```
 
 ---
