@@ -10,11 +10,8 @@ export default defineConfig({
       fileName: () => 'docs-ui.js',
     },
     outDir: 'dist',
-    rollupOptions: {
-      output: {
-        assetFileNames: 'docs-ui.[ext]',
-      },
-    },
+    // CSS is inlined in the JS bundle via ?inline import — no separate file.
+    cssCodeSplit: false,
   },
   test: {
     include: ['test/**/*.test.js'],

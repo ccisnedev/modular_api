@@ -24,7 +24,6 @@ _DOCS_UI_HTML_TEMPLATE = """\
     <title>{title} — API Reference</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href=""" + f'"{_DOCS_UI_CDN}/docs-ui.css"' + """ />
   </head>
   <body>
     <div id="swagger-ui"></div>
