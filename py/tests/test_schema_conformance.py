@@ -10,7 +10,7 @@ import sys
 _EXAMPLE_DIR = Path(__file__).resolve().parent.parent / "example"
 sys.path.insert(0, str(_EXAMPLE_DIR))
 
-from example import HelloInput, HelloOutput  # type: ignore[import-untyped]
+from modules.greetings.usecases.hello_world import HelloInput, HelloOutput  # type: ignore[import-untyped]
 
 _FIXTURES = Path(__file__).resolve().parent.parent.parent / "tests" / "fixtures"
 
