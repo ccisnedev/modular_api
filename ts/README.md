@@ -47,7 +47,7 @@ See `example/example.ts` for the full implementation including Input, Output, Us
 ## Features
 
 - `UseCase<I, O>` — pure business logic, no HTTP concerns
-- `Input` / `Output` — DTOs with `toJson()` and `toSchema()` for automatic OpenAPI
+- `Input` / `Output` — DTOs with automatic OpenAPI schema generation via `@Field` decorators
 - `Output.statusCode` — custom HTTP status codes per response
 - `UseCaseException` — structured error handling (status code, message, error code, details)
 - `ModularApi` + `ModuleBuilder` — module registration and routing

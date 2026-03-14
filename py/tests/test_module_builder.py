@@ -7,58 +7,30 @@ must not destroy the already-computable Input schema.
 
 from __future__ import annotations
 
+from pydantic import Field
+
 from modular_api.core.module_builder import ModuleBuilder
 from modular_api.core.registry import api_registry
 from modular_api.core.usecase import Input, Output, UseCase
 
 
-# ── Stubs: Output uninitialized (mirrors real HelloWorld pattern) ─────────
+# ── Stubs: Using new BaseModel-based DTOs ─────────────────────
 
 
 class StubInput(Input):
-    def __init__(self, *, name: str) -> None:
-        self._name = name
-
-    @classmethod
-    def from_json(cls, json: dict) -> StubInput:
-        return cls(name=str(json.get("name", "")))
-
-    def to_json(self) -> dict:
-        return {"name": self._name}
-
-    def to_schema(self) -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string", "description": "Name to greet"},
-            },
-            "required": ["name"],
-        }
+    name: str = Field(description="Name to greet")
 
 
 class StubOutput(Output):
-    def __init__(self, *, message: str) -> None:
-        self._message = message
+    message: str = Field(description="Greeting message")
 
     @property
     def status_code(self) -> int:
         return 200
 
-    def to_json(self) -> dict:
-        return {"message": self._message}
 
-    def to_schema(self) -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "message": {"type": "string", "description": "Greeting message"},
-            },
-            "required": ["message"],
-        }
-
-
-class UninitializedOutputUseCase(UseCase[StubInput, StubOutput]):
-    """UseCase with output initialised to a default — matches Dart pattern."""
+class StubUseCase(UseCase[StubInput, StubOutput]):
+    """UseCase with BaseModel-based DTOs."""
 
     def __init__(self, input_dto: StubInput) -> None:
         self._input = input_dto
@@ -77,16 +49,16 @@ class UninitializedOutputUseCase(UseCase[StubInput, StubOutput]):
         self._output = value
 
     @classmethod
-    def from_json(cls, json: dict) -> UninitializedOutputUseCase:
+    def from_json(cls, json: dict) -> StubUseCase:
         return cls(StubInput.from_json(json))
 
     def validate(self) -> str | None:
-        if not self.input._name:
+        if not self.input.name:
             return "name is required"
         return None
 
     async def execute(self) -> None:
-        self.output = StubOutput(message=f"Hello, {self.input._name}!")
+        self.output = StubOutput(message=f"Hello, {self.input.name}!")
 
     def to_json(self) -> dict:
         return self.output.to_json()
@@ -104,28 +76,24 @@ class TestExtractSchemas:
     def teardown_method(self) -> None:
         api_registry.clear()
 
-    def test_input_schema_has_properties_when_output_uninitialized(self) -> None:
-        """Input schema must be captured even if Output extraction were to fail."""
-        schemas = ModuleBuilder._extract_schemas(UninitializedOutputUseCase.from_json)
+    def test_input_schema_has_properties(self) -> None:
+        schemas = ModuleBuilder._extract_schemas(StubUseCase.from_json)
         assert "name" in schemas["input"].get("properties", {}), (
             "Input schema lost its properties"
         )
 
     def test_output_schema_has_properties(self) -> None:
-        """Output schema must include properties.message when initialised to default."""
-        schemas = ModuleBuilder._extract_schemas(UninitializedOutputUseCase.from_json)
+        schemas = ModuleBuilder._extract_schemas(StubUseCase.from_json)
         assert "message" in schemas["output"].get("properties", {}), (
             "Output schema must have properties.message"
         )
 
     def test_input_schema_name_type_is_string(self) -> None:
-        """Input schema properties.name.type must be 'string'."""
-        schemas = ModuleBuilder._extract_schemas(UninitializedOutputUseCase.from_json)
-        name_prop = schemas["input"].get("properties", {}).get("name", {})
-        assert name_prop.get("type") == "string"
+        schemas = ModuleBuilder._extract_schemas(StubUseCase.from_json)
+        name_prop = schemas["input"]["properties"]["name"]  # type: ignore[index]
+        assert name_prop["type"] == "string"
 
     def test_output_schema_message_type_is_string(self) -> None:
-        """Output schema properties.message.type must be 'string'."""
-        schemas = ModuleBuilder._extract_schemas(UninitializedOutputUseCase.from_json)
-        message_prop = schemas["output"].get("properties", {}).get("message", {})
-        assert message_prop.get("type") == "string"
+        schemas = ModuleBuilder._extract_schemas(StubUseCase.from_json)
+        msg_prop = schemas["output"]["properties"]["message"]  # type: ignore[index]
+        assert msg_prop["type"] == "string"

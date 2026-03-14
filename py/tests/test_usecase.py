@@ -13,45 +13,18 @@ from modular_api.core.usecase import Input, Output, UseCase
 class SumInput(Input):
     """Two integers to sum."""
 
-    def __init__(self, *, a: int | None, b: int | None) -> None:
-        self.a = a
-        self.b = b
-
-    def to_json(self) -> dict[str, object]:
-        return {"a": self.a, "b": self.b}
-
-    def to_schema(self) -> dict[str, object]:
-        return {
-            "type": "object",
-            "properties": {
-                "a": {"type": "integer"},
-                "b": {"type": "integer"},
-            },
-            "required": ["a", "b"],
-        }
+    a: int | None = None
+    b: int | None = None
 
 
 class SumOutput(Output):
     """Result of the sum operation."""
 
-    def __init__(self, *, resultado: int) -> None:
-        self.resultado = resultado
+    resultado: int = 0
 
     @property
     def status_code(self) -> int:
         return 200
-
-    def to_json(self) -> dict[str, object]:
-        return {"resultado": self.resultado}
-
-    def to_schema(self) -> dict[str, object]:
-        return {
-            "type": "object",
-            "properties": {
-                "resultado": {"type": "integer"},
-            },
-            "required": ["resultado"],
-        }
 
 
 class SumUseCase(UseCase[SumInput, SumOutput]):
@@ -89,27 +62,27 @@ class SumUseCase(UseCase[SumInput, SumOutput]):
 
 
 class TestInput:
-    def test_cannot_instantiate_directly(self) -> None:
-        with pytest.raises(TypeError):
-            Input()  # type: ignore[abstract]
+    def test_bare_input_is_instantiable(self) -> None:
+        """Input with no fields can be instantiated (it's a BaseModel now)."""
+        instance = Input()
+        assert instance.to_json() == {}
 
     def test_concrete_input_to_json(self) -> None:
         inp = SumInput(a=3, b=4)
         assert inp.to_json() == {"a": 3, "b": 4}
 
     def test_concrete_input_to_schema(self) -> None:
-        inp = SumInput(a=1, b=2)
-        schema = inp.to_schema()
+        schema = SumInput.to_schema()
         assert schema["type"] == "object"
         assert "a" in schema["properties"]  # type: ignore[operator]
-        assert schema["required"] == ["a", "b"]
 
 
 # ── Output tests ────────────────────────────────────────────────────
 
 
 class TestOutput:
-    def test_cannot_instantiate_directly(self) -> None:
+    def test_cannot_instantiate_without_status_code(self) -> None:
+        """Output requires status_code — subclass must define it."""
         with pytest.raises(TypeError):
             Output()  # type: ignore[abstract]
 
@@ -118,8 +91,7 @@ class TestOutput:
         assert out.to_json() == {"resultado": 7}
 
     def test_concrete_output_to_schema(self) -> None:
-        out = SumOutput(resultado=0)
-        schema = out.to_schema()
+        schema = SumOutput.to_schema()
         assert schema["type"] == "object"
         assert "resultado" in schema["properties"]  # type: ignore[operator]
 

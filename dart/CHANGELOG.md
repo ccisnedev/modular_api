@@ -6,6 +6,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+## [0.4.2] - 2026-03-12
+
+### Added
+
+- **Auto-schema generation** — `Input` and `Output` DTOs derive OpenAPI 3.0.3 schemas automatically from `schemaFields` getter + `SchemaField` metadata
+- `@Field` annotation — decorative per-field documentation (`@Field(description: 'x')`)
+- `SchemaField` class — metadata with factories: `.string()`, `.integer()`, `.number()`, `.boolean()`, `.array()`
+- `buildSchema()` utility — converts `List<SchemaField>` to OpenAPI 3.0.3-compatible `Map<String, dynamic>`
+- `Input` / `Output` base classes gain generative constructors and default `toSchema()` from `schemaFields`
+- Cross-language schema conformance tests against shared JSON fixtures
+
+### Changed
+
+- DTOs now use `extends Input` / `extends Output` instead of `implements` (for inherited `toSchema()` default)
+- Manual `toSchema()` override is deprecated — use `schemaFields` getter instead (removal in v0.5.0)
+
 ## [0.4.1] - 2026-03-12
 
 ### Changed

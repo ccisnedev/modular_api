@@ -23,6 +23,7 @@ import {
   HealthCheck,
   HealthCheckResult,
   LogLevel,
+  Field,
 } from '../src/index';
 
 // ─── Module Builder ───────────────────────────────────────────────────────────
@@ -30,55 +31,35 @@ import {
 //   src/modules/greetings/greetings_builder.ts
 
 function buildGreetingsModule(m: ModuleBuilder): void {
-  m.usecase('hello', HelloWorld.fromJson);
+  m.usecase('hello', HelloWorld.fromJson, {
+    inputClass: HelloInput,
+    outputClass: HelloOutput,
+  });
 }
 
 // ─── Input DTO ────────────────────────────────────────────────────────────────
 
-class HelloInput implements Input {
-  constructor(readonly name: string) {}
+class HelloInput extends Input {
+  @Field.string({ description: 'Name to greet', example: 'World' })
+  name!: string;
 
+  /// Strict factory — no coercion, no defaults.
+  /// Pre-validation in the handler ensures data is valid before this runs.
   static fromJson(json: Record<string, unknown>): HelloInput {
-    const name = (json['name'] ?? '').toString();
-    return new HelloInput(name);
-  }
-
-  toJson() {
-    return { name: this.name };
-  }
-
-  toSchema() {
-    return {
-      type: 'object',
-      properties: {
-        name: { type: 'string', description: 'Name to greet' },
-      },
-      required: ['name'],
-    };
+    const instance = new HelloInput();
+    instance.name = json['name'] as string;
+    return instance;
   }
 }
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
 
-class HelloOutput implements Output {
-  constructor(readonly message: string) {}
+class HelloOutput extends Output {
+  @Field.string({ description: 'Greeting message', example: 'Hello, World!' })
+  message!: string;
 
   get statusCode() {
     return 200;
-  }
-
-  toJson() {
-    return { message: this.message };
-  }
-
-  toSchema() {
-    return {
-      type: 'object',
-      properties: {
-        message: { type: 'string', description: 'Greeting message' },
-      },
-      required: ['message'],
-    };
   }
 }
 
@@ -91,7 +72,7 @@ class HelloWorld implements UseCase<HelloInput, HelloOutput> {
 
   constructor(input: HelloInput) {
     this.input = input;
-    this.output = new HelloOutput('');
+    this.output = new HelloOutput();
   }
 
   static fromJson(json: Record<string, unknown>): HelloWorld {
@@ -107,7 +88,9 @@ class HelloWorld implements UseCase<HelloInput, HelloOutput> {
 
   async execute(): Promise<void> {
     this.logger?.info(`Greeting user: ${this.input.name}`);
-    this.output = new HelloOutput(`Hello, ${this.input.name}!`);
+    const output = new HelloOutput();
+    output.message = `Hello, ${this.input.name}!`;
+    this.output = output;
   }
 
   toJson(): Record<string, unknown> {
@@ -152,8 +135,4 @@ if (api.metrics) {
 
 api.module('greetings', buildGreetingsModule);
 
-api.serve({ port }).then(() => {
-  console.log('====================================');
-  console.log(`API  → http://localhost:${port}/api/greetings/hello`);
-  console.log('====================================');
-});
+api.serve({ port });

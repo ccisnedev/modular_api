@@ -22,6 +22,7 @@ from modular_api.core.registry import ApiRegistry, UseCaseDocMeta, UseCaseRegist
 from modular_api.core.use_case_exception import UseCaseException
 from modular_api.core.usecase import Input, Output, UseCase
 from modular_api.core.usecase_handler import usecase_handler
+from pydantic import Field
 from modular_api.middlewares.cors import cors_middleware
 from modular_api.openapi.openapi import (
     build_openapi_spec,
@@ -34,6 +35,7 @@ from modular_api.openapi.swagger_docs import swagger_docs_handler
 __all__ = [
     "ApiRegistry",
     "Counter",
+    "Field",
     "Gauge",
     "HealthCheck",
     "HealthCheckResult",

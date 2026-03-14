@@ -1,3 +1,18 @@
+/// example/example.dart
+/// Minimal runnable example — mirrors example/example.dart from the Dart version.
+///
+/// Run:
+///   dart run example/example.dart
+///
+/// Then test:
+///   curl -X POST http://localhost:8080/api/greetings/hello \
+///        -H "Content-Type: application/json" \
+///        -d '{"name":"World"}'
+///
+/// Docs:
+///   http://localhost:8080/docs
+library;
+
 import 'package:modular_api/modular_api.dart';
 
 // ─── Server ───────────────────────────────────────────────────────────────────
@@ -29,10 +44,6 @@ Future<void> main(List<String> args) async {
   api.module('greetings', buildGreetingsModule);
 
   await api.serve(port: port);
-
-  print('====================================');
-  print('API     → http://localhost:$port/api/greetings/hello');
-  print('====================================');
 }
 
 // ─── Module Builder ───────────────────────────────────────────────────────────
@@ -40,41 +51,51 @@ Future<void> main(List<String> args) async {
 //   lib/modules/greetings/greetings_builder.dart
 
 void buildGreetingsModule(ModuleBuilder m) {
-  m.usecase('hello', HelloWorld.fromJson);
+  m.usecase(
+    'hello',
+    HelloWorld.fromJson,
+    inputExample: HelloInput.example,
+    outputExample: HelloOutput.example,
+  );
 }
 
 // ─── Input DTO ────────────────────────────────────────────────────────────────
 
-class HelloInput implements Input {
+class HelloInput extends Input {
+  @Field(description: 'Name to greet')
   final String name;
 
   HelloInput({required this.name});
 
-  factory HelloInput.fromJson(Map<String, dynamic> json) =>
-      HelloInput(name: (json['name'] ?? '').toString());
+  /// Strict factory — no coercion, no defaults.
+  /// Pre-validation in the handler ensures data is valid before this runs.
+  factory HelloInput.fromJson(Map<String, dynamic> json) => HelloInput(
+        name: json['name'] as String,
+      );
 
   @override
   Map<String, dynamic> toJson() => {'name': name};
 
   @override
-  Map<String, dynamic> toSchema() => {
-        'type': 'object',
-        'properties': {
-          'name': {'type': 'string', 'description': 'Name to greet'},
-        },
-        'required': ['name'],
-      };
+  List<SchemaField> get schemaFields => [
+        SchemaField.string('name',
+            description: 'Name to greet', example: 'World'),
+      ];
+
+  /// Example instance for schema extraction and Swagger UI.
+  static HelloInput get example => HelloInput(name: 'World');
 }
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
 
-class HelloOutput implements Output {
+class HelloOutput extends Output {
+  @Field(description: 'Greeting message')
   final String message;
 
-  HelloOutput({this.message = ''});
+  HelloOutput({required this.message});
 
   factory HelloOutput.fromJson(Map<String, dynamic> json) =>
-      HelloOutput(message: (json['message'] ?? '').toString());
+      HelloOutput(message: json['message'] as String);
 
   @override
   int get statusCode => 200;
@@ -83,13 +104,13 @@ class HelloOutput implements Output {
   Map<String, dynamic> toJson() => {'message': message};
 
   @override
-  Map<String, dynamic> toSchema() => {
-        'type': 'object',
-        'properties': {
-          'message': {'type': 'string', 'description': 'Greeting message'},
-        },
-        'required': ['message'],
-      };
+  List<SchemaField> get schemaFields => [
+        SchemaField.string('message',
+            description: 'Greeting message', example: 'Hello, World!'),
+      ];
+
+  /// Example instance for schema extraction and Swagger UI.
+  static HelloOutput get example => HelloOutput(message: 'Hello, World!');
 }
 
 // ─── UseCase ──────────────────────────────────────────────────────────────────
@@ -105,7 +126,7 @@ class HelloWorld implements UseCase<HelloInput, HelloOutput> {
   ModularLogger? logger;
 
   HelloWorld({required this.input}) {
-    output = HelloOutput();
+    output = HelloOutput(message: '');
   }
 
   static HelloWorld fromJson(Map<String, dynamic> json) {

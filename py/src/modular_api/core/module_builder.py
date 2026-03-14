@@ -15,6 +15,8 @@ Mirror of ``ModuleBuilder`` in Dart and TypeScript.
 
 from __future__ import annotations
 
+import inspect
+import typing
 from typing import Any, Callable
 
 from starlette.routing import Route, Router
@@ -27,6 +29,50 @@ from modular_api.core.registry import (
 )
 from modular_api.core.usecase import Input, Output, UseCase
 from modular_api.core.usecase_handler import usecase_handler
+
+
+def _get_return_type_hint(factory: Callable) -> type | None:  # noqa: ANN401
+    """Extract the UseCase class from the factory callable.
+
+    Our convention: factories are classmethods like ``HelloWorld.from_json``.
+    A bound classmethod has ``__self__`` pointing to the class itself.
+    """
+    # Bound classmethod: StubUseCase.from_json → __self__ is StubUseCase
+    owner = getattr(factory, "__self__", None)
+    if isinstance(owner, type) and issubclass(owner, UseCase):
+        return owner
+
+    # Fallback: try return type hint resolution
+    try:
+        hints = typing.get_type_hints(factory)
+        ret = hints.get("return")
+        if isinstance(ret, type) and issubclass(ret, UseCase):
+            return ret
+    except Exception:
+        pass
+
+    return None
+
+
+def _extract_dto_classes(usecase_cls: type) -> tuple[type | None, type | None]:
+    """Walk a UseCase subclass's MRO to find its Input and Output type args.
+
+    Given ``class HelloWorld(UseCase[HelloInput, HelloOutput])``, returns
+    ``(HelloInput, HelloOutput)``.
+    """
+    input_cls: type | None = None
+    output_cls: type | None = None
+
+    for base in getattr(usecase_cls, "__orig_bases__", ()):
+        origin = getattr(base, "__origin__", None)
+        if origin is UseCase or (isinstance(origin, type) and issubclass(origin, UseCase)):
+            args = getattr(base, "__args__", ())
+            if len(args) >= 2:
+                input_cls = args[0] if isinstance(args[0], type) else None
+                output_cls = args[1] if isinstance(args[1], type) else None
+            break
+
+    return input_cls, output_cls
 
 
 class ModuleBuilder:
@@ -97,31 +143,52 @@ class ModuleBuilder:
 
     @staticmethod
     def _extract_schemas(factory: UseCaseFactory) -> dict[str, dict[str, Any]]:
-        """Capture Input and Output schemas independently from a dummy factory call.
+        """Capture Input and Output schemas from a UseCase factory.
 
-        Each DTO extraction has its own try/except so a failure in one
-        (e.g. Output not yet initialised) does not destroy the other.
-        This matches Dart's separate _inferInputSchema/_inferOutputSchema pattern.
+        Strategy (in order of preference):
+        1. Class-level extraction via ``to_schema()`` classmethod on BaseModel DTOs.
+           Inspects the factory's type hints to find the Input/Output classes.
+        2. Fallback: instantiate via ``factory({})`` and call ``to_schema()``
+           on the resulting UseCase's input/output (legacy pattern).
         """
         input_schema: dict[str, Any] = {}
         output_schema: dict[str, Any] = {}
 
+        # --- Strategy 1: class-level extraction from type hints ---
+        return_hint = _get_return_type_hint(factory)
+
+        if return_hint is not None:
+            input_cls, output_cls = _extract_dto_classes(return_hint)
+
+            if input_cls is not None and hasattr(input_cls, "to_schema"):
+                try:
+                    input_schema = input_cls.to_schema()
+                except Exception:
+                    pass
+
+            if output_cls is not None and hasattr(output_cls, "to_schema"):
+                try:
+                    output_schema = output_cls.to_schema()
+                except Exception:
+                    pass
+
+            if input_schema or output_schema:
+                return {"input": input_schema, "output": output_schema}
+
+        # --- Strategy 2: legacy factory({}) fallback ---
         try:
             instance = factory({})
         except Exception:
-            # Factory itself failed — both schemas fall back to empty.
             return {"input": input_schema, "output": output_schema}
 
         try:
             input_schema = instance.input.to_schema()
         except Exception:
-            # Input DTO inaccessible or to_schema() failed — keep empty fallback.
             pass
 
         try:
             output_schema = instance.output.to_schema()
         except Exception:
-            # Output not initialised until execute() — expected for most UseCases.
             pass
 
         return {"input": input_schema, "output": output_schema}

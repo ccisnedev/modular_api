@@ -5,34 +5,45 @@
 // ============================================================
 
 import type { Request, Response, RequestHandler } from 'express';
-import type { UseCaseFactory, Input, Output } from './usecase';
+import type { UseCaseFactory, Output } from './usecase';
+import { Input } from './usecase';
 import { UseCaseException } from './use_case_exception';
+import { InputValidationError } from './input_validation_error';
 import { LOGGER_LOCALS_KEY } from './logger/logging_middleware';
 import type { ModularLogger } from './logger/logger';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
+
+export interface UseCaseHandlerOptions {
+  /** Input class for pre-validation before fromJson (enables strict factories). */
+  inputClass?: abstract new (...args: unknown[]) => Input;
+}
 
 /**
  * Wraps any UseCase factory into an Express RequestHandler.
  *
  * Lifecycle (mirrors Dart useCaseHttpHandler):
  *   1. Parse body (POST/PUT/PATCH) or query params (GET/DELETE)
- *   2. Build UseCase via factory(json)
- *   3. Call validate() — return 400 if error string returned
- *   4. Call execute()
- *   5. Return output.toJson() with output.statusCode
+ *   2. Pre-validate against @Field metadata (when inputClass provided)
+ *   3. Build UseCase via factory(json)
+ *   4. Post-validate (legacy fallback when no inputClass)
+ *   5. Call validate() — return 400 if error string returned
+ *   6. Call execute()
+ *   7. Return output.toJson() with output.statusCode
  *
  * Errors:
- *   - UseCaseException  → statusCode from exception, structured JSON body
- *   - Any other Error   → 500 Internal Server Error
+ *   - InputValidationError → 400 with structured error message
+ *   - UseCaseException     → statusCode from exception, structured JSON body
+ *   - Any other Error      → 500 Internal Server Error
  *
  * Usage:
  * ```ts
- * router.post('/hello', useCaseHandler(SayHello.fromJson));
+ * router.post('/hello', useCaseHandler(SayHello.fromJson, { inputClass: HelloInput }));
  * ```
  */
 export function useCaseHandler<I extends Input, O extends Output>(
   factory: UseCaseFactory<I, O>,
+  options: UseCaseHandlerOptions = {},
 ): RequestHandler {
   return async (req: Request, res: Response): Promise<void> => {
     try {
@@ -42,8 +53,21 @@ export function useCaseHandler<I extends Input, O extends Output>(
           ? { ...req.query, ...req.params }
           : ((req.body as Record<string, unknown>) ?? {});
 
-      // 2. Build use case
+      // 2. Pre-validate BEFORE fromJson (when inputClass provided)
+      if (options.inputClass) {
+        Input.validateJson(data, options.inputClass);
+      }
+
+      // 3. Build use case
       const useCase = factory(data);
+
+      // 3a. Post-validate for legacy path (no inputClass)
+      if (!options.inputClass) {
+        Input.validateJson(
+          data,
+          useCase.input.constructor as abstract new (...args: unknown[]) => unknown,
+        );
+      }
 
       // 2b. Inject request-scoped logger (if logging middleware is active)
       const logger = res.locals[LOGGER_LOCALS_KEY] as ModularLogger | undefined;
@@ -64,6 +88,10 @@ export function useCaseHandler<I extends Input, O extends Output>(
       // 5. Respond
       res.status(useCase.output.statusCode).set(JSON_HEADERS).json(useCase.toJson());
     } catch (err) {
+      if (err instanceof InputValidationError) {
+        res.status(400).set(JSON_HEADERS).json({ error: err.message });
+        return;
+      }
       if (err instanceof UseCaseException) {
         console.error('UseCaseException:', err.toString());
         res.status(err.statusCode).set(JSON_HEADERS).json(err.toJson());

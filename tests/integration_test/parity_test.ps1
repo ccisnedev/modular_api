@@ -371,6 +371,7 @@ function Test-UseCaseMissingBody {
     <#
     .SYNOPSIS
         POST /api/greetings/hello with empty object → 400.
+        fromJson validates required fields — returns "Missing required field: name".
     #>
     param([string]$ImplName, [string]$BaseUrl)
 
@@ -387,8 +388,35 @@ function Test-UseCaseMissingBody {
 
     $json = $response.Body | ConvertFrom-Json
 
-    Assert-True ($json.error -eq 'name is required') `
-        "$ImplName POST hello (empty object) error is 'name is required'"
+    Assert-True ($json.error -eq 'Missing required field: name') `
+        "$ImplName POST hello (empty object) error is 'Missing required field: name'"
+
+    return $json
+}
+
+function Test-UseCaseWrongType {
+    <#
+    .SYNOPSIS
+        POST /api/greetings/hello with wrong type → 400.
+        fromJson validates JSON types — returns "Field 'name' must be of type string".
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+        -Method POST -Body '{"name":123}'
+
+    Assert-True ($response.StatusCode -eq 400) `
+        "$ImplName POST hello (wrong type) → 400"
+
+    if ($response.StatusCode -notin @(400, 422)) {
+        Write-Host "    Body was: $($response.Body)" -ForegroundColor DarkGray
+        return $null
+    }
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($json.error -eq "Field 'name' must be of type string") `
+        "$ImplName POST hello (wrong type) error is 'Field ''name'' must be of type string'"
 
     return $json
 }
@@ -540,6 +568,7 @@ function Test-Implementation {
         UseCaseSuccess     = Test-UseCaseSuccess           -ImplName $Name -BaseUrl $BaseUrl
         UseCaseEmptyName   = Test-UseCaseValidationFailure -ImplName $Name -BaseUrl $BaseUrl
         UseCaseMissingBody = Test-UseCaseMissingBody       -ImplName $Name -BaseUrl $BaseUrl
+        UseCaseWrongType   = Test-UseCaseWrongType         -ImplName $Name -BaseUrl $BaseUrl
         OpenApiJson        = Test-OpenApiJson              -ImplName $Name -BaseUrl $BaseUrl
         OpenApiYaml        = Test-OpenApiYaml              -ImplName $Name -BaseUrl $BaseUrl
     }
@@ -614,6 +643,17 @@ function Compare-Implementations {
         Write-Fail 'UseCase missing-body error identical across implementations (skipped — missing data)'
         $script:totalTests++; $script:failedTests++
         $script:failures += 'UseCase missing-body error parity skipped — missing data'
+    }
+
+    if ($Dart.UseCaseWrongType -and $TypeScript.UseCaseWrongType -and $Python.UseCaseWrongType) {
+        Assert-True (
+            ($Dart.UseCaseWrongType.error -eq $TypeScript.UseCaseWrongType.error) -and
+            ($Dart.UseCaseWrongType.error -eq $Python.UseCaseWrongType.error)
+        ) 'UseCase wrong-type error identical across implementations'
+    } else {
+        Write-Fail 'UseCase wrong-type error identical across implementations (skipped — missing data)'
+        $script:totalTests++; $script:failedTests++
+        $script:failures += 'UseCase wrong-type error parity skipped — missing data'
     }
 
     # ── OpenAPI JSON structural parity ───────────────────────────────────────

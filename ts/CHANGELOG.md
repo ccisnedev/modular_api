@@ -7,6 +7,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+## [0.4.2] - 2026-03-12
+
+### Added
+
+- **Auto-schema generation** — `Input` and `Output` DTOs derive OpenAPI 3.0.3 schemas automatically from `@Field` decorator metadata
+- `@Field` decorators — Stage 3 decorators: `.string()`, `.integer()`, `.number()`, `.boolean()`, `.array()`, `.optional()`
+- `Symbol.metadata` polyfill for Node.js < 22 compatibility
+- `getFieldMetadata()` / `FieldMeta` / `FieldOptions` — public API for reading decorator metadata
+- `Input` / `Output` base classes provide concrete `toSchema()`, `toJson()`, `fromJson()` from decorator metadata
+- Cross-language schema conformance tests against shared JSON fixtures
+
+### Changed
+
+- TypeScript target changed from `ES2020` to `ES2022` for Stage 3 decorator support
+- Manual `toSchema()` override is deprecated — use `@Field` decorators instead (removal in v0.5.0)
+- `_extractSchemas` simplified — decorator metadata resolves schemas without manual methods
+
 ## [0.4.1] - 2026-03-12
 
 ### Removed

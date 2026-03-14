@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 
 // ── Minimal UseCase for integration tests ────────────────────────────────
 
-class _PingInput implements Input {
+class _PingInput extends Input {
   _PingInput();
   factory _PingInput.fromJson(Map<String, dynamic> json) => _PingInput();
   @override
@@ -19,7 +19,7 @@ class _PingInput implements Input {
       };
 }
 
-class _PingOutput implements Output {
+class _PingOutput extends Output {
   _PingOutput();
   @override
   Map<String, dynamic> toJson() => {'pong': true};

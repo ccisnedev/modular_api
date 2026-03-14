@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "description": "Name to greet", "example": "World" }
+  },
+  "required": ["name"],
+  "example": { "name": "World" }
+}

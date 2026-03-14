@@ -106,7 +106,7 @@ void main() {
 }
 
 // Test UseCase
-class ThrowExceptionInput implements Input {
+class ThrowExceptionInput extends Input {
   final bool shouldThrow;
 
   ThrowExceptionInput({required this.shouldThrow});
@@ -131,7 +131,7 @@ class ThrowExceptionInput implements Input {
   }
 }
 
-class ThrowExceptionOutput implements Output {
+class ThrowExceptionOutput extends Output {
   final bool success;
 
   ThrowExceptionOutput({required this.success});

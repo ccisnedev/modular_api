@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "message": { "type": "string", "description": "Greeting message", "example": "Hello, World!" }
+  },
+  "required": ["message"],
+  "example": { "message": "Hello, World!" }
+}

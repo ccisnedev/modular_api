@@ -35,7 +35,10 @@ abstract class SumRepository {
 }
 
 class SumInput extends Input {
+  @Field(description: 'First operand')
   final int a;
+
+  @Field(description: 'Second operand')
   final int b;
   
   SumInput({required this.a, required this.b});
@@ -46,21 +49,17 @@ class SumInput extends Input {
   
   @override
   Map<String, dynamic> toJson() => {'a': a, 'b': b};
-  
+
   @override
-  Map<String, dynamic> toSchema() {
-    return {
-      'type': 'object',
-      'properties': {
-        'a': {'type': 'integer'},
-        'b': {'type': 'integer'},
-      },
-      'required': ['a', 'b'],
-    };
-  }
+  List<SchemaField> get schemaFields => [
+        SchemaField.integer('a', description: 'First operand'),
+        SchemaField.integer('b', description: 'Second operand'),
+      ];
+}
 }
 
 class SumOutput extends Output {
+  @Field(description: 'Sum result')
   final int result;
   
   SumOutput({required this.result});
@@ -74,17 +73,11 @@ class SumOutput extends Output {
   
   @override
   Map<String, dynamic> toJson() => {'result': result};
-  
+
   @override
-  Map<String, dynamic> toSchema() {
-    return {
-      'type': 'object',
-      'properties': {
-        'result': {'type': 'integer'},
-      },
-      'required': ['result'],
-    };
-  }
+  List<SchemaField> get schemaFields => [
+        SchemaField.integer('result', description: 'Sum result'),
+      ];
 }
 
 class SumNumbers implements UseCase<SumInput, SumOutput> {
