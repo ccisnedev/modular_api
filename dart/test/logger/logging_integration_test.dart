@@ -49,13 +49,9 @@ class EchoUseCase implements UseCase<EchoInput, EchoOutput> {
   @override
   final EchoInput input;
   @override
-  late EchoOutput output;
-  @override
   ModularLogger? logger;
 
-  EchoUseCase({required this.input}) {
-    output = EchoOutput(echo: '');
-  }
+  EchoUseCase({required this.input});
 
   static EchoUseCase fromJson(Map<String, dynamic> json) =>
       EchoUseCase(input: EchoInput.fromJson(json));
@@ -64,13 +60,10 @@ class EchoUseCase implements UseCase<EchoInput, EchoOutput> {
   String? validate() => null;
 
   @override
-  Future<void> execute() async {
+  Future<EchoOutput> execute() async {
     logger?.info('echoing value', fields: {'value': input.value});
-    output = EchoOutput(echo: input.value);
+    return EchoOutput(echo: input.value);
   }
-
-  @override
-  Map<String, dynamic> toJson() => output.toJson();
 }
 
 /// UseCase that does NOT use the logger (regression test)
@@ -78,13 +71,9 @@ class SilentUseCase implements UseCase<EchoInput, EchoOutput> {
   @override
   final EchoInput input;
   @override
-  late EchoOutput output;
-  @override
   ModularLogger? logger;
 
-  SilentUseCase({required this.input}) {
-    output = EchoOutput(echo: '');
-  }
+  SilentUseCase({required this.input});
 
   static SilentUseCase fromJson(Map<String, dynamic> json) =>
       SilentUseCase(input: EchoInput.fromJson(json));
@@ -93,13 +82,10 @@ class SilentUseCase implements UseCase<EchoInput, EchoOutput> {
   String? validate() => null;
 
   @override
-  Future<void> execute() async {
+  Future<EchoOutput> execute() async {
     // Deliberately ignores logger
-    output = EchoOutput(echo: input.value);
+    return EchoOutput(echo: input.value);
   }
-
-  @override
-  Map<String, dynamic> toJson() => output.toJson();
 }
 
 /// UseCase that throws an unexpected error
@@ -107,13 +93,9 @@ class FailUseCase implements UseCase<EchoInput, EchoOutput> {
   @override
   final EchoInput input;
   @override
-  late EchoOutput output;
-  @override
   ModularLogger? logger;
 
-  FailUseCase({required this.input}) {
-    output = EchoOutput(echo: '');
-  }
+  FailUseCase({required this.input});
 
   static FailUseCase fromJson(Map<String, dynamic> json) =>
       FailUseCase(input: EchoInput.fromJson(json));
@@ -122,12 +104,9 @@ class FailUseCase implements UseCase<EchoInput, EchoOutput> {
   String? validate() => null;
 
   @override
-  Future<void> execute() async {
+  Future<EchoOutput> execute() async {
     throw Exception('unexpected crash');
   }
-
-  @override
-  Map<String, dynamic> toJson() => output.toJson();
 }
 
 // ─── Tests ─────────────────────────────────────────────────────────
@@ -150,9 +129,9 @@ void main() {
 
       final uc = EchoUseCase(input: EchoInput(value: 'hello'));
       uc.logger = logger;
-      await uc.execute();
+      final output = await uc.execute();
 
-      expect(uc.output.echo, 'hello');
+      expect(output.echo, 'hello');
       final lines = buf.toString().trim().split('\n');
       expect(lines.length, 1);
       final json = jsonDecode(lines[0]) as Map<String, dynamic>;
@@ -164,8 +143,8 @@ void main() {
     test('UseCase works without logger (regression)', () async {
       final uc = SilentUseCase(input: EchoInput(value: 'world'));
       // logger is null — execute should work fine
-      await uc.execute();
-      expect(uc.output.echo, 'world');
+      final output = await uc.execute();
+      expect(output.echo, 'world');
     });
   });
 
@@ -181,8 +160,8 @@ void main() {
 
       final uc = EchoUseCase(input: EchoInput(value: 'hi'));
       uc.logger = logger;
-      await uc.execute();
-      expect(uc.output.echo, 'hi');
+      final output = await uc.execute();
+      expect(output.echo, 'hi');
 
       // Verify logger was used
       final lines = buf.toString().trim().split('\n');
@@ -195,8 +174,8 @@ void main() {
 
     test('UseCase works without logger assigned (default behavior)', () async {
       final uc = SilentUseCase(input: EchoInput(value: 'hi'));
-      await uc.execute();
-      expect(uc.output.echo, 'hi');
+      final output = await uc.execute();
+      expect(output.echo, 'hi');
     });
   });
 
@@ -224,9 +203,15 @@ void main() {
       );
 
       api.module('test', (m) {
-        m.usecase('echo', EchoUseCase.fromJson);
-        m.usecase('silent', SilentUseCase.fromJson);
-        m.usecase('fail', FailUseCase.fromJson);
+        m.usecase('echo', EchoUseCase.fromJson,
+            inputExample: EchoInput(value: 'test'),
+            outputExample: EchoOutput(echo: 'test'));
+        m.usecase('silent', SilentUseCase.fromJson,
+            inputExample: EchoInput(value: 'test'),
+            outputExample: EchoOutput(echo: 'test'));
+        m.usecase('fail', FailUseCase.fromJson,
+            inputExample: EchoInput(value: 'test'),
+            outputExample: EchoOutput(echo: 'test'));
       });
 
       server = await api.serve(port: 0); // ephemeral port

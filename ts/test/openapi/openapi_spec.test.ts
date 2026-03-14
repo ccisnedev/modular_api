@@ -33,7 +33,6 @@ class PingOutput extends Output {
 
 class PingUseCase extends UseCase<PingInput, PingOutput> {
   readonly input: PingInput;
-  output!: PingOutput;
 
   constructor(input: PingInput) {
     super();
@@ -49,11 +48,7 @@ class PingUseCase extends UseCase<PingInput, PingOutput> {
   }
 
   async execute() {
-    this.output = new PingOutput();
-  }
-
-  toJson() {
-    return this.output.toJson();
+    return new PingOutput();
   }
 }
 
@@ -149,7 +144,7 @@ describe('OpenAPI spec endpoints (TypeScript)', () => {
       version: '1.0.0',
     });
     api.module('test', (m) => {
-      m.usecase('ping', PingUseCase.fromJson);
+      m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput });
     });
     server = await api.serve({ port: 0 });
     return server;
@@ -230,7 +225,7 @@ describe('OpenAPI spec endpoints (TypeScript)', () => {
         version: '2.0.0',
       });
       api.module('test', (m) => {
-        m.usecase('ping', PingUseCase.fromJson);
+        m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput });
       });
       server = await api.serve({ port: 0 });
 

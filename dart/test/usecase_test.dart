@@ -8,20 +8,12 @@ class SumUseCase implements UseCase<SumInput, SumOutput> {
   final SumInput input;
 
   @override
-  late SumOutput output;
-
-  @override
   ModularLogger? logger;
 
-  SumUseCase({required this.input}) {
-    // Default value for output (needed for schema inference elsewhere)
-    output = SumOutput(resultado: 0);
-  }
+  SumUseCase({required this.input});
 
   factory SumUseCase.fromJson(Map<String, dynamic> json) {
-    final uc = SumUseCase(input: SumInput.fromJson(json));
-    uc.output = SumOutput(resultado: 0);
-    return uc;
+    return SumUseCase(input: SumInput.fromJson(json));
   }
 
   @override
@@ -32,14 +24,11 @@ class SumUseCase implements UseCase<SumInput, SumOutput> {
   }
 
   @override
-  Future<void> execute() async {
+  Future<SumOutput> execute() async {
     final a = input.a ?? 0;
     final b = input.b ?? 0;
-    output = SumOutput(resultado: a + b);
+    return SumOutput(resultado: a + b);
   }
-
-  @override
-  Map<String, dynamic> toJson() => output.toJson();
 }
 
 class SumInput extends Input {
@@ -105,8 +94,8 @@ void main() {
     () async {
       final useCase = SumUseCase(input: SumInput(a: 3, b: 4));
       expect(useCase.validate(), isNull);
-      await useCase.execute();
-      expect(useCase.output.resultado, equals(7));
+      final output = await useCase.execute();
+      expect(output.resultado, equals(7));
     },
   );
 

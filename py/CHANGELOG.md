@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.3] - 2026-03-13
+
+### Changed (BREAKING)
+
+- **`execute()` returns `O`** — no longer `None`; the handler reads the returned Output directly
+- **Removed `output` property** from `UseCase` — no mutable state; `execute()` returns the result
+- **Removed `to_json()`** from `UseCase` — the handler calls `output.to_json()` on the returned value
+- **Removed Strategy 2 fallback** in OpenAPI schema extraction — no `factory({}).output` path
+
 ## [0.4.2] - 2026-03-12
 
 ### Added

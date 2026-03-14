@@ -67,7 +67,7 @@ class CreateUser extends UseCase<CreateUserInput, CreateUserOutput> {
       CreateUser(input: CreateUserInput.fromJson(json));
 
   @override
-  Future<void> execute() async {
+  Future<CreateUserOutput> execute() async {
     logger?.info('Creating user: ${input.email}');
     
     // ... business logic ...
@@ -77,7 +77,7 @@ class CreateUser extends UseCase<CreateUserInput, CreateUserOutput> {
       'email': input.email,
     });
     
-    output = CreateUserOutput(id: newUser.id);
+    return CreateUserOutput(id: newUser.id);
   }
 }
 ```

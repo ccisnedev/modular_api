@@ -6,108 +6,19 @@
  *   npx ts-node example/example.ts
  *
  * Then test:
- *   curl -X POST http://localhost:8080/api/greetings/hello \
+ *   curl -X POST http://localhost:8080/api/v1/greetings/hello-world \
  *        -H "Content-Type: application/json" \
  *        -d '{"name":"World"}'
+ *   curl http://localhost:8080/api/v1/time/current-time?tz=utc-5
  *
  * Docs:
  *   http://localhost:8080/docs
  */
 
-import {
-  Input,
-  Output,
-  UseCase,
-  ModularApi,
-  ModuleBuilder,
-  HealthCheck,
-  HealthCheckResult,
-  LogLevel,
-  Field,
-} from '../src/index';
-
-// ─── Module Builder ───────────────────────────────────────────────────────────
-// In a real project, this would live in its own file:
-//   src/modules/greetings/greetings_builder.ts
-
-function buildGreetingsModule(m: ModuleBuilder): void {
-  m.usecase('hello', HelloWorld.fromJson, {
-    inputClass: HelloInput,
-    outputClass: HelloOutput,
-  });
-}
-
-// ─── Input DTO ────────────────────────────────────────────────────────────────
-
-class HelloInput extends Input {
-  @Field.string({ description: 'Name to greet', example: 'World' })
-  name!: string;
-
-  /// Strict factory — no coercion, no defaults.
-  /// Pre-validation in the handler ensures data is valid before this runs.
-  static fromJson(json: Record<string, unknown>): HelloInput {
-    const instance = new HelloInput();
-    instance.name = json['name'] as string;
-    return instance;
-  }
-}
-
-// ─── Output DTO ───────────────────────────────────────────────────────────────
-
-class HelloOutput extends Output {
-  @Field.string({ description: 'Greeting message', example: 'Hello, World!' })
-  message!: string;
-
-  get statusCode() {
-    return 200;
-  }
-}
-
-// ─── UseCase ──────────────────────────────────────────────────────────────────
-
-class HelloWorld implements UseCase<HelloInput, HelloOutput> {
-  readonly input: HelloInput;
-  output: HelloOutput;
-  logger?: import('../src/core/logger/logger').ModularLogger;
-
-  constructor(input: HelloInput) {
-    this.input = input;
-    this.output = new HelloOutput();
-  }
-
-  static fromJson(json: Record<string, unknown>): HelloWorld {
-    return new HelloWorld(HelloInput.fromJson(json));
-  }
-
-  validate(): string | null {
-    if (!this.input.name) {
-      return 'name is required';
-    }
-    return null;
-  }
-
-  async execute(): Promise<void> {
-    this.logger?.info(`Greeting user: ${this.input.name}`);
-    const output = new HelloOutput();
-    output.message = `Hello, ${this.input.name}!`;
-    this.output = output;
-  }
-
-  toJson(): Record<string, unknown> {
-    return this.output.toJson();
-  }
-}
-
-// ─── Example Health Check ─────────────────────────────────────────────────────
-// In a real project you'd check a database connection, external service, etc.
-
-class AlwaysPassHealthCheck extends HealthCheck {
-  readonly name = 'example';
-
-  async check(): Promise<HealthCheckResult> {
-    return new HealthCheckResult('pass');
-  }
-}
+import { ModularApi, LogLevel } from '../src/index';
+import { AlwaysPassHealthCheck } from './health/always_pass_health_check';
+import { buildGreetingsModule } from './modules/greetings/greetings_builder';
+import { buildTimeModule } from './modules/time/time_builder';
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 
@@ -115,7 +26,7 @@ class AlwaysPassHealthCheck extends HealthCheck {
 const port = Number(process.argv[2]) || 8080;
 
 const api = new ModularApi({
-  basePath: '/api',
+  basePath: '/api/v1',
   title: 'Modular API',
   version: '1.0.0',
   metricsEnabled: true,
@@ -134,5 +45,6 @@ if (api.metrics) {
 }
 
 api.module('greetings', buildGreetingsModule);
+api.module('time', buildTimeModule);
 
 api.serve({ port });

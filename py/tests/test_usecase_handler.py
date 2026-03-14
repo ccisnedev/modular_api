@@ -32,26 +32,18 @@ class GreetUseCase(UseCase[GreetInput, GreetOutput]):
 
     def __init__(self, data: dict) -> None:
         self._input = GreetInput.from_json(data)
-        self._output = GreetOutput()
 
     @property
     def input(self) -> GreetInput:
         return self._input
-
-    @property
-    def output(self) -> GreetOutput:
-        return self._output
 
     def validate(self) -> str | None:
         if not self._input.name:
             return "name is required"
         return None
 
-    async def execute(self) -> None:
-        self._output = GreetOutput(greeting=f"Hello, {self._input.name}!")
-
-    def to_json(self) -> dict:
-        return self._output.to_json()
+    async def execute(self) -> GreetOutput:
+        return GreetOutput(greeting=f"Hello, {self._input.name}!")
 
 
 class FailingUseCase(UseCase[GreetInput, GreetOutput]):
@@ -59,28 +51,20 @@ class FailingUseCase(UseCase[GreetInput, GreetOutput]):
 
     def __init__(self, data: dict) -> None:
         self._input = GreetInput.from_json(data)
-        self._output = GreetOutput()
 
     @property
     def input(self) -> GreetInput:
         return self._input
 
-    @property
-    def output(self) -> GreetOutput:
-        return self._output
-
     def validate(self) -> str | None:
         return None
 
-    async def execute(self) -> None:
+    async def execute(self) -> GreetOutput:
         raise UseCaseException(
             status_code=409,
             message="Already exists",
             error_code="CONFLICT",
         )
-
-    def to_json(self) -> dict:
-        return self._output.to_json()
 
 
 class CrashingUseCase(UseCase[GreetInput, GreetOutput]):
@@ -88,24 +72,16 @@ class CrashingUseCase(UseCase[GreetInput, GreetOutput]):
 
     def __init__(self, data: dict) -> None:
         self._input = GreetInput(name="x")
-        self._output = GreetOutput()
 
     @property
     def input(self) -> GreetInput:
         return self._input
 
-    @property
-    def output(self) -> GreetOutput:
-        return self._output
-
     def validate(self) -> str | None:
         return None
 
-    async def execute(self) -> None:
+    async def execute(self) -> GreetOutput:
         raise RuntimeError("disk on fire")
-
-    def to_json(self) -> dict:
-        return self._output.to_json()
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
@@ -201,25 +177,17 @@ class TestUseCaseLifecycle:
         class SpyUseCase(UseCase[GreetInput, GreetOutput]):
             def __init__(self, data: dict) -> None:
                 self._input = GreetInput(name="x")
-                self._output = GreetOutput()
 
             @property
             def input(self) -> GreetInput:
                 return self._input
 
-            @property
-            def output(self) -> GreetOutput:
-                return self._output
-
             def validate(self) -> str | None:
                 return None
 
-            async def execute(self) -> None:
+            async def execute(self) -> GreetOutput:
                 captured_loggers.append(self.logger)
-                self._output = GreetOutput(greeting="ok")
-
-            def to_json(self) -> dict:
-                return self._output.to_json()
+                return GreetOutput(greeting="ok")
 
         # Middleware that fakes a logger in request.state
         from starlette.middleware import Middleware

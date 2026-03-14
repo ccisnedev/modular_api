@@ -23,9 +23,9 @@ export interface UseCaseOptions {
   /** Override output schema for OpenAPI (if fromJson fails with empty data) */
   outputSchema?: Record<string, unknown>;
   /** Input class for pre-validation and schema extraction (enables strict fromJson). */
-  inputClass?: abstract new (...args: unknown[]) => Input;
+  inputClass: abstract new (...args: unknown[]) => Input;
   /** Output class for schema extraction. */
-  outputClass?: abstract new (...args: unknown[]) => Output;
+  outputClass: abstract new (...args: unknown[]) => Output;
 }
 
 /**
@@ -56,27 +56,27 @@ export class ModuleBuilder {
   /**
    * Registers a use case as an HTTP endpoint.
    *
-   * @param name     Route segment, e.g. 'create' → POST /api/users/create
+   * @param command  Route segment and operationId root, e.g. 'hello-world' → POST /api/greetings/hello-world.
+   *                  Convention: command, class name, and file name share the same root.
    * @param factory  The static `fromJson` of your UseCase class
-   * @param options  Optional HTTP method, summary and description for OpenAPI
+   * @param options  HTTP method, inputClass/outputClass, and optional OpenAPI metadata
    */
   usecase<I extends Input, O extends Output>(
-    name: string,
+    command: string,
     factory: UseCaseFactory<I, O>,
-    options: UseCaseOptions = {},
+    options: UseCaseOptions,
   ): this {
     const { method = 'POST', summary, description, inputSchema, outputSchema, inputClass, outputClass } = options;
 
-    // Normalize name: trim and remove leading slash
-    const cleanName = name.trim().replace(/^\//g, '');
-    const subPath = `/${cleanName}`;
+    const cleanCommand = command.trim().replace(/^\//g, '');
+    const subPath = `/${cleanCommand}`;
     const methodL = method.toLowerCase() as Lowercase<HttpMethod>;
 
     // Mount the Express handler (with optional pre-validation)
     this.router[methodL](subPath, useCaseHandler(factory, { inputClass }));
 
-    // Try to capture schemas — prefer class-level metadata, then dummy factory
-    const extracted = this._extractSchemas(factory, inputClass, outputClass);
+    // Capture schemas from @Field decorator metadata
+    const extracted = this._extractSchemas(inputClass, outputClass);
     const schemas = {
       input: inputSchema ?? extracted.input,
       output: outputSchema ?? extracted.output,
@@ -85,14 +85,14 @@ export class ModuleBuilder {
     // Register in the global registry for OpenAPI generation
     apiRegistry.routes.push({
       module: this.moduleName,
-      name: cleanName,
+      command: cleanCommand,
       method: method,
-      path: `${this._normalizeBase(this.basePath)}/${this.moduleName}/${cleanName}`,
+      path: `${this._normalizeBase(this.basePath)}/${this.moduleName}/${cleanCommand}`,
       factory: factory as UseCaseFactory<Input, Output>,
       schemas,
       doc: {
-        summary: summary ?? `Use case ${cleanName} in module ${this.moduleName}`,
-        description: description ?? `Auto-generated documentation for ${cleanName}`,
+        summary: summary ?? `Use case ${cleanCommand} in module ${this.moduleName}`,
+        description: description ?? `Auto-generated documentation for ${cleanCommand}`,
         tags: [this.moduleName],
       },
     });
@@ -101,59 +101,25 @@ export class ModuleBuilder {
   }
 
   /**
-   * Capture Input and Output schemas from decorator metadata or a dummy factory call.
+   * Capture Input and Output schemas from decorator metadata.
    *
-   * Strategy (in order of preference):
-   * 1. Class-level: inputClass/outputClass → @Field metadata → build schema.
-   * 2. Fallback: call factory({}) and invoke toSchema() on the result (legacy).
+   * Uses @Field metadata from inputClass/outputClass to build schemas.
    */
   private _extractSchemas<I extends Input, O extends Output>(
-    factory: UseCaseFactory<I, O>,
-    inputClass?: abstract new (...args: unknown[]) => Input,
-    outputClass?: abstract new (...args: unknown[]) => Output,
+    inputClass: abstract new (...args: unknown[]) => Input,
+    outputClass: abstract new (...args: unknown[]) => Output,
   ): { input: Record<string, unknown>; output: Record<string, unknown> } {
     let input: Record<string, unknown> = {};
     let output: Record<string, unknown> = {};
 
-    // Strategy 1: class-level via @Field metadata (no instantiation needed)
-    if (inputClass) {
-      const fields = getFieldMetadata(inputClass);
-      if (fields.length > 0) {
-        input = new (inputClass as new () => Input)().toSchema();
-      }
-    }
-    if (outputClass) {
-      const fields = getFieldMetadata(outputClass);
-      if (fields.length > 0) {
-        output = new (outputClass as new () => Output)().toSchema();
-      }
+    const inputFields = getFieldMetadata(inputClass);
+    if (inputFields.length > 0) {
+      input = new (inputClass as new () => Input)().toSchema();
     }
 
-    // Strategy 2 fallback: dummy factory call
-    if (Object.keys(input).length === 0 || Object.keys(output).length === 0) {
-      let instance: UseCase<I, O> | undefined;
-      try {
-        instance = factory({});
-      } catch {
-        // Factory failed — that's fine.
-      }
-
-      if (instance) {
-        if (Object.keys(input).length === 0) {
-          try {
-            input = instance.input.toSchema();
-          } catch {
-            // toSchema() not available — keep empty.
-          }
-        }
-        if (Object.keys(output).length === 0) {
-          try {
-            output = instance.output.toSchema();
-          } catch {
-            // Output not initialised until execute() — expected for most UseCases.
-          }
-        }
-      }
+    const outputFields = getFieldMetadata(outputClass);
+    if (outputFields.length > 0) {
+      output = new (outputClass as new () => Output)().toSchema();
     }
 
     return { input, output };

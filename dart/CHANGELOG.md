@@ -6,6 +6,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+## [0.4.3] - 2026-03-13
+
+### Changed (BREAKING)
+
+- **`execute()` returns `Future<O>`** — no longer `Future<void>`; the handler reads the returned Output directly
+- **Removed `output` field** from `UseCase` — no mutable state; `execute()` returns the result
+- **Removed `toJson()`** from `UseCase` — the handler calls `output.toJson()` on the returned value
+- **`inputExample` / `outputExample` now required** in `ModuleBuilder.usecase()` — OpenAPI schema extraction uses them directly
+- **Removed Strategy 2 fallback** in OpenAPI schema extraction — no `factory({}).output` path
+
+### Removed
+
+- **`@Field` annotation** — was decorative only (no runtime effect in Dart); `schemaFields` getter is the sole schema source
+
 ## [0.4.2] - 2026-03-12
 
 ### Added

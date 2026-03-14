@@ -9,20 +9,11 @@ import 'package:modular_api/src/core/schema/field.dart';
 /// Lifecycle (handled by the framework):
 ///   1. `fromJson(json)`    — static factory, builds the use case
 ///   2. `validate()`        — return error string or null
-///   3. `execute()`         — run business logic, set `this.output`
-///   4. `output.toJson()`   — serialize and return to HTTP client
+///   3. `execute()`         — run business logic, return Output
+///   4. handler serializes  — `output.toJson()` → HTTP response
 abstract class UseCase<I extends Input, O extends Output> {
-  /// DTO entrada
-  /// Debe ser inicializado en el constructor
-  /// si no se inicializa en el contructor no se puede inferir el esquema
-  /// para OpenApi
+  /// Input DTO — set in constructor via fromJson.
   I get input;
-
-  /// DTO salida
-  /// Debe ser inicializado en el constructor
-  /// si no se inicializa en el contructor no se puede inferir el esquema
-  /// para OpenApi
-  late O output;
 
   /// Logger scoped to the current HTTP request.
   /// Set by the framework before [execute] is called.
@@ -38,13 +29,9 @@ abstract class UseCase<I extends Input, O extends Output> {
   /// Validate the use case data
   String? validate();
 
-  /// Execute the use case logic
-  /// Bussiness logic should be implemented here
-  Future<void> execute();
-
-  /// Write to DTO
-  /// Serialize the use case data to JSON
-  Map<String, dynamic> toJson();
+  /// Execute the use case logic and return the Output.
+  /// Business logic should be implemented here.
+  Future<O> execute();
 }
 
 /// **Contract** — use `implements Input`.
@@ -55,7 +42,6 @@ abstract class UseCase<I extends Input, O extends Output> {
 ///
 /// ```dart
 /// class HelloInput implements Input {
-///   @Field(description: 'Name to greet')
 ///   final String name;
 ///
 ///   HelloInput({required this.name});

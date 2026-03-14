@@ -89,8 +89,9 @@ def _add_route_to_spec(
     component_schemas: dict[str, Any],
 ) -> None:
     """Append a single route's path entry, schemas, and operation to the spec."""
-    input_ref_name = f"{route.module}_{route.name}_Input"
-    output_ref_name = f"{route.module}_{route.name}_Output"
+    safe_command = route.command.replace("-", "_")
+    input_ref_name = f"{route.module}_{safe_command}_Input"
+    output_ref_name = f"{route.module}_{safe_command}_Output"
 
     # Store schemas in components
     component_schemas[input_ref_name] = route.schemas.get("input", {"type": "object"})
@@ -102,7 +103,7 @@ def _add_route_to_spec(
     description = route.doc.description if route.doc else None
 
     operation: dict[str, Any] = {
-        "operationId": f"{route.module}_{route.name}_{method_lower}",
+        "operationId": f"{route.module}_{safe_command}_{method_lower}",
         "tags": tags,
         "responses": {
             "200": {

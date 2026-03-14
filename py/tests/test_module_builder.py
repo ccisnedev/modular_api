@@ -34,19 +34,10 @@ class StubUseCase(UseCase[StubInput, StubOutput]):
 
     def __init__(self, input_dto: StubInput) -> None:
         self._input = input_dto
-        self._output = StubOutput(message="")
 
     @property
     def input(self) -> StubInput:
         return self._input
-
-    @property
-    def output(self) -> StubOutput:
-        return self._output
-
-    @output.setter
-    def output(self, value: StubOutput) -> None:
-        self._output = value
 
     @classmethod
     def from_json(cls, json: dict) -> StubUseCase:
@@ -57,11 +48,8 @@ class StubUseCase(UseCase[StubInput, StubOutput]):
             return "name is required"
         return None
 
-    async def execute(self) -> None:
-        self.output = StubOutput(message=f"Hello, {self.input.name}!")
-
-    def to_json(self) -> dict:
-        return self.output.to_json()
+    async def execute(self) -> StubOutput:
+        return StubOutput(message=f"Hello, {self.input.name}!")
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────

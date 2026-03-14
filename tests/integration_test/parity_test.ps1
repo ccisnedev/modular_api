@@ -289,7 +289,7 @@ function Test-MetricsEndpoint {
     param([string]$ImplName, [string]$BaseUrl)
 
     # Hit a use case first so metrics have at least one observation.
-    $null = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+    $null = Invoke-Endpoint -Uri "$BaseUrl/api/v1/greetings/hello-world" `
         -Method POST -Body '{"name":"MetricsWarmup"}'
 
     $response = Invoke-Endpoint -Uri "$BaseUrl/metrics"
@@ -318,11 +318,11 @@ function Test-MetricsEndpoint {
 function Test-UseCaseSuccess {
     <#
     .SYNOPSIS
-        POST /api/greetings/hello with valid input → 200.
+        POST /api/v1/greetings/hello-world with valid input → 200.
     #>
     param([string]$ImplName, [string]$BaseUrl)
 
-    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/greetings/hello-world" `
         -Method POST -Body '{"name":"World"}'
 
     Assert-True ($response.StatusCode -eq 200) `
@@ -344,11 +344,11 @@ function Test-UseCaseSuccess {
 function Test-UseCaseValidationFailure {
     <#
     .SYNOPSIS
-        POST /api/greetings/hello with empty name → 400.
+        POST /api/v1/greetings/hello-world with empty name → 400.
     #>
     param([string]$ImplName, [string]$BaseUrl)
 
-    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/greetings/hello-world" `
         -Method POST -Body '{"name":""}'
 
     Assert-True ($response.StatusCode -eq 400) `
@@ -370,12 +370,12 @@ function Test-UseCaseValidationFailure {
 function Test-UseCaseMissingBody {
     <#
     .SYNOPSIS
-        POST /api/greetings/hello with empty object → 400.
+        POST /api/v1/greetings/hello-world with empty object → 400.
         fromJson validates required fields — returns "Missing required field: name".
     #>
     param([string]$ImplName, [string]$BaseUrl)
 
-    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/greetings/hello-world" `
         -Method POST -Body '{}'
 
     Assert-True ($response.StatusCode -eq 400) `
@@ -397,12 +397,12 @@ function Test-UseCaseMissingBody {
 function Test-UseCaseWrongType {
     <#
     .SYNOPSIS
-        POST /api/greetings/hello with wrong type → 400.
+        POST /api/v1/greetings/hello-world with wrong type → 400.
         fromJson validates JSON types — returns "Field 'name' must be of type string".
     #>
     param([string]$ImplName, [string]$BaseUrl)
 
-    $response = Invoke-Endpoint -Uri "$BaseUrl/api/greetings/hello" `
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/greetings/hello-world" `
         -Method POST -Body '{"name":123}'
 
     Assert-True ($response.StatusCode -eq 400) `
@@ -417,6 +417,89 @@ function Test-UseCaseWrongType {
 
     Assert-True ($json.error -eq "Field 'name' must be of type string") `
         "$ImplName POST hello (wrong type) error is 'Field ''name'' must be of type string'"
+
+    return $json
+}
+
+# ── Time/Now UseCase tests ───────────────────────────────────────────────────
+
+function Test-TimeNowDefault {
+    <#
+    .SYNOPSIS
+        GET /api/v1/time/current-time (no tz param) → 200 with datetime and offset.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/time/current-time"
+
+    Assert-True ($response.StatusCode -eq 200) `
+        "$ImplName GET time/now (default) → 200"
+
+    if ($response.StatusCode -ne 200) {
+        Write-Host "    Body was: $($response.Body)" -ForegroundColor DarkGray
+        return $null
+    }
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($null -ne $json.datetime) `
+        "$ImplName GET time/now (default) has datetime field"
+
+    Assert-True ($null -ne $json.offset) `
+        "$ImplName GET time/now (default) has offset field"
+
+    return $json
+}
+
+function Test-TimeNowWithOffset {
+    <#
+    .SYNOPSIS
+        GET /api/v1/time/current-time?tz=utc-5 → 200 with offset == -5.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/time/current-time?tz=utc-5"
+
+    Assert-True ($response.StatusCode -eq 200) `
+        "$ImplName GET time/now?tz=utc-5 → 200"
+
+    if ($response.StatusCode -ne 200) {
+        Write-Host "    Body was: $($response.Body)" -ForegroundColor DarkGray
+        return $null
+    }
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($json.offset -eq -5) `
+        "$ImplName GET time/now?tz=utc-5 offset is -5"
+
+    Assert-True ($null -ne $json.datetime) `
+        "$ImplName GET time/now?tz=utc-5 has datetime field"
+
+    return $json
+}
+
+function Test-TimeNowInvalidTz {
+    <#
+    .SYNOPSIS
+        GET /api/v1/time/current-time?tz=invalid → 400 validation error.
+    #>
+    param([string]$ImplName, [string]$BaseUrl)
+
+    $response = Invoke-Endpoint -Uri "$BaseUrl/api/v1/time/current-time?tz=invalid"
+
+    Assert-True ($response.StatusCode -eq 400) `
+        "$ImplName GET time/now?tz=invalid → 400"
+
+    if ($response.StatusCode -notin @(400, 422)) {
+        Write-Host "    Body was: $($response.Body)" -ForegroundColor DarkGray
+        return $null
+    }
+
+    $json = $response.Body | ConvertFrom-Json
+
+    Assert-True ($json.error -eq 'invalid timezone format, use utc, utc-5, utc+3') `
+        "$ImplName GET time/now?tz=invalid error message is correct"
 
     return $json
 }
@@ -448,13 +531,13 @@ function Test-OpenApiJson {
     Assert-True ($null -ne $json.paths) `
         "$ImplName /openapi.json has paths object"
 
-    # The example registers POST /api/greetings/hello
-    $greetingsPath = $json.paths.'/api/greetings/hello'
+    # The example registers POST /api/v1/greetings/hello-world
+    $greetingsPath = $json.paths.'/api/v1/greetings/hello-world'
     Assert-True ($null -ne $greetingsPath) `
-        "$ImplName /openapi.json paths has /api/greetings/hello"
+        "$ImplName /openapi.json paths has /api/v1/greetings/hello-world"
 
     Assert-True ($null -ne $greetingsPath.post) `
-        "$ImplName /openapi.json /api/greetings/hello has POST operation"
+        "$ImplName /openapi.json /api/v1/greetings/hello-world has POST operation"
 
     # Request body schema
     $requestBodySchema = $greetingsPath.post.requestBody.content.'application/json'.schema
@@ -474,40 +557,52 @@ function Test-OpenApiJson {
         "$ImplName /openapi.json has components.schemas"
 
     $schemaNames = $json.components.schemas.PSObject.Properties.Name | Sort-Object
-    Assert-True ($schemaNames -contains 'greetings_hello_Input') `
-        "$ImplName /openapi.json components.schemas has greetings_hello_Input"
+    Assert-True ($schemaNames -contains 'greetings_hello_world_Input') `
+        "$ImplName /openapi.json components.schemas has greetings_hello_world_Input"
 
-    Assert-True ($schemaNames -contains 'greetings_hello_Output') `
-        "$ImplName /openapi.json components.schemas has greetings_hello_Output"
+    Assert-True ($schemaNames -contains 'greetings_hello_world_Output') `
+        "$ImplName /openapi.json components.schemas has greetings_hello_world_Output"
 
     # requestBody and response must use $ref to components.schemas
-    Assert-True ($requestBodySchema.'$ref' -match 'greetings_hello_Input') `
+    Assert-True ($requestBodySchema.'$ref' -match 'greetings_hello_world_Input') `
         "$ImplName /openapi.json POST hello requestBody uses `$ref to Input schema"
 
-    Assert-True ($responseSchema.'$ref' -match 'greetings_hello_Output') `
+    Assert-True ($responseSchema.'$ref' -match 'greetings_hello_world_Output') `
         "$ImplName /openapi.json POST hello response uses `$ref to Output schema"
 
     # Schema content — Input must have properties.name with type string
-    $inputSchema = $json.components.schemas.greetings_hello_Input
+    $inputSchema = $json.components.schemas['greetings_hello_world_Input']
     $hasInputName = ($null -ne $inputSchema.properties) -and ($null -ne $inputSchema.properties.name)
     Assert-True $hasInputName `
-        "$ImplName /openapi.json greetings_hello_Input has properties.name"
+        "$ImplName /openapi.json greetings_hello_world_Input has properties.name"
 
     if ($hasInputName) {
         Assert-True ($inputSchema.properties.name.type -eq 'string') `
-            "$ImplName /openapi.json greetings_hello_Input.name type is 'string'"
+            "$ImplName /openapi.json greetings_hello_world_Input.name type is 'string'"
     }
 
     # Schema content — Output must have properties.message with type string
-    $outputSchema = $json.components.schemas.greetings_hello_Output
+    $outputSchema = $json.components.schemas['greetings_hello_world_Output']
     $hasOutputMessage = ($null -ne $outputSchema.properties) -and ($null -ne $outputSchema.properties.message)
     Assert-True $hasOutputMessage `
-        "$ImplName /openapi.json greetings_hello_Output has properties.message"
+        "$ImplName /openapi.json greetings_hello_world_Output has properties.message"
 
     if ($hasOutputMessage) {
         Assert-True ($outputSchema.properties.message.type -eq 'string') `
-            "$ImplName /openapi.json greetings_hello_Output.message type is 'string'"
+            "$ImplName /openapi.json greetings_hello_world_Output.message type is 'string'"
     }
+
+    # ── Time/Now endpoint in OpenAPI ─────────────────────────────────────────
+
+    $timePath = $json.paths.'/api/v1/time/current-time'
+    Assert-True ($null -ne $timePath) `
+        "$ImplName /openapi.json paths has /api/v1/time/current-time"
+
+    Assert-True ($null -ne $timePath.get) `
+        "$ImplName /openapi.json /api/v1/time/current-time has GET operation"
+
+    Assert-True ($schemaNames -contains 'time_current_time_Output') `
+        "$ImplName /openapi.json components.schemas has time_current_time_Output"
 
     return $json
 }
@@ -535,8 +630,8 @@ function Test-OpenApiYaml {
     Assert-True ($body -match 'paths:') `
         "$ImplName /openapi.yaml contains 'paths:' key"
 
-    Assert-True ($body -match '/api/greetings/hello') `
-        "$ImplName /openapi.yaml contains /api/greetings/hello path"
+    Assert-True ($body -match '/api/v1/greetings/hello-world') `
+        "$ImplName /openapi.yaml contains /api/v1/greetings/hello-world path"
 
     Assert-True ($body -match 'components:') `
         "$ImplName /openapi.yaml contains 'components:' section"
@@ -569,6 +664,9 @@ function Test-Implementation {
         UseCaseEmptyName   = Test-UseCaseValidationFailure -ImplName $Name -BaseUrl $BaseUrl
         UseCaseMissingBody = Test-UseCaseMissingBody       -ImplName $Name -BaseUrl $BaseUrl
         UseCaseWrongType   = Test-UseCaseWrongType         -ImplName $Name -BaseUrl $BaseUrl
+        TimeNowDefault     = Test-TimeNowDefault           -ImplName $Name -BaseUrl $BaseUrl
+        TimeNowWithOffset  = Test-TimeNowWithOffset        -ImplName $Name -BaseUrl $BaseUrl
+        TimeNowInvalidTz   = Test-TimeNowInvalidTz         -ImplName $Name -BaseUrl $BaseUrl
         OpenApiJson        = Test-OpenApiJson              -ImplName $Name -BaseUrl $BaseUrl
         OpenApiYaml        = Test-OpenApiYaml              -ImplName $Name -BaseUrl $BaseUrl
     }
@@ -656,6 +754,32 @@ function Compare-Implementations {
         $script:failures += 'UseCase wrong-type error parity skipped — missing data'
     }
 
+    # ── Time/Now parity ──────────────────────────────────────────────────────
+    # Offset must be identical when a fixed tz param is used.
+    # Datetime values are NOT compared — each server's clock may differ by milliseconds.
+
+    if ($Dart.TimeNowWithOffset -and $TypeScript.TimeNowWithOffset -and $Python.TimeNowWithOffset) {
+        Assert-True (
+            ($Dart.TimeNowWithOffset.offset -eq $TypeScript.TimeNowWithOffset.offset) -and
+            ($Dart.TimeNowWithOffset.offset -eq $Python.TimeNowWithOffset.offset)
+        ) 'Time/now offset identical across implementations (utc-5)'
+    } else {
+        Write-Fail 'Time/now offset identical across implementations (skipped — missing data)'
+        $script:totalTests++; $script:failedTests++
+        $script:failures += 'Time/now offset parity skipped — missing data'
+    }
+
+    if ($Dart.TimeNowInvalidTz -and $TypeScript.TimeNowInvalidTz -and $Python.TimeNowInvalidTz) {
+        Assert-True (
+            ($Dart.TimeNowInvalidTz.error -eq $TypeScript.TimeNowInvalidTz.error) -and
+            ($Dart.TimeNowInvalidTz.error -eq $Python.TimeNowInvalidTz.error)
+        ) 'Time/now invalid tz error identical across implementations'
+    } else {
+        Write-Fail 'Time/now invalid tz error identical across implementations (skipped — missing data)'
+        $script:totalTests++; $script:failedTests++
+        $script:failures += 'Time/now invalid tz error parity skipped — missing data'
+    }
+
     # ── OpenAPI JSON structural parity ───────────────────────────────────────
 
     Assert-True (
@@ -709,21 +833,21 @@ function Compare-Implementations {
     # ── Schema content parity (properties, types, required) ──────────────────
     # Dart is the reference — TS and Python must produce identical schema content.
 
-    $dartInputJson  = $Dart.OpenApiJson.components.schemas.greetings_hello_Input       | ConvertTo-Json -Depth 10 -Compress
-    $tsInputJson    = $TypeScript.OpenApiJson.components.schemas.greetings_hello_Input  | ConvertTo-Json -Depth 10 -Compress
-    $pyInputJson    = $Python.OpenApiJson.components.schemas.greetings_hello_Input      | ConvertTo-Json -Depth 10 -Compress
+    $dartInputJson  = $Dart.OpenApiJson.components.schemas['greetings_hello_world_Input']       | ConvertTo-Json -Depth 10 -Compress
+    $tsInputJson    = $TypeScript.OpenApiJson.components.schemas['greetings_hello_world_Input']  | ConvertTo-Json -Depth 10 -Compress
+    $pyInputJson    = $Python.OpenApiJson.components.schemas['greetings_hello_world_Input']      | ConvertTo-Json -Depth 10 -Compress
 
     Assert-True (
         ($dartInputJson -eq $tsInputJson) -and ($dartInputJson -eq $pyInputJson)
-    ) 'OpenAPI greetings_hello_Input schema content identical across implementations'
+    ) 'OpenAPI greetings_hello_world_Input schema content identical across implementations'
 
-    $dartOutputJson  = $Dart.OpenApiJson.components.schemas.greetings_hello_Output       | ConvertTo-Json -Depth 10 -Compress
-    $tsOutputJson    = $TypeScript.OpenApiJson.components.schemas.greetings_hello_Output  | ConvertTo-Json -Depth 10 -Compress
-    $pyOutputJson    = $Python.OpenApiJson.components.schemas.greetings_hello_Output      | ConvertTo-Json -Depth 10 -Compress
+    $dartOutputJson  = $Dart.OpenApiJson.components.schemas['greetings_hello_world_Output']       | ConvertTo-Json -Depth 10 -Compress
+    $tsOutputJson    = $TypeScript.OpenApiJson.components.schemas['greetings_hello_world_Output']  | ConvertTo-Json -Depth 10 -Compress
+    $pyOutputJson    = $Python.OpenApiJson.components.schemas['greetings_hello_world_Output']      | ConvertTo-Json -Depth 10 -Compress
 
     Assert-True (
         ($dartOutputJson -eq $tsOutputJson) -and ($dartOutputJson -eq $pyOutputJson)
-    ) 'OpenAPI greetings_hello_Output schema content identical across implementations'
+    ) 'OpenAPI greetings_hello_world_Output schema content identical across implementations'
 
     # ── Metrics format parity ────────────────────────────────────────────────
 
@@ -738,7 +862,7 @@ function Compare-Implementations {
 
     # ── OpenAPI YAML parity ──────────────────────────────────────────────────
 
-    $yamlKeywords = @('openapi:', 'info:', 'paths:', '/api/greetings/hello')
+    $yamlKeywords = @('openapi:', 'info:', 'paths:', '/api/v1/greetings/hello-world', '/api/v1/time/current-time')
     foreach ($keyword in $yamlKeywords) {
         $dartHas = $Dart.OpenApiYaml       -match [regex]::Escape($keyword)
         $tsHas   = $TypeScript.OpenApiYaml -match [regex]::Escape($keyword)
