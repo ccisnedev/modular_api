@@ -1,0 +1,36 @@
+{
+  "name": "@macss/docs-ui",
+  "version": "0.1.1",
+  "description": "Self-contained API documentation UI for modular_api — wraps Swagger UI with system-aware dark mode.",
+  "main": "dist/docs-ui.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vite build && vitest run",
+    "test:unit": "vitest run"
+  },
+  "keywords": [
+    "swagger-ui",
+    "openapi",
+    "docs",
+    "dark-mode"
+  ],
+  "author": "ccisne.dev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/macss-dev/modular_api.git",
+    "directory": "docs-ui"
+  },
+  "bugs": {
+    "url": "https://github.com/macss-dev/modular_api/issues"
+  },
+  "homepage": "https://github.com/macss-dev/modular_api/tree/main/docs-ui#readme",
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "vitest": "^4.0.0"
+  }
+}

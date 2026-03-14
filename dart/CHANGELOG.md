@@ -6,6 +6,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+## [0.4.4] - 2026-03-14
+
+### Changed
+
+- **Swagger UI replaced with `@macss/docs-ui`** — the ~200-line inline HTML/CSS/JS reduced to a ~15-line bootloader that loads `@macss/docs-ui@0.1` from jsdelivr CDN
+- Dark mode now delegated to `docs-ui` package — single source of truth across all three SDKs
+
 ## [0.4.3] - 2026-03-13
 
 ### Changed (BREAKING)

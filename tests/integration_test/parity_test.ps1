@@ -216,14 +216,14 @@ function Test-DocsEndpoint {
         "$ImplName /docs Content-Type contains text/html"
 
     $body = $response.Body
-    Assert-True ($body -match 'swagger-ui-dist@5') `
-        "$ImplName /docs body contains swagger-ui-dist@5 CDN reference"
+    Assert-True ($body -match '@macss/docs-ui') `
+        "$ImplName /docs body contains @macss/docs-ui CDN reference"
 
-    Assert-True ($body -match 'swagger-ui-bundle\.js') `
-        "$ImplName /docs body contains swagger-ui-bundle.js"
+    Assert-True ($body -match 'DocsUI\.init') `
+        "$ImplName /docs body contains DocsUI.init bootloader"
 
-    Assert-True ($body -match 'url:\s*"/openapi\.json"') `
-        "$ImplName /docs body points Swagger UI at /openapi.json"
+    Assert-True ($body -match '/openapi\.json') `
+        "$ImplName /docs body points at /openapi.json"
 
     Assert-True ($body -match '<title>Modular API') `
         "$ImplName /docs title is 'Modular API'"
@@ -803,7 +803,7 @@ function Compare-Implementations {
 
     # ── Swagger UI docs parity (PRD-003) ──────────────────────────────────────
 
-    $swaggerKeywords = @('swagger-ui-dist@5', 'swagger-ui-bundle.js', '<title>Modular API', 'prefers-color-scheme: dark', '--bg-primary', '#49cc90')
+    $swaggerKeywords = @('@macss/docs-ui', 'DocsUI.init', '<title>Modular API')
     foreach ($keyword in $swaggerKeywords) {
         $dartHas = $Dart.Docs       -match [regex]::Escape($keyword)
         $tsHas   = $TypeScript.Docs -match [regex]::Escape($keyword)
