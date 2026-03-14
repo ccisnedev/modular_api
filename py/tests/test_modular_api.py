@@ -205,7 +205,7 @@ class TestAutoMountedEndpoints:
         response = client.get("/docs")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
-        assert "swagger-ui-dist@5" in response.text
+        assert "@macss/docs-ui" in response.text
         assert "Test API" in response.text
 
 
