@@ -15,7 +15,6 @@ library;
 
 import 'package:modular_api/modular_api.dart';
 
-
 // ─── Server ───────────────────────────────────────────────────────────────────
 
 Future<void> main(List<String> args) async {
@@ -79,7 +78,8 @@ class HelloInput extends Input {
 
   @override
   List<SchemaField> get schemaFields => [
-        SchemaField.string('name', description: 'Name to greet', example: 'World'),
+        SchemaField.string('name',
+            description: 'Name to greet', example: 'World'),
       ];
 
   /// Example instance for schema extraction and Swagger UI.
@@ -105,7 +105,8 @@ class HelloOutput extends Output {
 
   @override
   List<SchemaField> get schemaFields => [
-        SchemaField.string('message', description: 'Greeting message', example: 'Hello, World!'),
+        SchemaField.string('message',
+            description: 'Greeting message', example: 'Hello, World!'),
       ];
 
   /// Example instance for schema extraction and Swagger UI.

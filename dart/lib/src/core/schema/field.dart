@@ -58,16 +58,20 @@ class SchemaField {
     this.example,
   });
 
-  factory SchemaField.string(String name, {String? description, dynamic example}) =>
+  factory SchemaField.string(String name,
+          {String? description, dynamic example}) =>
       SchemaField(name, 'string', description: description, example: example);
 
-  factory SchemaField.integer(String name, {String? description, dynamic example}) =>
+  factory SchemaField.integer(String name,
+          {String? description, dynamic example}) =>
       SchemaField(name, 'integer', description: description, example: example);
 
-  factory SchemaField.number(String name, {String? description, dynamic example}) =>
+  factory SchemaField.number(String name,
+          {String? description, dynamic example}) =>
       SchemaField(name, 'number', description: description, example: example);
 
-  factory SchemaField.boolean(String name, {String? description, dynamic example}) =>
+  factory SchemaField.boolean(String name,
+          {String? description, dynamic example}) =>
       SchemaField(name, 'boolean', description: description, example: example);
 
   factory SchemaField.array(
@@ -76,7 +80,8 @@ class SchemaField {
     String? description,
     dynamic example,
   }) =>
-      SchemaField(name, 'array', description: description, items: itemType, example: example);
+      SchemaField(name, 'array',
+          description: description, items: itemType, example: example);
 
   factory SchemaField.optional(SchemaField inner) => SchemaField(
         inner.name,

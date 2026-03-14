@@ -51,8 +51,7 @@ void main() {
       final schema = buildSchema([
         SchemaField.string('name',
             description: 'Name to greet', example: 'Sebastián'),
-        SchemaField.integer('age',
-            description: 'User age', example: 25),
+        SchemaField.integer('age', description: 'User age', example: 25),
       ]);
 
       final nameProps = schema['properties']['name'] as Map;

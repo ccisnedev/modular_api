@@ -50,7 +50,8 @@ class StrictInput extends Input {
         SchemaField.integer('age', example: 30),
         SchemaField.number('score', example: 9.5),
         SchemaField.boolean('active', example: true),
-        SchemaField.array('tags', SchemaField.string('item'), example: ['dart']),
+        SchemaField.array('tags', SchemaField.string('item'),
+            example: ['dart']),
       ];
 
   static StrictInput get example => StrictInput(
@@ -235,7 +236,8 @@ void main() {
 
     // ── Pre-validation protects strict fromJson ──
 
-    test('pre-validates BEFORE fromJson — strict factory never crashes', () async {
+    test('pre-validates BEFORE fromJson — strict factory never crashes',
+        () async {
       // Without pre-validation, this would crash in StrictInput.fromJson
       // because 'age' is a String, not int → `as int` would throw TypeError.
       // With pre-validation, handler returns 400 cleanly.
