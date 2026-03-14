@@ -2,10 +2,10 @@
 
 import 'package:modular_api/modular_api.dart';
 
-class HelloInput extends Input {
+class HelloWorldInput extends Input {
   final String name;
 
-  HelloInput({required this.name});
+  HelloWorldInput({required this.name});
 
   @override
   Map<String, dynamic> toJson() => {'name': name};
@@ -17,15 +17,15 @@ class HelloInput extends Input {
       ];
 
   /// Example instance for schema extraction and Swagger UI.
-  static HelloInput get example => HelloInput(name: 'World');
+  static HelloWorldInput get example => HelloWorldInput(name: 'World');
 }
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
 
-class HelloOutput extends Output {
+class HelloWorldOutput extends Output {
   final String message;
 
-  HelloOutput({required this.message});
+  HelloWorldOutput({required this.message});
 
   @override
   int get statusCode => 200;
@@ -40,14 +40,14 @@ class HelloOutput extends Output {
       ];
 
   /// Example instance for schema extraction and Swagger UI.
-  static HelloOutput get example => HelloOutput(message: 'Hello, World!');
+  static HelloWorldOutput get example => HelloWorldOutput(message: 'Hello, World!');
 }
 
 // ─── UseCase ──────────────────────────────────────────────────────────────────
 
-class HelloWorld implements UseCase<HelloInput, HelloOutput> {
+class HelloWorld implements UseCase<HelloWorldInput, HelloWorldOutput> {
   @override
-  final HelloInput input;
+  final HelloWorldInput input;
 
   @override
   ModularLogger? logger;
@@ -56,7 +56,7 @@ class HelloWorld implements UseCase<HelloInput, HelloOutput> {
 
   static HelloWorld fromJson(Map<String, dynamic> json) {
     return HelloWorld(
-      input: HelloInput(
+      input: HelloWorldInput(
         name: json['name'],
       )
     );
@@ -71,8 +71,8 @@ class HelloWorld implements UseCase<HelloInput, HelloOutput> {
   }
 
   @override
-  Future<HelloOutput> execute() async {
+  Future<HelloWorldOutput> execute() async {
     logger?.info('Greeting user: ${input.name}');
-    return HelloOutput(message: 'Hello, ${input.name}!');
+    return HelloWorldOutput(message: 'Hello, ${input.name}!');
   }
 }

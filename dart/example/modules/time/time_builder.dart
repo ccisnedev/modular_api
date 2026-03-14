@@ -1,13 +1,13 @@
 import 'package:modular_api/modular_api.dart';
 
-import 'usecases/now.dart';
+import 'usecases/current_time.dart';
 
 void buildTimeModule(ModuleBuilder m) {
   m.usecase(
-    'now',
+    'current-time',
     CurrentTime.fromJson,
-    inputExample: TimeInput.example,
-    outputExample: TimeOutput.example,
+    inputExample: CurrentTimeInput.example,
+    outputExample: CurrentTimeOutput.example,
     method: 'GET',
   );
 }

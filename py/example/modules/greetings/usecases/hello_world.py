@@ -6,14 +6,14 @@ from modular_api import Input, Output, UseCase, Field
 # ── Input DTO ─────────────────────────────────────────────────
 
 
-class HelloInput(Input):
+class HelloWorldInput(Input):
     name: str = Field(description="Name to greet", examples=["World"])
 
 
 # ── Output DTO ────────────────────────────────────────────────
 
 
-class HelloOutput(Output):
+class HelloWorldOutput(Output):
     message: str = Field(description="Greeting message", examples=["Hello, World!"])
 
     @property
@@ -24,23 +24,23 @@ class HelloOutput(Output):
 # ── UseCase ───────────────────────────────────────────────────
 
 
-class HelloWorld(UseCase[HelloInput, HelloOutput]):
-    def __init__(self, input_dto: HelloInput) -> None:
+class HelloWorld(UseCase[HelloWorldInput, HelloWorldOutput]):
+    def __init__(self, input_dto: HelloWorldInput) -> None:
         self._input = input_dto
 
     @property
-    def input(self) -> HelloInput:
+    def input(self) -> HelloWorldInput:
         return self._input
 
     @classmethod
     def from_json(cls, json: dict[str, object]) -> HelloWorld:
-        return cls(HelloInput.from_json(json))
+        return cls(HelloWorldInput.from_json(json))
 
     def validate(self) -> str | None:
         if not self.input.name:
             return "name is required"
         return None
 
-    async def execute(self) -> HelloOutput:
+    async def execute(self) -> HelloWorldOutput:
         self.logger.info(f"Greeting user: {self.input.name}")
-        return HelloOutput(message=f"Hello, {self.input.name}!")
+        return HelloWorldOutput(message=f"Hello, {self.input.name}!")

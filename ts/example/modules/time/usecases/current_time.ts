@@ -2,14 +2,14 @@ import { Input, Output, UseCase, Field, ModularLogger } from '../../../../src/in
 
 // ─── Input DTO ────────────────────────────────────────────────────────────────
 
-export class TimeInput extends Input {
+export class CurrentTimeInput extends Input {
   @Field.optional(Field.string({ description: 'Timezone offset (e.g. utc-5, utc+3, utc)', example: 'utc-5' }))
   tz?: string;
 }
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
 
-export class TimeOutput extends Output {
+export class CurrentTimeOutput extends Output {
   @Field.string({ description: 'ISO 8601 datetime at the requested offset', example: '2026-03-14T07:00:00' })
   datetime!: string;
 
@@ -23,16 +23,16 @@ export class TimeOutput extends Output {
 
 // ─── UseCase ──────────────────────────────────────────────────────────────────
 
-export class CurrentTime implements UseCase<TimeInput, TimeOutput> {
-  readonly input: TimeInput;
+export class CurrentTime implements UseCase<CurrentTimeInput, CurrentTimeOutput> {
+  readonly input: CurrentTimeInput;
   logger?: ModularLogger;
 
-  constructor(input: TimeInput) {
+  constructor(input: CurrentTimeInput) {
     this.input = input;
   }
 
   static fromJson(json: Record<string, unknown>): CurrentTime {
-    const input = new TimeInput();
+    const input = new CurrentTimeInput();
     input.tz = json['tz'] != null ? String(json['tz']) : undefined;
     return new CurrentTime(input);
   }
@@ -45,7 +45,7 @@ export class CurrentTime implements UseCase<TimeInput, TimeOutput> {
     return null;
   }
 
-  async execute(): Promise<TimeOutput> {
+  async execute(): Promise<CurrentTimeOutput> {
     const now = new Date();
     const offsetHours = this.input.tz
       ? CurrentTime.parseOffset(this.input.tz)!
@@ -54,7 +54,7 @@ export class CurrentTime implements UseCase<TimeInput, TimeOutput> {
     const iso = adjusted.toISOString().split('.')[0];
 
     this.logger?.info(`Time requested for offset ${offsetHours}`);
-    const output = new TimeOutput();
+    const output = new CurrentTimeOutput();
     output.datetime = iso;
     output.offset = offsetHours;
     return output;

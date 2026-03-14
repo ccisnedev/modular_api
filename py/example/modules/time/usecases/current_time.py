@@ -8,7 +8,7 @@ from modular_api import Field, Input, Output, UseCase
 # ── Input DTO ─────────────────────────────────────────────────
 
 
-class TimeInput(Input):
+class CurrentTimeInput(Input):
     tz: str | None = Field(
         default=None,
         description="Timezone offset (e.g. utc-5, utc+3, utc)",
@@ -19,7 +19,7 @@ class TimeInput(Input):
 # ── Output DTO ────────────────────────────────────────────────
 
 
-class TimeOutput(Output):
+class CurrentTimeOutput(Output):
     datetime: str = Field(
         description="ISO 8601 datetime at the requested offset",
         examples=["2026-03-14T07:00:00"],
@@ -36,17 +36,17 @@ class TimeOutput(Output):
 _OFFSET_RE = re.compile(r"^utc([+-]\d{1,2})$", re.IGNORECASE)
 
 
-class CurrentTime(UseCase[TimeInput, TimeOutput]):
-    def __init__(self, input_dto: TimeInput) -> None:
+class CurrentTime(UseCase[CurrentTimeInput, CurrentTimeOutput]):
+    def __init__(self, input_dto: CurrentTimeInput) -> None:
         self._input = input_dto
 
     @property
-    def input(self) -> TimeInput:
+    def input(self) -> CurrentTimeInput:
         return self._input
 
     @classmethod
     def from_json(cls, json: dict[str, object]) -> CurrentTime:
-        return cls(TimeInput.from_json(json))
+        return cls(CurrentTimeInput.from_json(json))
 
     def validate(self) -> str | None:
         if not self.input.tz:
@@ -58,7 +58,7 @@ class CurrentTime(UseCase[TimeInput, TimeOutput]):
             return "offset must be between -12 and +14"
         return None
 
-    async def execute(self) -> TimeOutput:
+    async def execute(self) -> CurrentTimeOutput:
         from datetime import datetime, timezone, timedelta
 
         now_utc = datetime.now(tz=timezone.utc)
@@ -73,7 +73,7 @@ class CurrentTime(UseCase[TimeInput, TimeOutput]):
         iso = adjusted.strftime("%Y-%m-%dT%H:%M:%S")
 
         self.logger.info(f"Time requested for offset {offset_hours}")
-        return TimeOutput(datetime=iso, offset=offset_hours)  # type: ignore[arg-type]
+        return CurrentTimeOutput(datetime=iso, offset=offset_hours)  # type: ignore[arg-type]
 
     @staticmethod
     def _parse_offset(tz: str) -> int | None:

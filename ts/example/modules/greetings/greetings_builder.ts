@@ -1,9 +1,9 @@
 import { ModuleBuilder } from '../../../src/index';
-import { HelloInput, HelloOutput, HelloWorld } from './usecases/hello_world';
+import { HelloWorldInput, HelloWorldOutput, HelloWorld } from './usecases/hello_world';
 
 export function buildGreetingsModule(m: ModuleBuilder): void {
-  m.usecase('hello', HelloWorld.fromJson, {
-    inputClass: HelloInput,
-    outputClass: HelloOutput,
+  m.usecase('hello-world', HelloWorld.fromJson, {
+    inputClass: HelloWorldInput,
+    outputClass: HelloWorldOutput,
   });
 }
