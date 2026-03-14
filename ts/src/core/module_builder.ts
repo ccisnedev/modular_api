@@ -22,6 +22,10 @@ export interface UseCaseOptions {
   inputSchema?: Record<string, unknown>;
   /** Override output schema for OpenAPI (if fromJson fails with empty data) */
   outputSchema?: Record<string, unknown>;
+  /** Input class for pre-validation and schema extraction (enables strict fromJson). */
+  inputClass?: abstract new (...args: unknown[]) => Input;
+  /** Output class for schema extraction. */
+  outputClass?: abstract new (...args: unknown[]) => Output;
 }
 
 /**
@@ -61,18 +65,18 @@ export class ModuleBuilder {
     factory: UseCaseFactory<I, O>,
     options: UseCaseOptions = {},
   ): this {
-    const { method = 'POST', summary, description, inputSchema, outputSchema } = options;
+    const { method = 'POST', summary, description, inputSchema, outputSchema, inputClass, outputClass } = options;
 
     // Normalize name: trim and remove leading slash
-    const cleanName = name.trim().replace(/^\//, '');
+    const cleanName = name.trim().replace(/^\//g, '');
     const subPath = `/${cleanName}`;
     const methodL = method.toLowerCase() as Lowercase<HttpMethod>;
 
-    // Mount the Express handler
-    this.router[methodL](subPath, useCaseHandler(factory));
+    // Mount the Express handler (with optional pre-validation)
+    this.router[methodL](subPath, useCaseHandler(factory, { inputClass }));
 
-    // Try to capture schemas via dummy factory call, or use overrides
-    const extracted = this._extractSchemas(factory);
+    // Try to capture schemas — prefer class-level metadata, then dummy factory
+    const extracted = this._extractSchemas(factory, inputClass, outputClass);
     const schemas = {
       input: inputSchema ?? extracted.input,
       output: outputSchema ?? extracted.output,
@@ -100,37 +104,55 @@ export class ModuleBuilder {
    * Capture Input and Output schemas from decorator metadata or a dummy factory call.
    *
    * Strategy (in order of preference):
-   * 1. Class-level: inspect factory → UseCase class → Input/Output type args
-   *    → @Field metadata → build schema without instantiation.
+   * 1. Class-level: inputClass/outputClass → @Field metadata → build schema.
    * 2. Fallback: call factory({}) and invoke toSchema() on the result (legacy).
    */
   private _extractSchemas<I extends Input, O extends Output>(
     factory: UseCaseFactory<I, O>,
+    inputClass?: abstract new (...args: unknown[]) => Input,
+    outputClass?: abstract new (...args: unknown[]) => Output,
   ): { input: Record<string, unknown>; output: Record<string, unknown> } {
-    // --- Strategy 1: class-level via factory({}) instance types ---
-    // For bound static methods, we can get the UseCase class and try
-    // to extract schemas from the Input/Output via decorator metadata.
-    let instance: UseCase<I, O> | undefined;
-    try {
-      instance = factory({});
-    } catch {
-      // Factory failed — that's fine, we still try class-level.
-    }
-
     let input: Record<string, unknown> = {};
     let output: Record<string, unknown> = {};
 
-    if (instance) {
+    // Strategy 1: class-level via @Field metadata (no instantiation needed)
+    if (inputClass) {
+      const fields = getFieldMetadata(inputClass);
+      if (fields.length > 0) {
+        input = new (inputClass as new () => Input)().toSchema();
+      }
+    }
+    if (outputClass) {
+      const fields = getFieldMetadata(outputClass);
+      if (fields.length > 0) {
+        output = new (outputClass as new () => Output)().toSchema();
+      }
+    }
+
+    // Strategy 2 fallback: dummy factory call
+    if (Object.keys(input).length === 0 || Object.keys(output).length === 0) {
+      let instance: UseCase<I, O> | undefined;
       try {
-        input = instance.input.toSchema();
+        instance = factory({});
       } catch {
-        // toSchema() not available — keep empty.
+        // Factory failed — that's fine.
       }
 
-      try {
-        output = instance.output.toSchema();
-      } catch {
-        // Output not initialised until execute() — expected for most UseCases.
+      if (instance) {
+        if (Object.keys(input).length === 0) {
+          try {
+            input = instance.input.toSchema();
+          } catch {
+            // toSchema() not available — keep empty.
+          }
+        }
+        if (Object.keys(output).length === 0) {
+          try {
+            output = instance.output.toSchema();
+          } catch {
+            // Output not initialised until execute() — expected for most UseCases.
+          }
+        }
       }
     }
 
