@@ -21,80 +21,11 @@ from __future__ import annotations
 
 import sys
 
-from modular_api import (
-    HealthCheck,
-    HealthCheckResult,
-    HealthStatus,
-    Input,
-    LogLevel,
-    ModularApi,
-    ModuleBuilder,
-    Output,
-    UseCase,
-    Field,
-)
+from modular_api import LogLevel, ModularApi
 
-
-# ── Module builder ────────────────────────────────────────────
-
-
-def build_greetings_module(m: ModuleBuilder) -> None:
-    m.usecase("hello", HelloWorld.from_json)
-
-
-# ── Input DTO ─────────────────────────────────────────────────
-
-
-class HelloInput(Input):
-    name: str = Field(description="Name to greet", examples=["World"])
-
-
-# ── Output DTO ────────────────────────────────────────────────
-
-
-class HelloOutput(Output):
-    message: str = Field(description="Greeting message", examples=["Hello, World!"])
-
-    @property
-    def status_code(self) -> int:
-        return 200
-
-
-# ── UseCase ───────────────────────────────────────────────────
-
-
-class HelloWorld(UseCase[HelloInput, HelloOutput]):
-    def __init__(self, input_dto: HelloInput) -> None:
-        self._input = input_dto
-
-    @property
-    def input(self) -> HelloInput:
-        return self._input
-
-    @classmethod
-    def from_json(cls, json: dict[str, object]) -> HelloWorld:
-        return cls(HelloInput.from_json(json))
-
-    def validate(self) -> str | None:
-        if not self.input.name:
-            return "name is required"
-        return None
-
-    async def execute(self) -> HelloOutput:
-        self.logger.info(f"Greeting user: {self.input.name}")
-        return HelloOutput(message=f"Hello, {self.input.name}!")
-
-
-# ── Health check ──────────────────────────────────────────────
-
-
-class AlwaysPassHealthCheck(HealthCheck):
-    @property
-    def name(self) -> str:
-        return "example"
-
-    async def check(self) -> HealthCheckResult:
-        return HealthCheckResult(status=HealthStatus.PASS)
+from .health.always_pass_health_check import AlwaysPassHealthCheck
+from .modules.greetings.greetings_builder import build_greetings_module
+from .modules.time.time_builder import build_time_module
 
 
 # ── Server ────────────────────────────────────────────────────
@@ -121,6 +52,7 @@ def main() -> None:
         )
 
     api.module("greetings", build_greetings_module)
+    api.module("time", build_time_module)
 
     api.serve(port=port)
 
