@@ -32,24 +32,16 @@ class _PingOutput(Output):
 class _PingUseCase(UseCase[_PingInput, _PingOutput]):
     def __init__(self, inp: _PingInput) -> None:
         self._input = inp
-        self._output = _PingOutput()
 
     @property
     def input(self) -> _PingInput:
         return self._input
 
-    @property
-    def output(self) -> _PingOutput:
-        return self._output
-
     def validate(self) -> str | None:
         return None
 
-    async def execute(self) -> None:
-        self._output = _PingOutput()
-
-    def to_json(self) -> dict:
-        return self.output.to_json()
+    async def execute(self) -> _PingOutput:
+        return _PingOutput()
 
     @staticmethod
     def from_json(json: dict) -> _PingUseCase:

@@ -32,15 +32,10 @@ class SumUseCase(UseCase[SumInput, SumOutput]):
 
     def __init__(self, input_dto: SumInput) -> None:
         self._input = input_dto
-        self._output = SumOutput(resultado=0)
 
     @property
     def input(self) -> SumInput:
         return self._input
-
-    @property
-    def output(self) -> SumOutput:
-        return self._output
 
     def validate(self) -> str | None:
         if self._input.a is None:
@@ -49,13 +44,10 @@ class SumUseCase(UseCase[SumInput, SumOutput]):
             return "b is required"
         return None
 
-    async def execute(self) -> None:
+    async def execute(self) -> SumOutput:
         a = self._input.a or 0
         b = self._input.b or 0
-        self._output = SumOutput(resultado=a + b)
-
-    def to_json(self) -> dict[str, object]:
-        return self._output.to_json()
+        return SumOutput(resultado=a + b)
 
 
 # ── Input tests ─────────────────────────────────────────────────────
@@ -116,16 +108,16 @@ class TestUseCase:
         uc = SumUseCase(SumInput(a=5, b=None))
         assert uc.validate() is not None
 
-    async def test_execute_sets_output(self) -> None:
+    async def test_execute_returns_output(self) -> None:
         uc = SumUseCase(SumInput(a=3, b=4))
         assert uc.validate() is None
-        await uc.execute()
-        assert uc.output.resultado == 7
+        output = await uc.execute()
+        assert output.resultado == 7
 
-    async def test_to_json_returns_output_json(self) -> None:
+    async def test_execute_output_serializes(self) -> None:
         uc = SumUseCase(SumInput(a=10, b=20))
-        await uc.execute()
-        assert uc.to_json() == {"resultado": 30}
+        output = await uc.execute()
+        assert output.to_json() == {"resultado": 30}
 
     def test_logger_defaults_to_none(self) -> None:
         uc = SumUseCase(SumInput(a=1, b=2))
