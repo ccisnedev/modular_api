@@ -246,49 +246,25 @@ class OpenApi {
     return const JsonEncoder.withIndent('  ').convert(spec);
   }
 
-  /// Extracts the input schema, preferring the registered example instance.
+  /// Extracts the input schema from the required example instance.
   ///
-  /// When [inputExample] is provided, the schema is built from the example
-  /// (via schemaFields or type inference) and `schema['example']` is set to
-  /// the example's serialized JSON. No `factory({})` call needed.
-  /// Falls back to `factory({})` when no example is registered.
+  /// The schema is built from the example (via schemaFields or type inference)
+  /// and `schema['example']` is set to the example's serialized JSON.
   static Map<String, dynamic> _inferInputSchema(UseCaseRegistration r) {
-    if (r.inputExample != null) {
-      final schema = r.inputExample!.toSchema();
-      if (schema['type'] == null) schema['type'] = 'object';
-      final exampleJson = r.inputExample!.toJson();
-      if (exampleJson.isNotEmpty) schema['example'] = exampleJson;
-      return schema;
-    }
-
-    try {
-      final uc = r.factory(<String, dynamic>{});
-      final schema = uc.input.toSchema();
-      if (schema['type'] == null) schema['type'] = 'object';
-      return schema;
-    } catch (_) {
-      return {'type': 'object', 'properties': {}};
-    }
+    final schema = r.inputExample.toSchema();
+    if (schema['type'] == null) schema['type'] = 'object';
+    final exampleJson = r.inputExample.toJson();
+    if (exampleJson.isNotEmpty) schema['example'] = exampleJson;
+    return schema;
   }
 
-  /// Extracts the output schema, preferring the registered example instance.
+  /// Extracts the output schema from the required example instance.
   static Map<String, dynamic> _inferOutputSchema(UseCaseRegistration r) {
-    if (r.outputExample != null) {
-      final schema = r.outputExample!.toSchema();
-      if (schema['type'] == null) schema['type'] = 'object';
-      final exampleJson = r.outputExample!.toJson();
-      if (exampleJson.isNotEmpty) schema['example'] = exampleJson;
-      return schema;
-    }
-
-    try {
-      final uc = r.factory(<String, dynamic>{});
-      final schema = uc.output.toSchema();
-      if (schema['type'] == null) schema['type'] = 'object';
-      return schema;
-    } catch (_) {
-      return {'type': 'object', 'properties': {}};
-    }
+    final schema = r.outputExample.toSchema();
+    if (schema['type'] == null) schema['type'] = 'object';
+    final exampleJson = r.outputExample.toJson();
+    if (exampleJson.isNotEmpty) schema['example'] = exampleJson;
+    return schema;
   }
 
   /// Converts a flat schema into query parameters (top-level properties only).
