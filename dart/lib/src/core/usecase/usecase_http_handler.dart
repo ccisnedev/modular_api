@@ -10,8 +10,15 @@ import 'usecase.dart';
 import 'use_case_exception.dart';
 
 /// Generic handler for any UseCase
-Handler useCaseHttpHandler(UseCase Function(Map<String, dynamic>) fromJson) {
+Handler useCaseHttpHandler(
+  UseCase Function(Map<String, dynamic>) fromJson, {
+  Input? inputExample,
+}) {
   const jsonHeaders = {'content-type': 'application/json; charset=utf-8'};
+
+  // Capture schema at creation time — enables pre-validation
+  // before fromJson, so strict factories never crash.
+  final preValidationFields = inputExample?.schemaFields;
 
   return (Request req) async {
     try {
@@ -20,14 +27,20 @@ Handler useCaseHttpHandler(UseCase Function(Map<String, dynamic>) fromJson) {
           ? await _jsonFromUrl(req)
           : await _jsonFromBody(req);
 
-      // 2. Build and validate the UseCase
+      // 2. Pre-validate BEFORE fromJson (when example provides schema)
+      if (preValidationFields != null) {
+        validateJsonFields(data, preValidationFields);
+      }
+
+      // 3. Build and validate the UseCase
       final useCase = fromJson(data);
 
-      // 2a. Auto-validate raw JSON against schemaFields on the Input DTO.
-      // Runs after fromJson (which may coerce) — validates the ORIGINAL payload.
-      final inputFields = useCase.input.schemaFields;
-      if (inputFields != null) {
-        validateJsonFields(data, inputFields);
+      // 3a. Post-validate for legacy path (no inputExample)
+      if (preValidationFields == null) {
+        final inputFields = useCase.input.schemaFields;
+        if (inputFields != null) {
+          validateJsonFields(data, inputFields);
+        }
       }
 
       final validationError = useCase.validate();

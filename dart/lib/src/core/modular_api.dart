@@ -216,7 +216,7 @@ class ModuleBuilder {
     Input? inputExample,
     Output? outputExample,
   }) {
-    Handler h = useCaseHttpHandler(usecaseFactory);
+    Handler h = useCaseHttpHandler(usecaseFactory, inputExample: inputExample);
 
     /// Clean usecase name
     usecaseName = usecaseName.trim();
