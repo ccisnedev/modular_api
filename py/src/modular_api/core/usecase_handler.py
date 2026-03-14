@@ -104,12 +104,12 @@ def usecase_handler(factory: UseCaseFactory) -> Any:
                 )
 
             # 4. Execute
-            await use_case.execute()
+            output = await use_case.execute()
 
             # 5. Respond
             return Response(
-                content=json.dumps(use_case.to_json()),
-                status_code=use_case.output.status_code,
+                content=json.dumps(output.to_json()),
+                status_code=output.status_code,
                 media_type=_JSON_CONTENT_TYPE,
             )
 

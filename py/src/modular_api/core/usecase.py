@@ -172,8 +172,11 @@ O = TypeVar("O", bound=Output)
 class UseCase(ABC, Generic[I, O]):
     """Contract for business logic units.
 
-    Pure interface: all members must be provided by the implementor.
-    No default behavior is inherited — every UseCase is self-contained.
+    Lifecycle (handled by the framework):
+      1. ``from_json(json)``    — static factory, builds the use case
+      2. ``validate()``         — return error string or ``None``
+      3. ``execute()``          — run business logic, return Output
+      4. handler serializes     — ``output.to_json()`` → HTTP response
     """
 
     # Request-scoped logger injected by the framework before execute().
@@ -186,23 +189,12 @@ class UseCase(ABC, Generic[I, O]):
         """Input DTO — set in constructor."""
         ...
 
-    @property
-    @abstractmethod
-    def output(self) -> O:
-        """Output DTO — set in ``execute()``."""
-        ...
-
     @abstractmethod
     def validate(self) -> str | None:
         """Validate the input. Return an error message or ``None``."""
         ...
 
     @abstractmethod
-    async def execute(self) -> None:
-        """Run the business logic and set ``self.output``."""
-        ...
-
-    @abstractmethod
-    def to_json(self) -> dict[str, object]:
-        """Serialize the output for the HTTP response body."""
+    async def execute(self) -> O:
+        """Run the business logic and return the Output."""
         ...

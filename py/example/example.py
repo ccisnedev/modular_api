@@ -66,19 +66,10 @@ class HelloOutput(Output):
 class HelloWorld(UseCase[HelloInput, HelloOutput]):
     def __init__(self, input_dto: HelloInput) -> None:
         self._input = input_dto
-        self._output = HelloOutput(message="")
 
     @property
     def input(self) -> HelloInput:
         return self._input
-
-    @property
-    def output(self) -> HelloOutput:
-        return self._output
-
-    @output.setter
-    def output(self, value: HelloOutput) -> None:
-        self._output = value
 
     @classmethod
     def from_json(cls, json: dict[str, object]) -> HelloWorld:
@@ -89,12 +80,9 @@ class HelloWorld(UseCase[HelloInput, HelloOutput]):
             return "name is required"
         return None
 
-    async def execute(self) -> None:
+    async def execute(self) -> HelloOutput:
         self.logger.info(f"Greeting user: {self.input.name}")
-        self.output = HelloOutput(message=f"Hello, {self.input.name}!")
-
-    def to_json(self) -> dict[str, object]:
-        return self.output.to_json()
+        return HelloOutput(message=f"Hello, {self.input.name}!")
 
 
 # ── Health check ──────────────────────────────────────────────

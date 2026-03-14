@@ -36,24 +36,16 @@ class _StubUseCase(UseCase[_StubInput, _StubOutput]):
 
     def __init__(self, inp: _StubInput) -> None:
         self._input = inp
-        self._output = _StubOutput()
 
     @property
     def input(self) -> _StubInput:
         return self._input
 
-    @property
-    def output(self) -> _StubOutput:
-        return self._output
-
     def validate(self) -> str | None:
         return None
 
-    async def execute(self) -> None:
-        self._output = _StubOutput()
-
-    def to_json(self) -> dict:
-        return self.output.to_json()
+    async def execute(self) -> _StubOutput:
+        return _StubOutput()
 
     @staticmethod
     def from_json(json: dict) -> _StubUseCase:

@@ -145,16 +145,12 @@ class ModuleBuilder:
     def _extract_schemas(factory: UseCaseFactory) -> dict[str, dict[str, Any]]:
         """Capture Input and Output schemas from a UseCase factory.
 
-        Strategy (in order of preference):
-        1. Class-level extraction via ``to_schema()`` classmethod on BaseModel DTOs.
-           Inspects the factory's type hints to find the Input/Output classes.
-        2. Fallback: instantiate via ``factory({})`` and call ``to_schema()``
-           on the resulting UseCase's input/output (legacy pattern).
+        Uses class-level extraction via ``to_schema()`` classmethod on BaseModel DTOs.
+        Inspects the factory's type hints to find the Input/Output classes.
         """
         input_schema: dict[str, Any] = {}
         output_schema: dict[str, Any] = {}
 
-        # --- Strategy 1: class-level extraction from type hints ---
         return_hint = _get_return_type_hint(factory)
 
         if return_hint is not None:
@@ -171,25 +167,6 @@ class ModuleBuilder:
                     output_schema = output_cls.to_schema()
                 except Exception:
                     pass
-
-            if input_schema or output_schema:
-                return {"input": input_schema, "output": output_schema}
-
-        # --- Strategy 2: legacy factory({}) fallback ---
-        try:
-            instance = factory({})
-        except Exception:
-            return {"input": input_schema, "output": output_schema}
-
-        try:
-            input_schema = instance.input.to_schema()
-        except Exception:
-            pass
-
-        try:
-            output_schema = instance.output.to_schema()
-        except Exception:
-            pass
 
         return {"input": input_schema, "output": output_schema}
 
