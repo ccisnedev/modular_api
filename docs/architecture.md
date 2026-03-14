@@ -56,12 +56,10 @@ with a well-defined lifecycle managed entirely by the framework.
 ```
 UseCase<I extends Input, O extends Output>
 ├── input: I                          // Read-only DTO, set at construction
-├── output: O                         // Write DTO, set during execute()
 ├── logger?: ModularLogger            // Injected by the framework
 ├── fromJson(json) → UseCase          // Static factory (construction)
 ├── validate() → string | null        // Pre-execution validation
-├── execute() → Future<void>          // Business logic
-└── toJson() → Map                    // Serialization of output
+└── execute() → Future<O>             // Business logic, returns Output
 ```
 
 **Lifecycle:**
@@ -86,7 +84,7 @@ sequenceDiagram
             UseCase-->>Framework: UseCaseException
             Framework-->>Client: exception.statusCode + structured error
         else success
-            UseCase-->>Framework: output set
+            UseCase-->>Framework: Output returned
             Framework-->>Client: output.statusCode + output.toJson()
         end
     end
@@ -99,7 +97,7 @@ sequenceDiagram
   the use case from the deserialized HTTP payload.
 - `validate()` MUST return a single error string or `null`. The framework
   returns 400 if non-null.
-- `execute()` MUST set `this.output` before returning. The framework reads
+- `execute()` MUST return an `Output` instance. The framework reads
   `output.toJson()` and `output.statusCode` to build the HTTP response.
 - `logger` is injected by the framework before `execute()` is called.
   Use cases SHOULD use `logger?.info(...)` for structured, request-scoped logging.
