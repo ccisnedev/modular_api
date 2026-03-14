@@ -250,8 +250,7 @@ class ModuleBuilder {
     // Register metadata for Swagger
     UseCaseDocMeta doc = UseCaseDocMeta(
       summary: summary ?? 'Use case $command in module $moduleName',
-      description:
-          description ?? 'Auto-generated documentation for $command',
+      description: description ?? 'Auto-generated documentation for $command',
       tags: [moduleName],
     );
 

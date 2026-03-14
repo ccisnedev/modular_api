@@ -40,7 +40,8 @@ class HelloWorldOutput extends Output {
       ];
 
   /// Example instance for schema extraction and Swagger UI.
-  static HelloWorldOutput get example => HelloWorldOutput(message: 'Hello, World!');
+  static HelloWorldOutput get example =>
+      HelloWorldOutput(message: 'Hello, World!');
 }
 
 // ─── UseCase ──────────────────────────────────────────────────────────────────
@@ -56,10 +57,9 @@ class HelloWorld implements UseCase<HelloWorldInput, HelloWorldOutput> {
 
   static HelloWorld fromJson(Map<String, dynamic> json) {
     return HelloWorld(
-      input: HelloWorldInput(
-        name: json['name'],
-      )
-    );
+        input: HelloWorldInput(
+      name: json['name'],
+    ));
   }
 
   @override
