@@ -557,39 +557,39 @@ function Test-OpenApiJson {
         "$ImplName /openapi.json has components.schemas"
 
     $schemaNames = $json.components.schemas.PSObject.Properties.Name | Sort-Object
-    Assert-True ($schemaNames -contains 'greetings_hello-world_Input') `
-        "$ImplName /openapi.json components.schemas has greetings_hello-world_Input"
+    Assert-True ($schemaNames -contains 'greetings_hello_world_Input') `
+        "$ImplName /openapi.json components.schemas has greetings_hello_world_Input"
 
-    Assert-True ($schemaNames -contains 'greetings_hello-world_Output') `
-        "$ImplName /openapi.json components.schemas has greetings_hello-world_Output"
+    Assert-True ($schemaNames -contains 'greetings_hello_world_Output') `
+        "$ImplName /openapi.json components.schemas has greetings_hello_world_Output"
 
     # requestBody and response must use $ref to components.schemas
-    Assert-True ($requestBodySchema.'$ref' -match 'greetings_hello-world_Input') `
+    Assert-True ($requestBodySchema.'$ref' -match 'greetings_hello_world_Input') `
         "$ImplName /openapi.json POST hello requestBody uses `$ref to Input schema"
 
-    Assert-True ($responseSchema.'$ref' -match 'greetings_hello-world_Output') `
+    Assert-True ($responseSchema.'$ref' -match 'greetings_hello_world_Output') `
         "$ImplName /openapi.json POST hello response uses `$ref to Output schema"
 
     # Schema content — Input must have properties.name with type string
-    $inputSchema = $json.components.schemas['greetings_hello-world_Input']
+    $inputSchema = $json.components.schemas['greetings_hello_world_Input']
     $hasInputName = ($null -ne $inputSchema.properties) -and ($null -ne $inputSchema.properties.name)
     Assert-True $hasInputName `
-        "$ImplName /openapi.json greetings_hello-world_Input has properties.name"
+        "$ImplName /openapi.json greetings_hello_world_Input has properties.name"
 
     if ($hasInputName) {
         Assert-True ($inputSchema.properties.name.type -eq 'string') `
-            "$ImplName /openapi.json greetings_hello-world_Input.name type is 'string'"
+            "$ImplName /openapi.json greetings_hello_world_Input.name type is 'string'"
     }
 
     # Schema content — Output must have properties.message with type string
-    $outputSchema = $json.components.schemas['greetings_hello-world_Output']
+    $outputSchema = $json.components.schemas['greetings_hello_world_Output']
     $hasOutputMessage = ($null -ne $outputSchema.properties) -and ($null -ne $outputSchema.properties.message)
     Assert-True $hasOutputMessage `
-        "$ImplName /openapi.json greetings_hello-world_Output has properties.message"
+        "$ImplName /openapi.json greetings_hello_world_Output has properties.message"
 
     if ($hasOutputMessage) {
         Assert-True ($outputSchema.properties.message.type -eq 'string') `
-            "$ImplName /openapi.json greetings_hello-world_Output.message type is 'string'"
+            "$ImplName /openapi.json greetings_hello_world_Output.message type is 'string'"
     }
 
     # ── Time/Now endpoint in OpenAPI ─────────────────────────────────────────
@@ -601,8 +601,8 @@ function Test-OpenApiJson {
     Assert-True ($null -ne $timePath.get) `
         "$ImplName /openapi.json /api/v1/time/current-time has GET operation"
 
-    Assert-True ($schemaNames -contains 'time_current-time_Output') `
-        "$ImplName /openapi.json components.schemas has time_current-time_Output"
+    Assert-True ($schemaNames -contains 'time_current_time_Output') `
+        "$ImplName /openapi.json components.schemas has time_current_time_Output"
 
     return $json
 }
@@ -833,21 +833,21 @@ function Compare-Implementations {
     # ── Schema content parity (properties, types, required) ──────────────────
     # Dart is the reference — TS and Python must produce identical schema content.
 
-    $dartInputJson  = $Dart.OpenApiJson.components.schemas['greetings_hello-world_Input']       | ConvertTo-Json -Depth 10 -Compress
-    $tsInputJson    = $TypeScript.OpenApiJson.components.schemas['greetings_hello-world_Input']  | ConvertTo-Json -Depth 10 -Compress
-    $pyInputJson    = $Python.OpenApiJson.components.schemas['greetings_hello-world_Input']      | ConvertTo-Json -Depth 10 -Compress
+    $dartInputJson  = $Dart.OpenApiJson.components.schemas['greetings_hello_world_Input']       | ConvertTo-Json -Depth 10 -Compress
+    $tsInputJson    = $TypeScript.OpenApiJson.components.schemas['greetings_hello_world_Input']  | ConvertTo-Json -Depth 10 -Compress
+    $pyInputJson    = $Python.OpenApiJson.components.schemas['greetings_hello_world_Input']      | ConvertTo-Json -Depth 10 -Compress
 
     Assert-True (
         ($dartInputJson -eq $tsInputJson) -and ($dartInputJson -eq $pyInputJson)
-    ) 'OpenAPI greetings_hello-world_Input schema content identical across implementations'
+    ) 'OpenAPI greetings_hello_world_Input schema content identical across implementations'
 
-    $dartOutputJson  = $Dart.OpenApiJson.components.schemas['greetings_hello-world_Output']       | ConvertTo-Json -Depth 10 -Compress
-    $tsOutputJson    = $TypeScript.OpenApiJson.components.schemas['greetings_hello-world_Output']  | ConvertTo-Json -Depth 10 -Compress
-    $pyOutputJson    = $Python.OpenApiJson.components.schemas['greetings_hello-world_Output']      | ConvertTo-Json -Depth 10 -Compress
+    $dartOutputJson  = $Dart.OpenApiJson.components.schemas['greetings_hello_world_Output']       | ConvertTo-Json -Depth 10 -Compress
+    $tsOutputJson    = $TypeScript.OpenApiJson.components.schemas['greetings_hello_world_Output']  | ConvertTo-Json -Depth 10 -Compress
+    $pyOutputJson    = $Python.OpenApiJson.components.schemas['greetings_hello_world_Output']      | ConvertTo-Json -Depth 10 -Compress
 
     Assert-True (
         ($dartOutputJson -eq $tsOutputJson) -and ($dartOutputJson -eq $pyOutputJson)
-    ) 'OpenAPI greetings_hello-world_Output schema content identical across implementations'
+    ) 'OpenAPI greetings_hello_world_Output schema content identical across implementations'
 
     # ── Metrics format parity ────────────────────────────────────────────────
 
