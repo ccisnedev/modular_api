@@ -46,14 +46,14 @@ def build_greetings_module(m: ModuleBuilder) -> None:
 
 
 class HelloInput(Input):
-    name: str = Field(description="Name to greet")
+    name: str = Field(description="Name to greet", examples=["World"])
 
 
 # ── Output DTO ────────────────────────────────────────────────
 
 
 class HelloOutput(Output):
-    message: str = Field(description="Greeting message")
+    message: str = Field(description="Greeting message", examples=["Hello, World!"])
 
     @property
     def status_code(self) -> int:
@@ -135,7 +135,7 @@ def main() -> None:
     api.module("greetings", build_greetings_module)
 
     api.serve(port=port)
-    
+
 
 if __name__ == "__main__":
     main()

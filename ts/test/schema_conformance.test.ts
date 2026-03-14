@@ -8,7 +8,7 @@ import { Input, Output } from '../src/core/usecase';
 import { Field } from '../src/core/schema/field';
 
 class HelloInput extends Input {
-  @Field.string({ description: 'Name to greet' })
+  @Field.string({ description: 'Name to greet', example: 'World' })
   name!: string;
 
   static fromJson(json: Record<string, unknown>): HelloInput {
@@ -19,7 +19,7 @@ class HelloInput extends Input {
 }
 
 class HelloOutput extends Output {
-  @Field.string({ description: 'Greeting message' })
+  @Field.string({ description: 'Greeting message', example: 'Hello, World!' })
   message!: string;
 
   get statusCode() {

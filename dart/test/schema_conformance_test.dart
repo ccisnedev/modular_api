@@ -19,7 +19,7 @@ class HelloInput extends Input {
 
   @override
   List<SchemaField> get schemaFields => [
-        SchemaField.string('name', description: 'Name to greet'),
+        SchemaField.string('name', description: 'Name to greet', example: 'World'),
       ];
 }
 
@@ -36,7 +36,7 @@ class HelloOutput extends Output {
 
   @override
   List<SchemaField> get schemaFields => [
-        SchemaField.string('message', description: 'Greeting message'),
+        SchemaField.string('message', description: 'Greeting message', example: 'Hello, World!'),
       ];
 }
 
