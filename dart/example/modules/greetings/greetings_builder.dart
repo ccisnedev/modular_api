@@ -4,9 +4,9 @@ import 'usecases/hello_world.dart';
 
 void buildGreetingsModule(ModuleBuilder m) {
   m.usecase(
-    'hello',
+    'hello-world',
     HelloWorld.fromJson,
-    inputExample: HelloInput.example,
-    outputExample: HelloOutput.example,
+    inputExample: HelloWorldInput.example,
+    outputExample: HelloWorldOutput.example,
   );
 }

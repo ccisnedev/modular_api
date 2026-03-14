@@ -2,10 +2,10 @@ import 'package:modular_api/modular_api.dart';
 
 // ─── Input DTO ────────────────────────────────────────────────────────────────
 
-class TimeInput extends Input {
+class CurrentTimeInput extends Input {
   final String tz;
 
-  TimeInput({this.tz = ''});
+  CurrentTimeInput({this.tz = ''});
 
   @override
   Map<String, dynamic> toJson() => {'tz': tz};
@@ -19,16 +19,16 @@ class TimeInput extends Input {
         ),
       ];
 
-  static TimeInput get example => TimeInput(tz: 'utc-5');
+  static CurrentTimeInput get example => CurrentTimeInput(tz: 'utc-5');
 }
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
 
-class TimeOutput extends Output {
+class CurrentTimeOutput extends Output {
   final String datetime;
   final int offset;
 
-  TimeOutput({required this.datetime, required this.offset});
+  CurrentTimeOutput({required this.datetime, required this.offset});
 
   @override
   int get statusCode => 200;
@@ -45,15 +45,15 @@ class TimeOutput extends Output {
             description: 'UTC offset in hours', example: -5),
       ];
 
-  static TimeOutput get example =>
-      TimeOutput(datetime: '2026-03-14T07:00:00', offset: -5);
+  static CurrentTimeOutput get example =>
+      CurrentTimeOutput(datetime: '2026-03-14T07:00:00', offset: -5);
 }
 
 // ─── UseCase ──────────────────────────────────────────────────────────────────
 
-class CurrentTime implements UseCase<TimeInput, TimeOutput> {
+class CurrentTime implements UseCase<CurrentTimeInput, CurrentTimeOutput> {
   @override
-  final TimeInput input;
+  final CurrentTimeInput input;
 
   @override
   ModularLogger? logger;
@@ -61,7 +61,7 @@ class CurrentTime implements UseCase<TimeInput, TimeOutput> {
   CurrentTime({required this.input});
 
   static CurrentTime fromJson(Map<String, dynamic> json) {
-    return CurrentTime(input: TimeInput(tz: (json['tz'] ?? '').toString()));
+    return CurrentTime(input: CurrentTimeInput(tz: (json['tz'] ?? '').toString()));
   }
 
   @override
@@ -74,7 +74,7 @@ class CurrentTime implements UseCase<TimeInput, TimeOutput> {
   }
 
   @override
-  Future<TimeOutput> execute() async {
+  Future<CurrentTimeOutput> execute() async {
     final now = DateTime.now().toUtc();
     final offsetHours = input.tz.isEmpty
         ? DateTime.now().timeZoneOffset.inHours
@@ -83,7 +83,7 @@ class CurrentTime implements UseCase<TimeInput, TimeOutput> {
     final iso = adjusted.toIso8601String().split('.').first;
 
     logger?.info('Time requested for offset $offsetHours');
-    return TimeOutput(datetime: iso, offset: offsetHours);
+    return CurrentTimeOutput(datetime: iso, offset: offsetHours);
   }
 
   /// Parses "utc-5", "utc+3", "utc" into an integer offset. Returns null on bad format.

@@ -6,4 +6,4 @@ from .usecases.hello_world import HelloWorld
 
 
 def build_greetings_module(m: ModuleBuilder) -> None:
-    m.usecase("hello", HelloWorld.from_json)
+    m.usecase("hello-world", HelloWorld.from_json)

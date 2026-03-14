@@ -2,14 +2,14 @@ import { Input, Output, UseCase, Field, ModularLogger } from '../../../../src/in
 
 // ─── Input DTO ────────────────────────────────────────────────────────────────
 
-export class HelloInput extends Input {
+export class HelloWorldInput extends Input {
   @Field.string({ description: 'Name to greet', example: 'World' })
   name!: string;
 }
 
 // ─── Output DTO ───────────────────────────────────────────────────────────────
 
-export class HelloOutput extends Output {
+export class HelloWorldOutput extends Output {
   @Field.string({ description: 'Greeting message', example: 'Hello, World!' })
   message!: string;
 
@@ -20,16 +20,16 @@ export class HelloOutput extends Output {
 
 // ─── UseCase ──────────────────────────────────────────────────────────────────
 
-export class HelloWorld implements UseCase<HelloInput, HelloOutput> {
-  readonly input: HelloInput;
+export class HelloWorld implements UseCase<HelloWorldInput, HelloWorldOutput> {
+  readonly input: HelloWorldInput;
   logger?: ModularLogger;
 
-  constructor(input: HelloInput) {
+  constructor(input: HelloWorldInput) {
     this.input = input;
   }
 
   static fromJson(json: Record<string, unknown>): HelloWorld {
-    const input = new HelloInput();
+    const input = new HelloWorldInput();
     input.name = json['name'] as string;
     return new HelloWorld(input);
   }
@@ -41,9 +41,9 @@ export class HelloWorld implements UseCase<HelloInput, HelloOutput> {
     return null;
   }
 
-  async execute(): Promise<HelloOutput> {
+  async execute(): Promise<HelloWorldOutput> {
     this.logger?.info(`Greeting user: ${this.input.name}`);
-    const output = new HelloOutput();
+    const output = new HelloWorldOutput();
     output.message = `Hello, ${this.input.name}!`;
     return output;
   }

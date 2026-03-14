@@ -8,10 +8,10 @@
 
 # Then test::
 
-#     curl -X POST http://localhost:8080/api/v1/greetings/hello \
+#     curl -X POST http://localhost:8080/api/v1/greetings/hello-world \
 #          -H "Content-Type: application/json" \
 #          -d '{"name":"World"}'
-#     curl http://localhost:8080/api/v1/time/now?tz=utc-5
+#     curl http://localhost:8080/api/v1/time/current-time?tz=utc-5
 
 # Docs::
 
