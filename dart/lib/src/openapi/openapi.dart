@@ -197,15 +197,15 @@ class OpenApi {
       final outputSchema = _inferOutputSchema(r);
 
       // 3) Name schemas for components (reusables)
-      final inputRefName = '${r.module}_${r.name}_Input';
-      final outputRefName = '${r.module}_${r.name}_Output';
+      final inputRefName = '${r.module}_${r.command}_Input';
+      final outputRefName = '${r.module}_${r.command}_Output';
       compSchemas[inputRefName] = inputSchema;
       compSchemas[outputRefName] = outputSchema;
 
       // 4) Build operation
       final op = <String, dynamic>{
         'tags': r.doc?.tags ?? [r.module],
-        'operationId': '${r.module}_${r.name}_${r.method.toLowerCase()}',
+        'operationId': '${r.module}_${r.command}_${r.method.toLowerCase()}',
         if (r.doc?.summary != null) 'summary': r.doc!.summary,
         if (r.doc?.description != null) 'description': r.doc!.description,
         'responses': {

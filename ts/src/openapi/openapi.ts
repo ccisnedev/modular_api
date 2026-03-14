@@ -44,8 +44,8 @@ export function buildOpenApiSpec(options: OpenApiOptions): Record<string, unknow
     const path = route.path;
 
     // Store named schemas in components for Swagger UI "Schemas" section
-    const inputRefName = `${route.module}_${route.name}_Input`;
-    const outputRefName = `${route.module}_${route.name}_Output`;
+    const inputRefName = `${route.module}_${route.command}_Input`;
+    const outputRefName = `${route.module}_${route.command}_Output`;
     componentSchemas[inputRefName] = route.schemas.input;
     componentSchemas[outputRefName] = route.schemas.output;
 

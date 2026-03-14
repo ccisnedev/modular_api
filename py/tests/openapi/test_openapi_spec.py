@@ -23,7 +23,7 @@ def _dummy_factory(json: dict) -> object:
 def _make_registration(**overrides: object) -> UseCaseRegistration:
     defaults: dict = {
         "module": "users",
-        "name": "create",
+        "command": "create",
         "method": "POST",
         "path": "/api/users/create",
         "factory": _dummy_factory,
@@ -141,7 +141,7 @@ class TestOpenApiGetUseCase:
 
     def test_get_has_parameters(self) -> None:
         api_registry.routes.append(
-            _make_registration(name="list", method="GET", path="/api/users/list"),
+            _make_registration(command="list", method="GET", path="/api/users/list"),
         )
         spec = build_openapi_spec(title="Test", port=8000)
 
@@ -151,7 +151,7 @@ class TestOpenApiGetUseCase:
 
     def test_query_params_from_input_properties(self) -> None:
         api_registry.routes.append(
-            _make_registration(name="list", method="GET", path="/api/users/list"),
+            _make_registration(command="list", method="GET", path="/api/users/list"),
         )
         spec = build_openapi_spec(title="Test", port=8000)
 
@@ -229,10 +229,10 @@ class TestMultipleMethodsOnSamePath:
 
     def test_same_path_different_methods(self) -> None:
         api_registry.routes.append(
-            _make_registration(name="item", method="GET", path="/api/users/item"),
+            _make_registration(command="item", method="GET", path="/api/users/item"),
         )
         api_registry.routes.append(
-            _make_registration(name="item", method="PUT", path="/api/users/item"),
+            _make_registration(command="item", method="PUT", path="/api/users/item"),
         )
         spec = build_openapi_spec(title="Test", port=8000)
 

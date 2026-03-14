@@ -21,10 +21,11 @@ export interface UseCaseDocMeta {
 
 export interface UseCaseRegistration {
   module: string;
-  name: string;
+  /** Route segment and operationId root, e.g. 'hello-world' */
+  command: string;
   /** HTTP method in uppercase: "POST" | "GET" | "PUT" | "PATCH" | "DELETE" */
   method: string;
-  /** Full path e.g. "/api/users/create" */
+  /** Full path e.g. "/api/v1/greetings/hello-world" */
   path: string;
   factory: UseCaseFactory<Input, Output>;
   doc?: UseCaseDocMeta;
