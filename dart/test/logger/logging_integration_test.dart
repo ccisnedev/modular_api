@@ -7,7 +7,7 @@ import 'package:modular_api/src/core/logger/logger.dart';
 
 // ─── Fixtures ──────────────────────────────────────────────────────
 
-class EchoInput implements Input {
+class EchoInput extends Input {
   final String value;
   EchoInput({required this.value});
 
@@ -26,7 +26,7 @@ class EchoInput implements Input {
       };
 }
 
-class EchoOutput implements Output {
+class EchoOutput extends Output {
   final String echo;
   EchoOutput({required this.echo});
 

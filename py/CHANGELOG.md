@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.2] - 2026-03-12
+
+### Added
+
+- **Auto-schema generation** — `Input` and `Output` inherit from Pydantic `BaseModel`; schemas derived automatically from field declarations
+- `Field(description='x')` re-exported from Pydantic — uniform field metadata across all three SDKs
+- Class-level schema extraction in `ModuleBuilder` — no `factory({})` dummy call needed
+- `_normalize_schema()` — converts Pydantic JSON Schema Draft 2020-12 to OpenAPI 3.0.3 (`anyOf` → `nullable`, strip `title`/`default`)
+- Cross-language schema conformance tests against shared JSON fixtures
+
+### Changed
+
+- `Input` / `Output` now inherit from `BaseModel` — `to_json()`, `to_schema()`, `from_json()` are automatic
+- Manual `to_schema()` override is deprecated via `__init_subclass__()` detection — use field declarations instead (removal in v0.5.0)
+- `_extract_schemas()` uses return type hint introspection (Strategy 1) with `factory({})` fallback (Strategy 2)
+
 ## [0.4.1] - 2026-03-12
 
 ### Added

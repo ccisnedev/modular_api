@@ -51,7 +51,7 @@ See `example/example.dart` for the full implementation including Input, Output, 
 ## Features
 
 - `UseCase<I, O>` — pure business logic, no HTTP concerns
-- `Input` / `Output` — DTOs with `toJson()` and `toSchema()` for automatic OpenAPI
+- `Input` / `Output` — DTOs with automatic OpenAPI schema generation via `@Field` + `schemaFields`
 - `Output.statusCode` — custom HTTP status codes per response
 - `UseCaseException` — structured error handling (status code, message, error code, details)
 - `ModularApi` + `ModuleBuilder` — module registration and routing
@@ -69,7 +69,7 @@ See `example/example.dart` for the full implementation including Input, Output, 
 
 ```yaml
 dependencies:
-  modular_api: ^0.3.0
+  modular_api: ^0.4.2
 ```
 
 ```bash

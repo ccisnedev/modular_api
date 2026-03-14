@@ -18,19 +18,11 @@ from modular_api.core.usecase import Input, Output, UseCase
 
 
 class _PingInput(Input):
-    def to_json(self) -> dict:
-        return {}
-
-    def to_schema(self) -> dict:
-        return {"type": "object", "properties": {}}
+    pass
 
 
 class _PingOutput(Output):
-    def to_json(self) -> dict:
-        return {"pong": True}
-
-    def to_schema(self) -> dict:
-        return {"type": "object", "properties": {"pong": {"type": "boolean"}}}
+    pong: bool = True
 
     @property
     def status_code(self) -> int:

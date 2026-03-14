@@ -5,12 +5,20 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '../logger/logger.dart';
 import '../logger/logging_middleware.dart';
+import '../schema/field.dart';
 import 'usecase.dart';
 import 'use_case_exception.dart';
 
 /// Generic handler for any UseCase
-Handler useCaseHttpHandler(UseCase Function(Map<String, dynamic>) fromJson) {
+Handler useCaseHttpHandler(
+  UseCase Function(Map<String, dynamic>) fromJson, {
+  Input? inputExample,
+}) {
   const jsonHeaders = {'content-type': 'application/json; charset=utf-8'};
+
+  // Capture schema at creation time — enables pre-validation
+  // before fromJson, so strict factories never crash.
+  final preValidationFields = inputExample?.schemaFields;
 
   return (Request req) async {
     try {
@@ -19,8 +27,22 @@ Handler useCaseHttpHandler(UseCase Function(Map<String, dynamic>) fromJson) {
           ? await _jsonFromUrl(req)
           : await _jsonFromBody(req);
 
-      // 2. Build and validate the UseCase
+      // 2. Pre-validate BEFORE fromJson (when example provides schema)
+      if (preValidationFields != null) {
+        validateJsonFields(data, preValidationFields);
+      }
+
+      // 3. Build and validate the UseCase
       final useCase = fromJson(data);
+
+      // 3a. Post-validate for legacy path (no inputExample)
+      if (preValidationFields == null) {
+        final inputFields = useCase.input.schemaFields;
+        if (inputFields != null) {
+          validateJsonFields(data, inputFields);
+        }
+      }
+
       final validationError = useCase.validate();
       if (validationError != null) {
         return Response(
@@ -50,6 +72,12 @@ Handler useCaseHttpHandler(UseCase Function(Map<String, dynamic>) fromJson) {
         e.statusCode,
         headers: jsonHeaders,
         body: jsonEncode(e.toJson()),
+      );
+    } on InputValidationException catch (e) {
+      return Response(
+        400,
+        headers: jsonHeaders,
+        body: jsonEncode({'error': e.message}),
       );
     } catch (e) {
       // Handle unexpected errors

@@ -21,16 +21,9 @@ if (-not (Test-Path $envFile)) {
     exit 1
 }
 
-$token = $null
-$testToken = $null
-Get-Content $envFile | ForEach-Object {
-    if ($_ -match '^\s*TOKEN_PYPI\s*=\s*(.+)\s*$') {
-        $token = $Matches[1]
-    }
-    if ($_ -match '^\s*TOKEN_TEST_PYPI\s*=\s*(.+)\s*$') {
-        $testToken = $Matches[1]
-    }
-}
+$envLines = Get-Content $envFile
+$token     = ($envLines | Where-Object { $_ -match '^\s*TOKEN_PYPI\s*='     } | ForEach-Object { ($_ -split '=', 2)[1].Trim() }) | Select-Object -First 1
+$testToken = ($envLines | Where-Object { $_ -match '^\s*TOKEN_TEST_PYPI\s*=' } | ForEach-Object { ($_ -split '=', 2)[1].Trim() }) | Select-Object -First 1
 
 if ($TestPyPI) {
     if (-not $testToken) {

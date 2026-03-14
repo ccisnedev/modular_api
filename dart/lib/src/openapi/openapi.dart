@@ -246,34 +246,47 @@ class OpenApi {
     return const JsonEncoder.withIndent('  ').convert(spec);
   }
 
-  /// Attempts to construct the UseCase with {} and read input.toSchema()
-  /// Requires fromJson to be tolerant (not throw).
+  /// Extracts the input schema, preferring the registered example instance.
+  ///
+  /// When [inputExample] is provided, the schema is built from the example
+  /// (via schemaFields or type inference) and `schema['example']` is set to
+  /// the example's serialized JSON. No `factory({})` call needed.
+  /// Falls back to `factory({})` when no example is registered.
   static Map<String, dynamic> _inferInputSchema(UseCaseRegistration r) {
+    if (r.inputExample != null) {
+      final schema = r.inputExample!.toSchema();
+      if (schema['type'] == null) schema['type'] = 'object';
+      final exampleJson = r.inputExample!.toJson();
+      if (exampleJson.isNotEmpty) schema['example'] = exampleJson;
+      return schema;
+    }
+
     try {
       final uc = r.factory(<String, dynamic>{});
       final schema = uc.input.toSchema();
-      // Sanitize: ensure at least 'type: object'
-      if (schema['type'] == null) {
-        schema['type'] = 'object';
-      }
+      if (schema['type'] == null) schema['type'] = 'object';
       return schema;
     } catch (_) {
-      // Fallback si fromJson lanza
       return {'type': 'object', 'properties': {}};
     }
   }
 
+  /// Extracts the output schema, preferring the registered example instance.
   static Map<String, dynamic> _inferOutputSchema(UseCaseRegistration r) {
+    if (r.outputExample != null) {
+      final schema = r.outputExample!.toSchema();
+      if (schema['type'] == null) schema['type'] = 'object';
+      final exampleJson = r.outputExample!.toJson();
+      if (exampleJson.isNotEmpty) schema['example'] = exampleJson;
+      return schema;
+    }
+
     try {
       final uc = r.factory(<String, dynamic>{});
       final schema = uc.output.toSchema();
-      // Sanitize: ensure at least 'type: object'
-      if (schema['type'] == null) {
-        schema['type'] = 'object';
-      }
+      if (schema['type'] == null) schema['type'] = 'object';
       return schema;
     } catch (_) {
-      // Fallback if fromJson throws
       return {'type': 'object', 'properties': {}};
     }
   }

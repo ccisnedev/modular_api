@@ -16,29 +16,11 @@ from modular_api.core.usecase_handler import LOGGER_STATE_KEY, usecase_handler
 
 
 class GreetInput(Input):
-    def __init__(self, name: str) -> None:
-        self._name = name
-
-    def to_json(self) -> dict:
-        return {"name": self._name}
-
-    def to_schema(self) -> dict:
-        return {"type": "object", "properties": {"name": {"type": "string"}}}
-
-    @property
-    def status_code(self) -> int:
-        return 200
+    name: str = ""
 
 
 class GreetOutput(Output):
-    def __init__(self, greeting: str = "") -> None:
-        self._greeting = greeting
-
-    def to_json(self) -> dict:
-        return {"greeting": self._greeting}
-
-    def to_schema(self) -> dict:
-        return {"type": "object", "properties": {"greeting": {"type": "string"}}}
+    greeting: str = ""
 
     @property
     def status_code(self) -> int:
@@ -49,7 +31,7 @@ class GreetUseCase(UseCase[GreetInput, GreetOutput]):
     """Says hello — happy path."""
 
     def __init__(self, data: dict) -> None:
-        self._input = GreetInput(name=data.get("name", ""))
+        self._input = GreetInput.from_json(data)
         self._output = GreetOutput()
 
     @property
@@ -61,12 +43,12 @@ class GreetUseCase(UseCase[GreetInput, GreetOutput]):
         return self._output
 
     def validate(self) -> str | None:
-        if not self._input._name:
+        if not self._input.name:
             return "name is required"
         return None
 
     async def execute(self) -> None:
-        self._output = GreetOutput(greeting=f"Hello, {self._input._name}!")
+        self._output = GreetOutput(greeting=f"Hello, {self._input.name}!")
 
     def to_json(self) -> dict:
         return self._output.to_json()
@@ -76,7 +58,7 @@ class FailingUseCase(UseCase[GreetInput, GreetOutput]):
     """Raises UseCaseException during execute."""
 
     def __init__(self, data: dict) -> None:
-        self._input = GreetInput(name=data.get("name", ""))
+        self._input = GreetInput.from_json(data)
         self._output = GreetOutput()
 
     @property
