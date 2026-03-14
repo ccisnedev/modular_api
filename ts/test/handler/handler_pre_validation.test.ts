@@ -46,7 +46,6 @@ class StrictOutput extends Output {
 
 class StrictUseCase extends UseCase<StrictInput, StrictOutput> {
   readonly input: StrictInput;
-  output!: StrictOutput;
 
   constructor(input: StrictInput) {
     super();
@@ -64,11 +63,7 @@ class StrictUseCase extends UseCase<StrictInput, StrictOutput> {
   async execute() {
     const out = new StrictOutput();
     out.greeting = `Hello ${this.input.name}`;
-    this.output = out;
-  }
-
-  toJson() {
-    return this.output.toJson();
+    return out;
   }
 }
 

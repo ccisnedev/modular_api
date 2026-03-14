@@ -83,10 +83,10 @@ export function useCaseHandler<I extends Input, O extends Output>(
       }
 
       // 4. Execute
-      await useCase.execute();
+      const output = await useCase.execute();
 
       // 5. Respond
-      res.status(useCase.output.statusCode).set(JSON_HEADERS).json(useCase.toJson());
+      res.status(output.statusCode).set(JSON_HEADERS).json(output.toJson());
     } catch (err) {
       if (err instanceof InputValidationError) {
         res.status(400).set(JSON_HEADERS).json({ error: err.message });
