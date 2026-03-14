@@ -35,10 +35,8 @@ abstract class SumRepository {
 }
 
 class SumInput extends Input {
-  @Field(description: 'First operand')
   final int a;
 
-  @Field(description: 'Second operand')
   final int b;
   
   SumInput({required this.a, required this.b});
@@ -59,7 +57,6 @@ class SumInput extends Input {
 }
 
 class SumOutput extends Output {
-  @Field(description: 'Sum result')
   final int result;
   
   SumOutput({required this.result});

@@ -12,7 +12,6 @@ export 'src/core/usecase/usecase.dart' show UseCase, Input, Output;
 export 'src/core/usecase/use_case_exception.dart' show UseCaseException;
 export 'src/core/schema/field.dart'
     show
-        Field,
         SchemaField,
         buildSchema,
         InputValidationException,

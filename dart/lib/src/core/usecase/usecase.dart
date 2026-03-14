@@ -42,7 +42,6 @@ abstract class UseCase<I extends Input, O extends Output> {
 ///
 /// ```dart
 /// class HelloInput implements Input {
-///   @Field(description: 'Name to greet')
 ///   final String name;
 ///
 ///   HelloInput({required this.name});
