@@ -48,7 +48,9 @@ describe('docs-ui build output', () => {
     expect(existsSync(resolve(root, 'dist/docs-ui.js'))).toBe(true);
   });
 
-  it('produces dist/docs-ui.css', () => {
-    expect(existsSync(resolve(root, 'dist/docs-ui.css'))).toBe(true);
+  it('embeds CSS in the JS bundle (single-file distribution)', () => {
+    const js = readFileSync(resolve(root, 'dist/docs-ui.js'), 'utf-8');
+    expect(js).toContain('prefers-color-scheme');
+    expect(js).toContain('--bg-primary');
   });
 });

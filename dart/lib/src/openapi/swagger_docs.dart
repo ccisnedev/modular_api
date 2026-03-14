@@ -19,7 +19,6 @@ const _docsUiHtmlTemplate = '''
     <title>{{title}} — API Reference</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="$_docsUiCdn/docs-ui.css" />
   </head>
   <body>
     <div id="swagger-ui"></div>
