@@ -69,7 +69,7 @@ See `example/example.dart` for the full implementation including Input, Output, 
 
 ```yaml
 dependencies:
-  modular_api: ^0.4.2
+  modular_api: ^0.4.3
 ```
 
 ```bash
