@@ -31,18 +31,23 @@ import {
 //   src/modules/greetings/greetings_builder.ts
 
 function buildGreetingsModule(m: ModuleBuilder): void {
-  m.usecase('hello', HelloWorld.fromJson);
+  m.usecase('hello', HelloWorld.fromJson, {
+    inputClass: HelloInput,
+    outputClass: HelloOutput,
+  });
 }
 
 // ─── Input DTO ────────────────────────────────────────────────────────────────
 
 class HelloInput extends Input {
-  @Field.string({ description: 'Name to greet' })
+  @Field.string({ description: 'Name to greet', example: 'World' })
   name!: string;
 
+  /// Strict factory — no coercion, no defaults.
+  /// Pre-validation in the handler ensures data is valid before this runs.
   static fromJson(json: Record<string, unknown>): HelloInput {
     const instance = new HelloInput();
-    instance.name = (json['name'] ?? '').toString();
+    instance.name = json['name'] as string;
     return instance;
   }
 }
@@ -50,17 +55,11 @@ class HelloInput extends Input {
 // ─── Output DTO ───────────────────────────────────────────────────────────────
 
 class HelloOutput extends Output {
-  @Field.string({ description: 'Greeting message' })
+  @Field.string({ description: 'Greeting message', example: 'Hello, World!' })
   message!: string;
 
   get statusCode() {
     return 200;
-  }
-
-  static fromJson(json: Record<string, unknown>): HelloOutput {
-    const instance = new HelloOutput();
-    instance.message = (json['message'] ?? '').toString();
-    return instance;
   }
 }
 
