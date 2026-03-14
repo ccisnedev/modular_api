@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>docs-ui — Development</title>
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script type="module">
+      import { init } from './src/docs-ui.js';
+
+      const params = new URLSearchParams(window.location.search);
+      init({
+        specUrl: params.get('specUrl') || '/sample-spec.json',
+      });
+    </script>
+  </body>
+</html>
