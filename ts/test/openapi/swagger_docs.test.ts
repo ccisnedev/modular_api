@@ -1,11 +1,11 @@
 /**
- * Tests for the Swagger UI docs handler at GET /docs.
+ * Tests for the docs-ui handler at GET /docs.
  *
- * PRD-003 assertions:
+ * Assertions:
  *   1. GET /docs returns HTTP 200.
  *   2. Content-Type header is text/html; charset=utf-8.
- *   3. Response body contains swagger-ui-dist@5 CDN references.
- *   4. Response body contains url: "/openapi.json" Swagger UI config.
+ *   3. Response body contains @macss/docs-ui CDN reference.
+ *   4. Response body contains DocsUI.init bootloader call.
  *   5. Response body does NOT contain "scalar" (regression guard).
  */
 
@@ -15,7 +15,7 @@ import type { Server } from 'http';
 import { ModularApi } from '../../src';
 import { apiRegistry } from '../../src/core/registry';
 
-describe('GET /docs — Swagger UI (PRD-003)', () => {
+describe('GET /docs — docs-ui (PRD-003)', () => {
   let server: Server;
 
   afterEach(async () => {
@@ -43,22 +43,22 @@ describe('GET /docs — Swagger UI (PRD-003)', () => {
     expect(res.headers['content-type']).toContain('text/html');
   });
 
-  it('body contains swagger-ui-dist@5 CSS', async () => {
+  it('body contains @macss/docs-ui CDN reference', async () => {
     await startServer();
     const res = await request(server).get('/docs');
-    expect(res.text).toContain('swagger-ui-dist@5/swagger-ui.css');
+    expect(res.text).toContain('@macss/docs-ui');
   });
 
-  it('body contains swagger-ui-dist@5 JS bundle', async () => {
+  it('body contains DocsUI.init bootloader', async () => {
     await startServer();
     const res = await request(server).get('/docs');
-    expect(res.text).toContain('swagger-ui-dist@5/swagger-ui-bundle.js');
+    expect(res.text).toContain('DocsUI.init');
   });
 
-  it('body contains url pointing to /openapi.json', async () => {
+  it('body contains specUrl pointing to /openapi.json', async () => {
     await startServer();
     const res = await request(server).get('/docs');
-    expect(res.text).toContain('url: "/openapi.json"');
+    expect(res.text).toContain('/openapi.json');
   });
 
   it('body does NOT contain scalar (PRD-003 regression guard)', async () => {
@@ -80,23 +80,5 @@ describe('GET /docs — Swagger UI (PRD-003)', () => {
     expect(res.text).toContain('</html>');
   });
 
-  // ── PRD-004: System-aware dark mode ──────────────────────────
-
-  it('contains prefers-color-scheme media query (PRD-004)', async () => {
-    await startServer();
-    const res = await request(server).get('/docs');
-    expect(res.text).toContain('prefers-color-scheme: dark');
-  });
-
-  it('contains CSS custom properties for theming (PRD-004)', async () => {
-    await startServer();
-    const res = await request(server).get('/docs');
-    expect(res.text).toContain('--bg-primary');
-  });
-
-  it('preserves HTTP method accent colors in dark mode (PRD-004)', async () => {
-    await startServer();
-    const res = await request(server).get('/docs');
-    expect(res.text).toContain('#49cc90');
-  });
+  // ── Dark mode is now handled by @macss/docs-ui — tested in docs-ui/
 });
