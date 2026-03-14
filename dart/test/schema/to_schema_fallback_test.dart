@@ -1,7 +1,6 @@
 import 'package:test/test.dart';
 import 'package:modular_api/src/core/schema/field.dart';
 import 'package:modular_api/src/core/usecase/usecase.dart';
-import 'package:modular_api/src/core/logger/logger.dart';
 
 // ── Input WITHOUT schemaFields — relies on toJson() inference ─────────────
 

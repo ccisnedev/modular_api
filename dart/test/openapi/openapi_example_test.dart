@@ -67,9 +67,6 @@ class _GreetOutput extends Output {
 
   static final example = _GreetOutput(message: 'Hello, Sebastián!');
 
-  factory _GreetOutput.fromJson(Map<String, dynamic> json) =>
-      _GreetOutput(message: json['message']);
-
   @override
   int get statusCode => 200;
 
