@@ -213,6 +213,8 @@ class ModuleBuilder {
     String method = 'POST',
     String? summary,
     String? description,
+    Input? inputExample,
+    Output? outputExample,
   }) {
     Handler h = useCaseHttpHandler(usecaseFactory);
 
@@ -260,6 +262,8 @@ class ModuleBuilder {
         path: '${_normalizeBase(basePath)}/$moduleName/$usecaseName',
         factory: usecaseFactory,
         doc: doc,
+        inputExample: inputExample,
+        outputExample: outputExample,
       ),
     );
 
@@ -296,6 +300,14 @@ class UseCaseRegistration {
   final UseCaseFactory factory;
   final UseCaseDocMeta? doc;
 
+  /// Example Input instance for schema extraction and Swagger UI.
+  /// When provided, the framework extracts schema from this instance
+  /// instead of calling `factory({})` — enabling strict `fromJson`.
+  final Input? inputExample;
+
+  /// Example Output instance for schema extraction and Swagger UI.
+  final Output? outputExample;
+
   UseCaseRegistration({
     required this.module,
     required this.name,
@@ -303,6 +315,8 @@ class UseCaseRegistration {
     required this.path,
     required this.factory,
     this.doc,
+    this.inputExample,
+    this.outputExample,
   });
 }
 
