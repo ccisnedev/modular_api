@@ -46,6 +46,7 @@ class SchemaField {
   final bool required;
   final bool nullable;
   final SchemaField? items;
+  final dynamic example;
 
   const SchemaField(
     this.name,
@@ -54,26 +55,28 @@ class SchemaField {
     this.required = true,
     this.nullable = false,
     this.items,
+    this.example,
   });
 
-  factory SchemaField.string(String name, {String? description}) =>
-      SchemaField(name, 'string', description: description);
+  factory SchemaField.string(String name, {String? description, dynamic example}) =>
+      SchemaField(name, 'string', description: description, example: example);
 
-  factory SchemaField.integer(String name, {String? description}) =>
-      SchemaField(name, 'integer', description: description);
+  factory SchemaField.integer(String name, {String? description, dynamic example}) =>
+      SchemaField(name, 'integer', description: description, example: example);
 
-  factory SchemaField.number(String name, {String? description}) =>
-      SchemaField(name, 'number', description: description);
+  factory SchemaField.number(String name, {String? description, dynamic example}) =>
+      SchemaField(name, 'number', description: description, example: example);
 
-  factory SchemaField.boolean(String name, {String? description}) =>
-      SchemaField(name, 'boolean', description: description);
+  factory SchemaField.boolean(String name, {String? description, dynamic example}) =>
+      SchemaField(name, 'boolean', description: description, example: example);
 
   factory SchemaField.array(
     String name,
     SchemaField itemType, {
     String? description,
+    dynamic example,
   }) =>
-      SchemaField(name, 'array', description: description, items: itemType);
+      SchemaField(name, 'array', description: description, items: itemType, example: example);
 
   factory SchemaField.optional(SchemaField inner) => SchemaField(
         inner.name,
@@ -82,6 +85,7 @@ class SchemaField {
         required: false,
         nullable: true,
         items: inner.items,
+        example: inner.example,
       );
 }
 
@@ -89,6 +93,8 @@ class SchemaField {
 Map<String, dynamic> buildSchema(List<SchemaField> fields) {
   final properties = <String, Map<String, dynamic>>{};
   final required = <String>[];
+
+  final exampleValues = <String, dynamic>{};
 
   for (final field in fields) {
     final prop = <String, dynamic>{'type': field.type};
@@ -100,6 +106,10 @@ Map<String, dynamic> buildSchema(List<SchemaField> fields) {
     }
     if (field.items != null) {
       prop['items'] = {'type': field.items!.type};
+    }
+    if (field.example != null) {
+      prop['example'] = field.example;
+      exampleValues[field.name] = field.example;
     }
     properties[field.name] = prop;
 
@@ -114,6 +124,9 @@ Map<String, dynamic> buildSchema(List<SchemaField> fields) {
   };
   if (required.isNotEmpty) {
     schema['required'] = required;
+  }
+  if (exampleValues.isNotEmpty) {
+    schema['example'] = exampleValues;
   }
   return schema;
 }
