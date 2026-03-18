@@ -28,5 +28,6 @@ Thumbs.db
 # Test coverage
 coverage/
 
-# local development files
-.dev/
+# .dev 
+.dev/*
+!.dev/runbooks
