@@ -70,8 +70,9 @@ class CurrentTime implements UseCase<CurrentTimeInput, CurrentTimeOutput> {
     if (input.tz.isEmpty) return null;
     final offset = _parseOffset(input.tz);
     if (offset == null) return 'invalid timezone format, use utc, utc-5, utc+3';
-    if (offset < -12 || offset > 14)
+    if (offset < -12 || offset > 14) {
       return 'offset must be between -12 and +14';
+    }
     return null;
   }
 
