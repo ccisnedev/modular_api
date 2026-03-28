@@ -315,4 +315,131 @@ void main() {
       expect(yamlResp.body, contains('title: Consistency Test'));
     });
   });
+
+  // ── Custom servers ──────────────────────────────────────────
+
+  group('OpenAPI spec — custom servers', () {
+    late HttpServer server;
+    late int port;
+
+    tearDown(() async {
+      await server.close(force: true);
+      apiRegistry.routes.clear();
+    });
+
+    test('uses localhost default when servers is not provided', () async {
+      apiRegistry.routes.clear();
+
+      final api = ModularApi(
+        basePath: '/api',
+        title: 'Default Servers',
+        version: '1.0.0',
+      );
+
+      api.module('test', (m) {
+        m.usecase('ping', _PingUseCase.fromJson,
+            inputExample: _PingInput(), outputExample: _PingOutput());
+      });
+
+      server = await api.serve(port: 0);
+      port = server.port;
+
+      final resp =
+          await http.get(Uri.parse('http://localhost:$port/openapi.json'));
+      final spec = jsonDecode(resp.body) as Map<String, dynamic>;
+      final servers = spec['servers'] as List;
+
+      expect(servers, hasLength(1));
+      expect(servers[0]['url'], contains('localhost'));
+    });
+
+    test('propagates custom servers to OpenAPI spec', () async {
+      apiRegistry.routes.clear();
+
+      final api = ModularApi(
+        basePath: '/api',
+        title: 'Custom Servers',
+        version: '1.0.0',
+        servers: [
+          {'url': 'https://miapi.example.com', 'description': 'Production'},
+        ],
+      );
+
+      api.module('test', (m) {
+        m.usecase('ping', _PingUseCase.fromJson,
+            inputExample: _PingInput(), outputExample: _PingOutput());
+      });
+
+      server = await api.serve(port: 0);
+      port = server.port;
+
+      final resp =
+          await http.get(Uri.parse('http://localhost:$port/openapi.json'));
+      final spec = jsonDecode(resp.body) as Map<String, dynamic>;
+      final servers = spec['servers'] as List;
+
+      expect(servers, hasLength(1));
+      expect(servers[0]['url'], equals('https://miapi.example.com'));
+      expect(servers[0]['description'], equals('Production'));
+    });
+
+    test('supports multiple servers in the OpenAPI spec', () async {
+      apiRegistry.routes.clear();
+
+      final api = ModularApi(
+        basePath: '/api',
+        title: 'Multi Servers',
+        version: '1.0.0',
+        servers: [
+          {'url': 'https://prod.example.com', 'description': 'Production'},
+          {'url': 'http://192.168.5.82:8080', 'description': 'LAN'},
+        ],
+      );
+
+      api.module('test', (m) {
+        m.usecase('ping', _PingUseCase.fromJson,
+            inputExample: _PingInput(), outputExample: _PingOutput());
+      });
+
+      server = await api.serve(port: 0);
+      port = server.port;
+
+      final resp =
+          await http.get(Uri.parse('http://localhost:$port/openapi.json'));
+      final spec = jsonDecode(resp.body) as Map<String, dynamic>;
+      final servers = spec['servers'] as List;
+
+      expect(servers, hasLength(2));
+      expect(servers[0]['url'], equals('https://prod.example.com'));
+      expect(servers[1]['url'], equals('http://192.168.5.82:8080'));
+    });
+
+    test('preserves server descriptions in spec output', () async {
+      apiRegistry.routes.clear();
+
+      final api = ModularApi(
+        basePath: '/api',
+        title: 'Described Servers',
+        version: '1.0.0',
+        servers: [
+          {'url': 'https://api.example.com', 'description': 'Main API'},
+        ],
+      );
+
+      api.module('test', (m) {
+        m.usecase('ping', _PingUseCase.fromJson,
+            inputExample: _PingInput(), outputExample: _PingOutput());
+      });
+
+      server = await api.serve(port: 0);
+      port = server.port;
+
+      final resp =
+          await http.get(Uri.parse('http://localhost:$port/openapi.json'));
+      final spec = jsonDecode(resp.body) as Map<String, dynamic>;
+      final servers = spec['servers'] as List;
+
+      expect(servers[0]['description'], equals('Main API'));
+    });
+  });
 }
