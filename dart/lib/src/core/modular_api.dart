@@ -22,6 +22,9 @@ class ModularApi {
   // ── Logger ──
   final LogLevel logLevel;
 
+  // ── OpenAPI ──
+  final List<Map<String, String>>? servers;
+
   // ── Metrics ──
   final bool metricsEnabled;
   final String metricsPath;
@@ -43,6 +46,9 @@ class ModularApi {
   /// [version] — API version (e.g. '1.0.0'). Used in health check response.
   /// [releaseId] — Defaults to `version-debug`. Override at compile time:
   ///   `dart compile exe --define=RELEASE_ID=1.2.3 bin/main.dart`
+  /// [servers] — OpenAPI `servers` list. Each entry is a map with `url` and
+  /// optional `description`. When omitted, `serve()` generates
+  /// `[{url: 'http://localhost:{port}'}]` automatically.
   /// [metricsEnabled] — Opt-in Prometheus metrics at [metricsPath].
   /// [metricsPath] — Path for the metrics endpoint (default `/metrics`).
   /// [excludedMetricsRoutes] — Routes excluded from instrumentation.
@@ -52,6 +58,7 @@ class ModularApi {
     this.title = 'Modular API',
     String version = 'x.y.z',
     String? releaseId,
+    this.servers,
     this.metricsEnabled = false,
     this.metricsPath = '/metrics',
     List<String>? excludedMetricsRoutes,
@@ -123,13 +130,7 @@ class ModularApi {
     await OpenApi.init(
       title: title,
       port: port,
-      // Customize as needed
-      // servers: [
-      //   {
-      //     'url': 'http://192.168.10.18:$port',
-      //     'description': 'PROD'
-      //   }
-      // ],
+      servers: servers,
     );
     // Swagger UI docs — inline HTML, no external dependency (PRD-003).
     _root.get('/docs', swaggerDocsHandler(title: title));

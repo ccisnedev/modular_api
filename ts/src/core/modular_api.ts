@@ -41,6 +41,11 @@ export interface ModularApiOptions {
    * Default: LogLevel.info (emits emergency..info, suppresses debug).
    */
   logLevel?: LogLevel;
+  /**
+   * OpenAPI `servers` list. Each entry has a `url` and optional `description`.
+   * When omitted, `serve()` generates `[{url: 'http://localhost:{port}'}]`.
+   */
+  servers?: Array<{ url: string; description?: string }>;
 }
 
 /**
@@ -85,6 +90,9 @@ export class ModularApi {
   // Logging
   private readonly logLevel: LogLevel;
 
+  // OpenAPI
+  private readonly servers?: Array<{ url: string; description?: string }>;
+
   /** Public accessor for custom-metric registration. Undefined when metrics are disabled. */
   get metrics(): MetricsRegistrar | undefined {
     return this._metricsRegistrar;
@@ -106,6 +114,9 @@ export class ModularApi {
 
     // Logging
     this.logLevel = options.logLevel ?? LogLevel.info;
+
+    // OpenAPI servers
+    this.servers = options.servers;
 
     if (this.metricsEnabled) {
       this.metricRegistry = new MetricRegistry();
@@ -242,7 +253,7 @@ export class ModularApi {
       this.app.get('/docs', swaggerDocsHandler({ title: this.title }));
 
       // Raw spec endpoints
-      const spec = buildOpenApiSpec({ title: this.title, port });
+      const spec = buildOpenApiSpec({ title: this.title, port, servers: this.servers });
       this.app.get('/openapi.json', openApiJsonHandler(spec));
       this.app.get('/openapi.yaml', openApiYamlHandler(spec));
 

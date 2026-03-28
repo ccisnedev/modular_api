@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.5] - 2026-03-28
+
+### Added
+
+- **`servers` parameter** in `ModularApi` constructor — configures the OpenAPI `servers` field so Swagger UI "Try it out" targets the correct host (LAN IP, domain, reverse proxy URL). Defaults to `localhost:{port}` when omitted.
+
 ## [0.4.4] - 2026-03-14
 
 ### Changed

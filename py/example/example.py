@@ -39,6 +39,12 @@ def main() -> None:
         base_path="/api/v1",
         title="Modular API",
         version="1.0.0",
+        # OpenAPI servers — shown in Swagger UI "Try it out" dropdown.
+        # When omitted, defaults to http://localhost:{port}.
+        # servers=[
+        #     {"url": "https://miapi.example.com", "description": "Production"},
+        #     {"url": "http://192.168.5.82:8080", "description": "LAN"},
+        # ],
         metrics_enabled=True,
         log_level=LogLevel.debug,
     )
