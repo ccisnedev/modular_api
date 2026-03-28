@@ -88,16 +88,18 @@ export function useCaseHandler<I extends Input, O extends Output>(
       // 5. Respond
       res.status(output.statusCode).set(JSON_HEADERS).json(output.toJson());
     } catch (err) {
+      const logger = res.locals[LOGGER_LOCALS_KEY] as ModularLogger | undefined;
+
       if (err instanceof InputValidationError) {
         res.status(400).set(JSON_HEADERS).json({ error: err.message });
         return;
       }
       if (err instanceof UseCaseException) {
-        console.error('UseCaseException:', err.toString());
+        logger?.error('UseCaseException', { error: err.toString(), status: err.statusCode });
         res.status(err.statusCode).set(JSON_HEADERS).json(err.toJson());
         return;
       }
-      console.error('useCaseHandler unexpected error:', err);
+      logger?.error('Unexpected error in use case handler', { error: String(err) });
       res.status(500).set(JSON_HEADERS).json({ error: 'Internal server error' });
     }
   };
