@@ -110,6 +110,89 @@ it('integration — persists to real DB', async () => {
 
 ---
 
+## Vitest 4.x — configuring OXC for `@Field` decorators
+
+Vitest 4.x uses [OXC](https://oxc.rs/) instead of esbuild for TypeScript
+transformation. OXC reads `tsconfig.json` to decide how to handle decorators.
+The `@Field.*` decorators in modular-api are **TC39 decorators** (stage 3), so
+the main `tsconfig.json` does **not** set `experimentalDecorators`. However, OXC
+fails to parse `@Field.integer()` and similar expressions without that flag,
+producing a `SyntaxError: Invalid or unexpected token` at import time.
+
+**Solution:** create a separate `tsconfig.test.json` that enables
+`experimentalDecorators` only for the test runner, and point vitest to it.
+
+### 1. `tsconfig.test.json`
+
+```json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "experimentalDecorators": true
+  },
+  "include": ["src/**/*", "tests/**/*"]
+}
+```
+
+### 2. `vitest.config.ts`
+
+```ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  oxc: {
+    tsconfig: {
+      configFile: './tsconfig.test.json',
+    },
+  },
+  test: {
+    root: '.',
+  },
+});
+```
+
+### 3. Mock `@macss/modular-api` when testing with `vi.mock`
+
+When unit-testing a `UseCase` class via `vi.mock` + dynamic `await import()`
+(instead of constructor injection), you must mock the decorators so OXC can
+resolve the `@Field.*` calls:
+
+```ts
+vi.mock('@macss/modular-api', () => {
+  const noopDecorator = () => (_target: any, _key: string) => {};
+  return {
+    Input: class {},
+    Output: class {},
+    UseCase: class {},
+    Field: {
+      integer: () => noopDecorator(),
+      boolean: () => noopDecorator(),
+      string:  () => noopDecorator(),
+    },
+    UseCaseException: class extends Error {
+      statusCode: number;
+      constructor(params: { statusCode: number; message: string }) {
+        super(params.message);
+        this.statusCode = params.statusCode;
+      }
+    },
+  };
+});
+
+const { MyUseCase } = await import('../../src/modules/my-use-case');
+```
+
+> **Important:** `noopDecorator` must be defined **inside** the `vi.mock()`
+> factory callback. Vitest hoists `vi.mock()` calls to the top of the file,
+> so any variable declared outside the factory is `undefined` when it runs.
+
+> **Prefer constructor injection** (see above) whenever possible — it avoids
+> the mock entirely. The `vi.mock` approach is only needed when the use case
+> lacks constructor-based dependency injection or when you need to mock
+> multiple sibling modules that the use case imports.
+
+---
+
 ## Summary
 
 | Test type       | When to use              | How                                              |
