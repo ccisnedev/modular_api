@@ -7,6 +7,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+## [0.4.5] - 2026-03-28
+
+### Added
+
+- **`servers` option** in `ModularApiOptions` — configures the OpenAPI `servers` field so Swagger UI "Try it out" targets the correct host (LAN IP, domain, reverse proxy URL). Defaults to `localhost:{port}` when omitted.
+
 ## [0.4.4] - 2026-03-14
 
 ### Changed
