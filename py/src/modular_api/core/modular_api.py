@@ -59,6 +59,7 @@ class ModularApi:
         title: str = "Modular API",
         version: str = "0.0.0",
         release_id: str | None = None,
+        servers: list[dict[str, str]] | None = None,
         metrics_enabled: bool = False,
         metrics_path: str = "/metrics",
         log_level: LogLevel = LogLevel.info,
@@ -67,6 +68,7 @@ class ModularApi:
         self._title = title
         self._version = version
         self._release_id = release_id or f"{version}-debug"
+        self._servers = servers
         self._metrics_enabled = metrics_enabled
         self._metrics_path = metrics_path
         self._log_level = log_level
@@ -188,6 +190,8 @@ class ModularApi:
 
         # OpenAPI endpoints
         spec_kwargs: dict[str, Any] = {"title": self._title, "port": port, "version": self._version}
+        if self._servers is not None:
+            spec_kwargs["servers"] = self._servers
         routes.append(Route("/openapi.json", endpoint=openapi_json_handler(**spec_kwargs)))
         routes.append(Route("/openapi.yaml", endpoint=openapi_yaml_handler(**spec_kwargs)))
 

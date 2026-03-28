@@ -209,6 +209,53 @@ class TestAutoMountedEndpoints:
         assert "Test API" in response.text
 
 
+# ── Custom servers in OpenAPI spec ────────────────────────────
+
+
+class TestCustomServers:
+    """ModularApi propagates servers to the OpenAPI spec."""
+
+    def _build_client(self, **api_options: object) -> TestClient:
+        api = _make_api(**api_options)
+        api.module("test", lambda m: m.usecase("ping", _PingUseCase.from_json))
+        app = api.build()
+        return TestClient(app)
+
+    def test_uses_localhost_default_when_servers_not_provided(self) -> None:
+        client = self._build_client()
+        spec = client.get("/openapi.json").json()
+        assert len(spec["servers"]) == 1
+        assert "localhost" in spec["servers"][0]["url"]
+
+    def test_propagates_custom_servers_to_openapi_spec(self) -> None:
+        client = self._build_client(
+            servers=[{"url": "https://miapi.example.com", "description": "Production"}],
+        )
+        spec = client.get("/openapi.json").json()
+        assert len(spec["servers"]) == 1
+        assert spec["servers"][0]["url"] == "https://miapi.example.com"
+        assert spec["servers"][0]["description"] == "Production"
+
+    def test_supports_multiple_servers(self) -> None:
+        client = self._build_client(
+            servers=[
+                {"url": "https://prod.example.com", "description": "Production"},
+                {"url": "http://192.168.5.82:8080", "description": "LAN"},
+            ],
+        )
+        spec = client.get("/openapi.json").json()
+        assert len(spec["servers"]) == 2
+        assert spec["servers"][0]["url"] == "https://prod.example.com"
+        assert spec["servers"][1]["url"] == "http://192.168.5.82:8080"
+
+    def test_preserves_server_descriptions(self) -> None:
+        client = self._build_client(
+            servers=[{"url": "https://api.example.com", "description": "Main API"}],
+        )
+        spec = client.get("/openapi.json").json()
+        assert spec["servers"][0]["description"] == "Main API"
+
+
 # ── Step 2.9.3: Middleware pipeline order ─────────────────────
 
 

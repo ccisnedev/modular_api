@@ -27,7 +27,7 @@ export 'src/core/metrics/metric.dart'
 export 'src/core/metrics/metric_registry.dart' show MetricsRegistrar;
 
 // Middlewares
-export 'src/middlewares/cors.dart' show exampleCorsMiddleware;
+export 'src/middlewares/cors.dart' show corsMiddleware;
 
 // OpenAPI
 export 'src/openapi/openapi.dart' show OpenApi;

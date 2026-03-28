@@ -59,6 +59,27 @@ Versioning follows semantic versioning strictly:
 
 ---
 
+## v0.4.5
+
+> *The API must know where it lives.*
+
+### OpenAPI `servers` Configuration
+
+- [ ] Add `servers` parameter to `ModularApi` constructor in all three SDKs (Dart, TypeScript, Python)
+- [ ] When `servers` is provided, propagate it to OpenAPI spec generation — the `servers` field in `openapi.json` / `openapi.yaml` reflects the user-defined list
+- [ ] When `servers` is omitted, `serve()` auto-generates `[{url: "http://localhost:{port}", description: "Local"}]` as the default (current behavior, no breaking change)
+- [ ] Swagger UI `Try it out` dropdown populates from the user-defined servers, enabling requests to production, LAN, or any configured host
+
+### CORS Middleware Alignment (Dart)
+
+- [ ] Replace `exampleCorsMiddleware()` in Dart with a configurable `corsMiddleware()` matching the interface of TypeScript (`cors()`) and Python (`cors_middleware()`)
+- [ ] Configurable parameters: `origin` (string or list), `methods`, `allowedHeaders`
+- [ ] Defaults: `origin: '*'`, `methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS'`, `allowedHeaders: 'Content-Type,Authorization'`
+- [ ] Preflight `OPTIONS` handled with 204 No Content
+- [ ] Update Dart barrel export: remove `exampleCorsMiddleware`, export `corsMiddleware`
+
+---
+
 ## Phase 0 — Foundation Hardening `v0.5.0`
 
 > *Before building the ecosystem, the core must be production-grade.*
@@ -354,6 +375,7 @@ Features that belong in the roadmap but whose timing depends on ecosystem maturi
 ```
 v0.4.1  ████████████████████████████  Core SDKs complete (Dart + TS + Python)  ✅
 v0.4.2  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Auto-generated documentation
+v0.4.5  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  OpenAPI servers config + CORS alignment
 v0.5.0  ████████░░░░░░░░░░░░░░░░░░░░  Foundation hardening (interfaces + OpenAPI 3.1)
 v0.6.0  ████████████░░░░░░░░░░░░░░░░  Plugin infrastructure (plugins + GraphQL + metrics)
 v0.7.0  ████████████████░░░░░░░░░░░░  Spec Driven Development (pragma_spec)
