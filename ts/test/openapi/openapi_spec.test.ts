@@ -242,4 +242,83 @@ describe('OpenAPI spec endpoints (TypeScript)', () => {
       expect(yamlRes.text).toContain('title: Consistency Test');
     });
   });
+
+  // ── Custom servers ──────────────────────────────────────────
+
+  describe('Custom servers in OpenAPI spec', () => {
+    it('uses localhost default when servers is not provided', async () => {
+      const api = new ModularApi({
+        basePath: '/api',
+        title: 'Default Servers',
+        version: '1.0.0',
+      });
+      api.module('test', (m) => {
+        m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput });
+      });
+      server = await api.serve({ port: 0 });
+
+      const res = await request(server).get('/openapi.json');
+      expect(res.body.servers).toHaveLength(1);
+      expect(res.body.servers[0].url).toContain('localhost');
+    });
+
+    it('propagates custom servers to OpenAPI spec', async () => {
+      const api = new ModularApi({
+        basePath: '/api',
+        title: 'Custom Servers',
+        version: '1.0.0',
+        servers: [
+          { url: 'https://miapi.example.com', description: 'Production' },
+        ],
+      });
+      api.module('test', (m) => {
+        m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput });
+      });
+      server = await api.serve({ port: 0 });
+
+      const res = await request(server).get('/openapi.json');
+      expect(res.body.servers).toHaveLength(1);
+      expect(res.body.servers[0].url).toBe('https://miapi.example.com');
+      expect(res.body.servers[0].description).toBe('Production');
+    });
+
+    it('supports multiple servers in the OpenAPI spec', async () => {
+      const api = new ModularApi({
+        basePath: '/api',
+        title: 'Multi Servers',
+        version: '1.0.0',
+        servers: [
+          { url: 'https://prod.example.com', description: 'Production' },
+          { url: 'http://192.168.5.82:8080', description: 'LAN' },
+        ],
+      });
+      api.module('test', (m) => {
+        m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput });
+      });
+      server = await api.serve({ port: 0 });
+
+      const res = await request(server).get('/openapi.json');
+      expect(res.body.servers).toHaveLength(2);
+      expect(res.body.servers[0].url).toBe('https://prod.example.com');
+      expect(res.body.servers[1].url).toBe('http://192.168.5.82:8080');
+    });
+
+    it('preserves server descriptions in spec output', async () => {
+      const api = new ModularApi({
+        basePath: '/api',
+        title: 'Described Servers',
+        version: '1.0.0',
+        servers: [
+          { url: 'https://api.example.com', description: 'Main API' },
+        ],
+      });
+      api.module('test', (m) => {
+        m.usecase('ping', PingUseCase.fromJson, { inputClass: PingInput, outputClass: PingOutput });
+      });
+      server = await api.serve({ port: 0 });
+
+      const res = await request(server).get('/openapi.json');
+      expect(res.body.servers[0].description).toBe('Main API');
+    });
+  });
 });
