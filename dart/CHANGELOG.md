@@ -13,6 +13,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 - **`servers` parameter** in `ModularApi` constructor — configures the OpenAPI `servers` field so Swagger UI "Try it out" targets the correct host (LAN IP, domain, reverse proxy URL). Defaults to `localhost:{port}` when omitted.
 - **`corsMiddleware()`** — configurable CORS middleware replacing `exampleCorsMiddleware()`. Accepts `origin` (String or List), `methods`, and `allowedHeaders`. Aligned with TypeScript `cors()` and Python `cors_middleware()`.
 
+### Fixed
+
+- **`useCaseHttpHandler` catch blocks use scoped logger** — `UseCaseException` and unexpected errors are now logged through `req.context['modular.logger']` instead of `stderr.writeln`, enabling Loki correlation with `trace_id` (issue #7).
+
 ### Removed
 
 - **`exampleCorsMiddleware()`** — replaced by the configurable `corsMiddleware()`

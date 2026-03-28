@@ -11,6 +11,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 - **`servers` parameter** in `ModularApi` constructor — configures the OpenAPI `servers` field so Swagger UI "Try it out" targets the correct host (LAN IP, domain, reverse proxy URL). Defaults to `localhost:{port}` when omitted.
 
+### Fixed
+
+- **`usecase_handler` catch blocks use scoped logger** — `UseCaseException` and unexpected errors are now logged through `request.state.modular_logger` instead of `print(stderr)`, enabling Loki correlation with `trace_id` (issue #7).
+
 ## [0.4.4] - 2026-03-14
 
 ### Changed
