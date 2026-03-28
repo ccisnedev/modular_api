@@ -6,6 +6,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+## [0.4.5] - 2026-03-28
+
+### Added
+
+- **`servers` parameter** in `ModularApi` constructor — configures the OpenAPI `servers` field so Swagger UI "Try it out" targets the correct host (LAN IP, domain, reverse proxy URL). Defaults to `localhost:{port}` when omitted.
+- **`corsMiddleware()`** — configurable CORS middleware replacing `exampleCorsMiddleware()`. Accepts `origin` (String or List), `methods`, and `allowedHeaders`. Aligned with TypeScript `cors()` and Python `cors_middleware()`.
+
+### Removed
+
+- **`exampleCorsMiddleware()`** — replaced by the configurable `corsMiddleware()`
+
 ## [0.4.4] - 2026-03-14
 
 ### Changed
