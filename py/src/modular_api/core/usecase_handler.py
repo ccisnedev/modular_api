@@ -8,7 +8,6 @@ the full use-case lifecycle: parse → validate → execute → respond.
 from __future__ import annotations
 
 import json
-import sys
 from typing import Any, Callable
 
 from pydantic import ValidationError
@@ -114,7 +113,9 @@ def usecase_handler(factory: UseCaseFactory) -> Any:
             )
 
         except UseCaseException as exc:
-            print(f"UseCaseException: {exc}", file=sys.stderr)
+            logger = getattr(request.state, LOGGER_STATE_KEY, None)
+            if logger is not None:
+                logger.error("UseCaseException", fields={"error": str(exc), "status": exc.status_code})
             return Response(
                 content=json.dumps(exc.to_json()),
                 status_code=exc.status_code,
@@ -131,7 +132,9 @@ def usecase_handler(factory: UseCaseFactory) -> Any:
                 media_type=_JSON_CONTENT_TYPE,
             )
         except Exception as exc:
-            print(f"usecase_handler unexpected error: {exc}", file=sys.stderr)
+            logger = getattr(request.state, LOGGER_STATE_KEY, None)
+            if logger is not None:
+                logger.error("Unexpected error in use case handler", fields={"error": str(exc)})
             return Response(
                 content=json.dumps({"error": "Internal server error"}),
                 status_code=500,

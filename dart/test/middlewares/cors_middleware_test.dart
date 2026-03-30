@@ -1,6 +1,7 @@
 /// Tests for corsMiddleware — Shelf middleware that sets CORS headers.
 ///
 /// Mirrors test_cors.py (Python) to ensure cross-SDK parity.
+library;
 import 'package:modular_api/modular_api.dart';
 import 'package:test/test.dart';
 

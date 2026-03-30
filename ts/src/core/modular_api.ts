@@ -15,6 +15,7 @@ import { MetricRegistry, MetricsRegistrar } from './metrics/metric_registry';
 import { metricsMiddleware, metricsHandler } from './metrics/metrics_middleware';
 import { loggingMiddleware } from './logger/logging_middleware';
 import { LogLevel } from './logger/logger';
+import { bodyParserErrorHandler } from './body_parser_error_handler';
 import { apiRegistry } from './registry';
 import type { Counter, Gauge, Histogram } from './metrics/metric';
 
@@ -138,7 +139,6 @@ export class ModularApi {
     }
 
     this.app = express();
-    this.app.use(express.json());
 
     this.rootRouter = express.Router();
   }
@@ -212,6 +212,10 @@ export class ModularApi {
           excludedRoutes: excludedLogRoutes,
         }),
       );
+
+      // Body parsing AFTER loggingMiddleware — SyntaxErrors now have trace_id.
+      this.app.use(express.json());
+      this.app.use(bodyParserErrorHandler);
 
       // Metrics middleware — before user middlewares & routes.
       // Created here so registeredPaths is populated from apiRegistry.

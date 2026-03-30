@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
@@ -65,8 +64,8 @@ Handler useCaseHttpHandler(
         body: jsonEncode(output.toJson()),
       );
     } on UseCaseException catch (e) {
-      // Handle known business logic exceptions with custom status codes
-      stderr.writeln('UseCaseException: $e');
+      final logger = req.context[loggerContextKey] as ModularLogger?;
+      logger?.error('UseCaseException', fields: {'error': e.toString(), 'status': e.statusCode});
       return Response(
         e.statusCode,
         headers: jsonHeaders,
@@ -79,8 +78,8 @@ Handler useCaseHttpHandler(
         body: jsonEncode({'error': e.message}),
       );
     } catch (e) {
-      // Handle unexpected errors
-      stderr.writeln('useCaseHttpHandler Error: $e');
+      final logger = req.context[loggerContextKey] as ModularLogger?;
+      logger?.error('Unexpected error in use case handler', fields: {'error': e.toString()});
       return Response(
         500,
         headers: jsonHeaders,

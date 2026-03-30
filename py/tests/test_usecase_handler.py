@@ -205,3 +205,80 @@ class TestUseCaseLifecycle:
         client = TestClient(app)
         client.post("/spy", json={})
         assert captured_loggers == ["fake-logger"]
+
+
+# ── Scoped-logger error integration (issue #7) ───────────────────────────
+
+
+class TestScopedLoggerInErrorPaths:
+    """Catch blocks must log through the request-scoped logger (with trace_id)
+    instead of printing to stderr."""
+
+    @staticmethod
+    def _build_app_with_logger(
+        factory,
+        log_lines: list[str],
+    ) -> Starlette:
+        """App with logging middleware capturing output into log_lines."""
+        from starlette.middleware import Middleware
+
+        from modular_api.core.logger.logging_middleware import logging_middleware
+        from modular_api.core.logger.logger import LogLevel
+
+        mw_cls = logging_middleware(
+            log_level=LogLevel.debug,
+            service_name="test-svc",
+            write_fn=lambda line: log_lines.append(line),
+        )
+        return Starlette(
+            routes=[Route("/test", usecase_handler(factory), methods=["POST"])],
+            middleware=[Middleware(mw_cls)],
+        )
+
+    def test_logs_use_case_exception_through_scoped_logger(self) -> None:
+        log_lines: list[str] = []
+        app = self._build_app_with_logger(FailingUseCase, log_lines)
+        client = TestClient(app, raise_server_exceptions=False)
+        resp = client.post(
+            "/test",
+            json={"name": "x"},
+            headers={"X-Request-ID": "trace-py-uce-001"},
+        )
+        assert resp.status_code == 409
+
+        error_logs = [
+            json.loads(l)
+            for l in log_lines
+            if '"level": "error"' in l and "UseCaseException" in l
+        ]
+        assert len(error_logs) > 0, "expected error log from scoped logger"
+        assert error_logs[0]["trace_id"] == "trace-py-uce-001"
+
+    def test_logs_unexpected_error_through_scoped_logger(self) -> None:
+        log_lines: list[str] = []
+        app = self._build_app_with_logger(CrashingUseCase, log_lines)
+        client = TestClient(app, raise_server_exceptions=False)
+        resp = client.post(
+            "/test",
+            json={"name": "x"},
+            headers={"X-Request-ID": "trace-py-crash-002"},
+        )
+        assert resp.status_code == 500
+
+        error_logs = [
+            json.loads(l)
+            for l in log_lines
+            if '"level": "error"' in l and "Unexpected error" in l
+        ]
+        assert len(error_logs) > 0, "expected error log from scoped logger"
+        assert error_logs[0]["trace_id"] == "trace-py-crash-002"
+
+    def test_does_not_throw_when_logger_unavailable(self) -> None:
+        """When no logging middleware is present, catch blocks must not crash."""
+        app = Starlette(
+            routes=[Route("/test", usecase_handler(FailingUseCase), methods=["POST"])],
+        )
+        client = TestClient(app, raise_server_exceptions=False)
+        resp = client.post("/test", json={"name": "x"})
+        assert resp.status_code == 409
+        assert resp.json()["message"] == "Already exists"

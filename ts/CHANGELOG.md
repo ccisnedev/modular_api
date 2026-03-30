@@ -12,6 +12,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - **`servers` option** in `ModularApiOptions` — configures the OpenAPI `servers` field so Swagger UI "Try it out" targets the correct host (LAN IP, domain, reverse proxy URL). Defaults to `localhost:{port}` when omitted.
+- **`bodyParserErrorHandler`** — Express error middleware that catches body-parser `SyntaxError` and returns 400 with structured JSON.
+
+### Fixed
+
+- **body-parser SyntaxError now carries `trace_id`** — moved `express.json()` after `loggingMiddleware` in the middleware chain so malformed-body errors are logged as structured JSON with `trace_id` (issue #7).
+- **`useCaseHandler` catch blocks use scoped logger** — `UseCaseException` and unexpected errors are now logged through `res.locals['modularLogger']` instead of `console.error`, enabling Loki correlation.
 
 ## [0.4.4] - 2026-03-14
 
