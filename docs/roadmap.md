@@ -17,13 +17,13 @@ Versioning follows semantic versioning strictly:
 
 ---
 
-## Current State — v0.4.1
+## Current State — v0.4.5
 
 | Package | Version | Registry | Status |
 |---|---|---|---|
-| `modular_api` (Dart) | 0.4.1 | [pub.dev](https://pub.dev/packages/modular_api) | ✅ Published |
-| `@macss/modular-api` (TS) | 0.4.1 | [npm](https://www.npmjs.com/package/@macss/modular-api) | ✅ Published |
-| `macss-modular-api` (Python) | 0.4.1 | [PyPI](https://pypi.org/project/macss-modular-api/) | ✅ Published |
+| `modular_api` (Dart) | 0.4.5 | [pub.dev](https://pub.dev/packages/modular_api) | ✅ Published |
+| `@macss/modular-api` (TS) | 0.4.5 | [npm](https://www.npmjs.com/package/@macss/modular-api) | ✅ Published |
+| `macss-modular-api` (Python) | 0.4.5 | [PyPI](https://pypi.org/project/macss-modular-api/) | ✅ Published |
 
 ---
 
@@ -48,35 +48,77 @@ Versioning follows semantic versioning strictly:
 
 ---
 
-## v0.4.2 — Next
+## v0.4.2 — Released
 
 > *Documentation generation must be automatic.*
 
 ### Auto-Generated Documentation
 
-- [ ] Remove the need for `ToSchema()` — OpenAPI documentation generated automatically from Use Case DTOs (Input/Output) without requiring manual schema definitions
-- [ ] All three SDKs (Dart, TypeScript, Python) must generate identical OpenAPI output from equivalent DTO definitions
+- [x] Remove the need for `ToSchema()` — OpenAPI documentation generated automatically from Use Case DTOs (Input/Output) without requiring manual schema definitions
+- [x] All three SDKs (Dart, TypeScript, Python) must generate identical OpenAPI output from equivalent DTO definitions
+- [x] Dart: `SchemaField` metadata via `schemaFields` getter + `buildSchema()` utility
+- [x] TypeScript: Stage 3 `@Field` decorators + `getFieldMetadata()` + `buildSchemaFromMetadata()`
+- [x] Python: Pydantic `BaseModel` + `_normalize_schema()` (Draft 2020-12 → OpenAPI 3.0.3)
+- [x] Cross-language schema conformance tests against shared JSON fixtures
 
 ---
 
-## v0.4.5
+## v0.4.3 — Released
 
-> *The API must know where it lives.*
+> *Use cases return their output. No mutable state.*
+
+### Execute Returns Output (BREAKING)
+
+- [x] `execute()` returns `Future<O>` / `Promise<O>` / `O` — no longer void; the handler reads the returned Output directly
+- [x] Removed `output` field from `UseCase` — no mutable state
+- [x] Removed `toJson()` from `UseCase` — the handler calls `output.toJson()` on the returned value
+- [x] `inputExample` / `outputExample` (Dart) and `inputClass` / `outputClass` (TS) now required in `ModuleBuilder.usecase()` — OpenAPI schema extraction uses them directly
+- [x] Removed Strategy 2 fallback in OpenAPI schema extraction
+
+---
+
+## v0.4.4 — Released
+
+> *One Swagger UI to rule them all.*
+
+### Docs UI Extraction
+
+- [x] Swagger UI replaced with `@macss/docs-ui` — the ~200-line inline HTML/CSS/JS reduced to a ~15-line bootloader that loads `@macss/docs-ui@0.1` from jsdelivr CDN
+- [x] Dark mode delegated to `docs-ui` package — single source of truth across all three SDKs
+- [x] Published `docs-ui/` as standalone package
+
+---
+
+## v0.4.5 — Released
+
+> *The API must know where it lives. Every error must be traceable.*
 
 ### OpenAPI `servers` Configuration
 
-- [ ] Add `servers` parameter to `ModularApi` constructor in all three SDKs (Dart, TypeScript, Python)
-- [ ] When `servers` is provided, propagate it to OpenAPI spec generation — the `servers` field in `openapi.json` / `openapi.yaml` reflects the user-defined list
-- [ ] When `servers` is omitted, `serve()` auto-generates `[{url: "http://localhost:{port}", description: "Local"}]` as the default (current behavior, no breaking change)
-- [ ] Swagger UI `Try it out` dropdown populates from the user-defined servers, enabling requests to production, LAN, or any configured host
+- [x] Add `servers` parameter to `ModularApi` constructor in all three SDKs (Dart, TypeScript, Python)
+- [x] When `servers` is provided, propagate it to OpenAPI spec generation — the `servers` field in `openapi.json` / `openapi.yaml` reflects the user-defined list
+- [x] When `servers` is omitted, `serve()` auto-generates `[{url: "http://localhost:{port}", description: "Local"}]` as the default (current behavior, no breaking change)
+- [x] Swagger UI `Try it out` dropdown populates from the user-defined servers, enabling requests to production, LAN, or any configured host
 
 ### CORS Middleware Alignment (Dart)
 
-- [ ] Replace `exampleCorsMiddleware()` in Dart with a configurable `corsMiddleware()` matching the interface of TypeScript (`cors()`) and Python (`cors_middleware()`)
-- [ ] Configurable parameters: `origin` (string or list), `methods`, `allowedHeaders`
-- [ ] Defaults: `origin: '*'`, `methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS'`, `allowedHeaders: 'Content-Type,Authorization'`
-- [ ] Preflight `OPTIONS` handled with 204 No Content
-- [ ] Update Dart barrel export: remove `exampleCorsMiddleware`, export `corsMiddleware`
+- [x] Replace `exampleCorsMiddleware()` in Dart with a configurable `corsMiddleware()` matching the interface of TypeScript (`cors()`) and Python (`cors_middleware()`)
+- [x] Configurable parameters: `origin` (string or list), `methods`, `allowedHeaders`
+- [x] Defaults: `origin: '*'`, `methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS'`, `allowedHeaders: 'Content-Type,Authorization'`
+- [x] Preflight `OPTIONS` handled with 204 No Content
+- [x] Update Dart barrel export: remove `exampleCorsMiddleware`, export `corsMiddleware`
+
+### Scoped Logger in Error Paths (issue #7)
+
+- [x] TypeScript: moved `express.json()` after `loggingMiddleware` so body-parser errors carry `trace_id`; added `bodyParserErrorHandler` Express error middleware
+- [x] All 3 SDKs: catch blocks in use case handlers now log via scoped `RequestScopedLogger` instead of `stderr` / `console.error` / `print`, enabling Loki correlation
+
+### `SchemaField.object` / `Field.object` (issue #8)
+
+- [x] Dart: `SchemaField.object()` factory + `case 'object'` in `_isJsonTypeValid` + `Map` case in `_inferOpenApiType`
+- [x] TypeScript: `Field.object()` decorator + `'object'` in `FieldMeta.type` union + `case 'object'` in `isJsonTypeValid`
+- [x] Python: `_normalize_schema` strips `additionalProperties` for cross-SDK parity
+- [x] Shared fixture `webhook_input_schema.json` — all 3 SDKs produce identical schemas for object fields
 
 ---
 
@@ -373,15 +415,17 @@ Features that belong in the roadmap but whose timing depends on ecosystem maturi
 ## Summary Timeline
 
 ```
-v0.4.1  ████████████████████████████  Core SDKs complete (Dart + TS + Python)  ✅
-v0.4.2  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Auto-generated documentation
-v0.4.5  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  OpenAPI servers config + CORS alignment
-v0.5.0  ████████░░░░░░░░░░░░░░░░░░░░  Foundation hardening (interfaces + OpenAPI 3.1)
-v0.6.0  ████████████░░░░░░░░░░░░░░░░  Plugin infrastructure (plugins + GraphQL + metrics)
-v0.7.0  ████████████████░░░░░░░░░░░░  Spec Driven Development (pragma_spec)
-v0.8.0  ████████████████████░░░░░░░░  MCP integration (pragma_mcp)
-v0.9.0  ████████████████████████░░░░  Reference implementation (macss-imc)
-v1.0.0  ████████████████████████████  Production ready (oauth2 + stability)
+v0.4.1  ████████████████████████████  Core SDKs complete (Dart + TS + Python)       ✅
+v0.4.2  ████████████████████████████  Auto-generated documentation (SchemaField)    ✅
+v0.4.3  ████████████████████████████  execute() returns Output (BREAKING)           ✅
+v0.4.4  ████████████████████████████  Swagger UI → @macss/docs-ui                   ✅
+v0.4.5  ████████████████████████████  servers + CORS + trace_id + Field.object       ✅
+v0.5.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Foundation hardening (interfaces + OpenAPI 3.1)
+v0.6.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Plugin infrastructure (plugins + GraphQL + metrics)
+v0.7.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Spec Driven Development (pragma_spec)
+v0.8.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  MCP integration (pragma_mcp)
+v0.9.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Reference implementation (macss-imc)
+v1.0.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Production ready (oauth2 + stability)
 v1.1.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Custom docs UI + community tooling + CLI
 ```
 
