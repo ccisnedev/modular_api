@@ -65,7 +65,8 @@ Handler useCaseHttpHandler(
       );
     } on UseCaseException catch (e) {
       final logger = req.context[loggerContextKey] as ModularLogger?;
-      logger?.error('UseCaseException', fields: {'error': e.toString(), 'status': e.statusCode});
+      logger?.error('UseCaseException',
+          fields: {'error': e.toString(), 'status': e.statusCode});
       return Response(
         e.statusCode,
         headers: jsonHeaders,
@@ -79,7 +80,8 @@ Handler useCaseHttpHandler(
       );
     } catch (e) {
       final logger = req.context[loggerContextKey] as ModularLogger?;
-      logger?.error('Unexpected error in use case handler', fields: {'error': e.toString()});
+      logger?.error('Unexpected error in use case handler',
+          fields: {'error': e.toString()});
       return Response(
         500,
         headers: jsonHeaders,

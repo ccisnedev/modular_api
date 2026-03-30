@@ -2,6 +2,7 @@
 ///
 /// Mirrors test_cors.py (Python) to ensure cross-SDK parity.
 library;
+
 import 'package:modular_api/modular_api.dart';
 import 'package:test/test.dart';
 
@@ -26,8 +27,7 @@ Future<Response> _send(
   return handler(request);
 }
 
-Request _get(String path) =>
-    Request('GET', Uri.parse('http://localhost$path'));
+Request _get(String path) => Request('GET', Uri.parse('http://localhost$path'));
 
 Request _post(String path) =>
     Request('POST', Uri.parse('http://localhost$path'));

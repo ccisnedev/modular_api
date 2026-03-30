@@ -13,6 +13,7 @@
 /// api.use(corsMiddleware(origin: ['https://a.com', 'https://b.com']));
 /// ```
 library;
+
 import 'package:shelf/shelf.dart';
 
 const _defaultMethods = 'GET,POST,PUT,PATCH,DELETE,OPTIONS';
