@@ -9,6 +9,7 @@ Error message contract (identical across all 3 SDKs for parity):
 """
 
 import json
+from typing import Any
 
 import pytest
 from pydantic import Field, ValidationError
@@ -120,3 +121,28 @@ class TestFromJsonHandlerErrors:
         assert resp.status_code == 200
         body = resp.json()
         assert body["greeting"] == "Hi Alice, age 25"
+
+
+# ── Unit: dict[str, Any] object type validation ──────────────────────────
+
+
+class ObjectInput(Input):
+    id: str = Field(description="ID")
+    details: dict[str, Any] = Field(description="Nested object")
+
+
+class TestFromJsonObjectType:
+    """Pydantic strict mode validates dict[str, Any] as object type."""
+
+    def test_accepts_dict_for_object_field(self) -> None:
+        result = ObjectInput.from_json({"id": "abc", "details": {"amount": 100}})
+        assert result.id == "abc"
+        assert result.details == {"amount": 100}
+
+    def test_rejects_string_for_object_field(self) -> None:
+        with pytest.raises(ValidationError):
+            ObjectInput.from_json({"id": "abc", "details": "not-a-dict"})
+
+    def test_rejects_list_for_object_field(self) -> None:
+        with pytest.raises(ValidationError):
+            ObjectInput.from_json({"id": "abc", "details": [1, 2]})

@@ -13,6 +13,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 - **`servers` option** in `ModularApiOptions` — configures the OpenAPI `servers` field so Swagger UI "Try it out" targets the correct host (LAN IP, domain, reverse proxy URL). Defaults to `localhost:{port}` when omitted.
 - **`bodyParserErrorHandler`** — Express error middleware that catches body-parser `SyntaxError` and returns 400 with structured JSON.
+- **`Field.object()`** — decorator for nested JSON object fields (`type: 'object'`). Enables webhook payloads with arbitrary nested objects to be declared, validated, and documented in OpenAPI (issue #8).
+- **`object` case in `isJsonTypeValid`** — validates that a field declared as `object` receives a plain object; rejects strings, arrays, and null.
 
 ### Fixed
 

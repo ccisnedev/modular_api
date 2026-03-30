@@ -81,4 +81,43 @@ void main() {
       );
     });
   });
+
+  group('validateJsonFields — object type', () {
+    final fields = [
+      SchemaField.string('id', description: 'ID'),
+      SchemaField.object('details', description: 'Nested object'),
+    ];
+
+    test('accepts Map value for SchemaField.object', () {
+      expect(
+        () => validateJsonFields({
+          'id': 'abc',
+          'details': {'amount': 100, 'currency': 'PEN'},
+        }, fields),
+        returnsNormally,
+      );
+    });
+
+    test('rejects String value for SchemaField.object', () {
+      expect(
+        () => validateJsonFields({'id': 'abc', 'details': 'not-a-map'}, fields),
+        throwsA(isA<InputValidationException>().having(
+          (e) => e.message,
+          'message',
+          "Field 'details' must be of type object",
+        )),
+      );
+    });
+
+    test('rejects List value for SchemaField.object', () {
+      expect(
+        () => validateJsonFields({'id': 'abc', 'details': [1, 2]}, fields),
+        throwsA(isA<InputValidationException>().having(
+          (e) => e.message,
+          'message',
+          "Field 'details' must be of type object",
+        )),
+      );
+    });
+  });
 }
