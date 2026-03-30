@@ -52,3 +52,26 @@ describe('Schema Conformance', () => {
     expect(output.toSchema()).toEqual(fixture);
   });
 });
+
+class WebhookInput extends Input {
+  @Field.string({ description: 'Payment instruction ID', example: '20260323ABC' })
+  instruction_id!: string;
+
+  @Field.object({ description: 'Nested transfer info', example: { amount: 2300, currency: 'PEN' } })
+  transfer_details!: Record<string, unknown>;
+
+  static fromJson(json: Record<string, unknown>): WebhookInput {
+    const instance = new WebhookInput();
+    instance.instruction_id = json['instruction_id'] as string;
+    instance.transfer_details = json['transfer_details'] as Record<string, unknown>;
+    return instance;
+  }
+}
+
+describe('Schema Conformance — object type', () => {
+  it('WebhookInput schema matches shared fixture', () => {
+    const fixture = loadFixture('webhook_input_schema.json');
+    const input = new WebhookInput();
+    expect(input.toSchema()).toEqual(fixture);
+  });
+});

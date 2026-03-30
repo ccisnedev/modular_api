@@ -14,6 +14,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - **`usecase_handler` catch blocks use scoped logger** — `UseCaseException` and unexpected errors are now logged through `request.state.modular_logger` instead of `print(stderr)`, enabling Loki correlation with `trace_id` (issue #7).
+- **`_normalize_schema` strips `additionalProperties`** — Pydantic emits `additionalProperties: true` for `dict[str, Any]` fields; now stripped for cross-SDK parity with Dart/TS (issue #8).
 
 ## [0.4.4] - 2026-03-14
 

@@ -12,6 +12,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 - **`servers` parameter** in `ModularApi` constructor — configures the OpenAPI `servers` field so Swagger UI "Try it out" targets the correct host (LAN IP, domain, reverse proxy URL). Defaults to `localhost:{port}` when omitted.
 - **`corsMiddleware()`** — configurable CORS middleware replacing `exampleCorsMiddleware()`. Accepts `origin` (String or List), `methods`, and `allowedHeaders`. Aligned with TypeScript `cors()` and Python `cors_middleware()`.
+- **`SchemaField.object()`** — factory constructor for nested JSON object fields (`type: 'object'`). Enables webhook payloads with arbitrary nested objects to be declared, validated, and documented in OpenAPI (issue #8).
+- **`object` case in `_isJsonTypeValid`** — validates that a field declared as `object` receives a `Map` value; rejects strings, arrays, and other types.
+- **`Map` case in `_inferOpenApiType`** — infers `'object'` for `Map` values in example-based schema generation.
 
 ### Fixed
 

@@ -1,9 +1,9 @@
 # Modular API — Architecture Specification
 
 **Status:** Living Document  
-**Version:** 0.4.0  
+**Version:** 0.4.5  
 **Applies to:** All implementations (Dart, TypeScript, Python, future languages)  
-**Last updated:** 2026-03-11
+**Last updated:** 2026-03-30
 
 ---
 
@@ -732,11 +732,11 @@ opt-in authentication middleware.
 | Aspect | Dart | TypeScript | Python |
 |---|---|---|---|
 | **HTTP framework** | [shelf](https://pub.dev/packages/shelf) | [Express](https://expressjs.com/) | [Starlette](https://www.starlette.io/) |
-| **Package** | `modular_api` (pub.dev) | `@macss/modular-api` (npm) | `modular-api` (PyPI) |
-| **Version** | 0.4.0 | 0.4.0 | — |
-| **Schema generation** | `@Field` + `schemaFields` getter | Stage 3 `@Field` decorators | Pydantic `BaseModel` |
+| **Package** | `modular_api` (pub.dev) | `@macss/modular-api` (npm) | `macss-modular-api` (PyPI) |
+| **Version** | 0.4.5 | 0.4.5 | 0.4.5 |
+| **Schema generation** | `SchemaField` + `schemaFields` getter | Stage 3 `@Field` decorators | Pydantic `BaseModel` |
 | **Metrics** | Native implementation | Native implementation | Native implementation |
-| **Swagger UI** | `shelf_swagger_ui` | `swagger-ui-express` | Native or `starlette-swagger-ui` |
+| **Swagger UI** | `@macss/docs-ui` (CDN) | `@macss/docs-ui` (CDN) | `@macss/docs-ui` (CDN) |
 | **YAML serializer** | Native (zero-dep) | Native (zero-dep) | Native (zero-dep) |
 | **UUID v4** | Native (`Random.secure()`) | Native (`crypto.randomUUID()`) | Native (`uuid.uuid4()`) |
 

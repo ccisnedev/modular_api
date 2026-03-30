@@ -27,7 +27,7 @@ declare global {
 /** Metadata stored per decorated field. */
 export interface FieldMeta {
   name: string;
-  type: 'string' | 'integer' | 'number' | 'boolean' | 'array';
+  type: 'string' | 'integer' | 'number' | 'boolean' | 'array' | 'object';
   description?: string;
   required: boolean;
   nullable: boolean;
@@ -109,6 +109,11 @@ export const Field = {
   boolean(options: FieldOptions = {}): FieldDecorator & PendingField {
     const decorator = makeFieldDecorator('boolean', options);
     return Object.assign(decorator, { __pending: true as const, type: 'boolean' as const, options, extra: {} });
+  },
+
+  object(options: FieldOptions = {}): FieldDecorator & PendingField {
+    const decorator = makeFieldDecorator('object', options);
+    return Object.assign(decorator, { __pending: true as const, type: 'object' as const, options, extra: {} });
   },
 
   /**

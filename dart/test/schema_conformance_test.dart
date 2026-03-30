@@ -71,4 +71,18 @@ void main() {
       expect(output.toSchema(), equals(fixture));
     });
   });
+
+  group('Schema Conformance — object type', () {
+    test('WebhookInput schema matches shared fixture', () {
+      final fixture = loadFixture('webhook_input_schema.json');
+      final schema = buildSchema([
+        SchemaField.string('instruction_id',
+            description: 'Payment instruction ID', example: '20260323ABC'),
+        SchemaField.object('transfer_details',
+            description: 'Nested transfer info',
+            example: {'amount': 2300, 'currency': 'PEN'}),
+      ]);
+      expect(schema, equals(fixture));
+    });
+  });
 }

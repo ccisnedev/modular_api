@@ -49,13 +49,15 @@ def _normalize_schema(raw: dict[str, Any]) -> dict[str, object]:
                 # Convert examples → example (nullable fields)
                 if "examples" in prop and prop["examples"]:
                     collapsed["example"] = prop["examples"][0]
+                collapsed.pop("additionalProperties", None)
                 normalized_props[name] = _reorder_type_first(collapsed)
                 if name in required:
                     required.remove(name)
                 continue
 
-        # Strip Pydantic's auto-generated ``title`` and ``default`` from properties
-        cleaned = {k: v for k, v in prop.items() if k not in ("title", "default")}
+        # Strip Pydantic's auto-generated ``title``, ``default``, and
+        # ``additionalProperties`` (emitted for dict[str, Any] fields) from properties.
+        cleaned = {k: v for k, v in prop.items() if k not in ("title", "default", "additionalProperties")}
 
         # Convert Pydantic ``examples`` (list, Draft 2020-12) → OpenAPI ``example`` (singular)
         if "examples" in cleaned and cleaned["examples"]:
