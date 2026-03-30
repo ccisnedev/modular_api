@@ -111,7 +111,10 @@ void main() {
 
     test('rejects List value for SchemaField.object', () {
       expect(
-        () => validateJsonFields({'id': 'abc', 'details': [1, 2]}, fields),
+        () => validateJsonFields({
+          'id': 'abc',
+          'details': [1, 2]
+        }, fields),
         throwsA(isA<InputValidationException>().having(
           (e) => e.message,
           'message',

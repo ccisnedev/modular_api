@@ -93,14 +93,12 @@ class CapturingSink implements StringSink {
   void writeAll(Iterable<dynamic> objects, [String separator = '']) =>
       lines.add(objects.join(separator));
   @override
-  void writeCharCode(int charCode) =>
-      lines.add(String.fromCharCode(charCode));
+  void writeCharCode(int charCode) => lines.add(String.fromCharCode(charCode));
   @override
   void writeln([Object? object = '']) => lines.add(object.toString());
 }
 
-Request postJson(String path, Map<String, dynamic> body,
-    {String? traceId}) {
+Request postJson(String path, Map<String, dynamic> body, {String? traceId}) {
   final headers = <String, String>{
     'content-type': 'application/json',
     if (traceId != null) 'X-Request-ID': traceId,
@@ -111,8 +109,7 @@ Request postJson(String path, Map<String, dynamic> body,
 
 void main() {
   group('useCaseHttpHandler scoped-logger integration (issue #7)', () {
-    test('logs UseCaseException through scoped logger with trace_id',
-        () async {
+    test('logs UseCaseException through scoped logger with trace_id', () async {
       final logLines = <String>[];
       final handler = wrapWithLogging(
         useCaseHttpHandler(FailingUseCase.fromJson,
@@ -120,8 +117,8 @@ void main() {
         logLines,
       );
       const traceId = 'trace-uce-dart-001';
-      final response = await handler(
-          postJson('/test', {'payload': 'hi'}, traceId: traceId));
+      final response =
+          await handler(postJson('/test', {'payload': 'hi'}, traceId: traceId));
 
       expect(response.statusCode, equals(422));
 
@@ -146,8 +143,8 @@ void main() {
         logLines,
       );
       const traceId = 'trace-crash-dart-002';
-      final response = await handler(
-          postJson('/test', {'payload': 'hi'}, traceId: traceId));
+      final response =
+          await handler(postJson('/test', {'payload': 'hi'}, traceId: traceId));
 
       expect(response.statusCode, equals(500));
 
@@ -167,8 +164,7 @@ void main() {
       final handler = useCaseHttpHandler(FailingUseCase.fromJson,
           inputExample: PingInput.example);
 
-      final response =
-          await handler(postJson('/test', {'payload': 'hi'}));
+      final response = await handler(postJson('/test', {'payload': 'hi'}));
 
       expect(response.statusCode, equals(422));
       final body = jsonDecode(await response.readAsString());
