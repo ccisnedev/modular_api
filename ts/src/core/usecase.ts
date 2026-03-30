@@ -71,6 +71,7 @@ function isJsonTypeValid(value: unknown, expectedType: string): boolean {
     case 'number':  return typeof value === 'number';
     case 'boolean': return typeof value === 'boolean';
     case 'array':   return Array.isArray(value);
+    case 'object':  return typeof value === 'object' && value !== null && !Array.isArray(value);
     default:        return true;
   }
 }

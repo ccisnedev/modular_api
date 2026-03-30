@@ -72,3 +72,43 @@ describe('Input.validateJson', () => {
     expect(input.age).toBe(25);
   });
 });
+
+// ── Stub with object field ───────────────────────────────────────────────
+
+class ObjectInput extends Input {
+  @Field.string({ description: 'ID' })
+  id!: string;
+
+  @Field.object({ description: 'Nested object' })
+  details!: Record<string, unknown>;
+
+  static fromJson(json: Record<string, unknown>): ObjectInput {
+    Input.validateJson(json, ObjectInput);
+    const instance = new ObjectInput();
+    instance.id = json['id'] as string;
+    instance.details = json['details'] as Record<string, unknown>;
+    return instance;
+  }
+}
+
+// ── Unit: validateJson handles object type ───────────────────────────────
+
+describe('Input.validateJson — object type', () => {
+  it('accepts plain object for Field.object', () => {
+    expect(
+      () => Input.validateJson({ id: 'abc', details: { amount: 100 } }, ObjectInput),
+    ).not.toThrow();
+  });
+
+  it('rejects string for Field.object', () => {
+    expect(
+      () => Input.validateJson({ id: 'abc', details: 'not-an-object' }, ObjectInput),
+    ).toThrow("Field 'details' must be of type object");
+  });
+
+  it('rejects array for Field.object', () => {
+    expect(
+      () => Input.validateJson({ id: 'abc', details: [1, 2] }, ObjectInput),
+    ).toThrow("Field 'details' must be of type object");
+  });
+});
