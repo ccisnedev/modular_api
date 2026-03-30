@@ -69,6 +69,10 @@ class SchemaField {
       SchemaField(name, 'array',
           description: description, items: itemType, example: example);
 
+  factory SchemaField.object(String name,
+          {String? description, dynamic example}) =>
+      SchemaField(name, 'object', description: description, example: example);
+
   factory SchemaField.optional(SchemaField inner) => SchemaField(
         inner.name,
         inner.type,
@@ -171,6 +175,7 @@ String _inferOpenApiType(dynamic value) {
   if (value is double) return 'number';
   if (value is bool) return 'boolean';
   if (value is List) return 'array';
+  if (value is Map) return 'object';
   return 'string';
 }
 
@@ -224,6 +229,8 @@ bool _isJsonTypeValid(dynamic value, String expectedType) {
       return value is bool;
     case 'array':
       return value is List;
+    case 'object':
+      return value is Map;
     default:
       return true;
   }

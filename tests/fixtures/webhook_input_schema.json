@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "instruction_id": { "type": "string", "description": "Payment instruction ID", "example": "20260323ABC" },
+    "transfer_details": { "type": "object", "description": "Nested transfer info", "example": { "amount": 2300, "currency": "PEN" } }
+  },
+  "required": ["instruction_id", "transfer_details"],
+  "example": { "instruction_id": "20260323ABC", "transfer_details": { "amount": 2300, "currency": "PEN" } }
+}
