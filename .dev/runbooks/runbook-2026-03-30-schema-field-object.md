@@ -64,19 +64,19 @@ Cambios:
 - `_isJsonTypeValid`: agregar `case 'object': return value is Map;`
 - `_inferOpenApiType`: agregar `if (value is Map) return 'object';` (antes del fallback `return 'string'`)
 
-- [ ] Write failing test(s) with documentation
+- [x] Write failing test(s) with documentation
   - `dart/test/fromjson_validation_test.dart`: 3 nuevos tests en grupo `validateJsonFields — object type`
     - `accepts Map value for SchemaField.object` — JSON con campo `{key: value}` pasa validación
     - `rejects String value for SchemaField.object` — string donde se espera object → `"Field 'details' must be of type object"`
     - `rejects List value for SchemaField.object` — array donde se espera object → mismo error
   - `dart/test/schema_conformance_test.dart`: 1 test nuevo
     - `WebhookInput schema matches shared fixture` — schema con campo `object` coincide con fixture `webhook_input_schema.json`
-- [ ] 🔍 REVIEW GATE: Present documented tests to user for approval
-- [ ] Incorporate user feedback
-- [ ] Implement minimum code to pass
-- [ ] Refactor if needed
-- [ ] Mark completed checks in this RUNBOOK
-- [ ] `git add . && git commit -m "feat(dart): add SchemaField.object + object type validation (closes #8)"` (all tests green, RUNBOOK updated)
+- [x] 🔍 REVIEW GATE: skipReview
+- [x] Incorporate user feedback
+- [x] Implement minimum code to pass
+- [x] Refactor if needed
+- [x] Mark completed checks in this RUNBOOK
+- [x] `git add . && git commit -m "feat(dart): add SchemaField.object + object type validation (closes #8)"` (all tests green, RUNBOOK updated)
 
 ### Step 2: TypeScript — `Field.object()` + `FieldMeta.type` union + `isJsonTypeValid`
 
@@ -87,19 +87,19 @@ Cambios:
 - Nuevo método `Field.object(options)` siguiendo el patrón de los demás
 - `isJsonTypeValid`: agregar `case 'object': return typeof value === 'object' && value !== null && !Array.isArray(value);`
 
-- [ ] Write failing test(s) with documentation
+- [x] Write failing test(s) with documentation
   - `ts/test/fromjson_validation.test.ts`: 3 tests nuevos en grupo `Input.validateJson — object type`
     - `accepts plain object for Field.object` — JSON con `{key: value}` pasa
     - `rejects string for Field.object` — `"Field 'details' must be of type object"`
     - `rejects array for Field.object` — mismo error
   - `ts/test/schema_conformance.test.ts`: 1 test nuevo
     - `WebhookInput schema matches shared fixture` — schema con `@Field.object()` coincide con fixture
-- [ ] 🔍 REVIEW GATE: Present documented tests to user for approval
-- [ ] Incorporate user feedback
-- [ ] Implement minimum code to pass
-- [ ] Refactor if needed
-- [ ] Mark completed checks in this RUNBOOK
-- [ ] `git add . && git commit -m "feat(ts): add Field.object + object type validation (closes #8)"` (all tests green, RUNBOOK updated)
+- [x] 🔍 REVIEW GATE: skipReview
+- [x] Incorporate user feedback
+- [x] Implement minimum code to pass
+- [x] Refactor if needed
+- [x] Mark completed checks in this RUNBOOK
+- [x] `git add . && git commit -m "feat(ts): add Field.object + object type validation (closes #8)"` (all tests green, RUNBOOK updated)
 
 ### Step 3: Python — strip `additionalProperties` + tests de conformancia
 
@@ -108,23 +108,23 @@ Archivos a modificar: `py/src/modular_api/core/usecase.py`
 Cambios:
 - `_normalize_schema`: eliminar `additionalProperties` de las propiedades normalizadas (tanto en el branch de `anyOf` como en el branch normal)
 
-- [ ] Write failing test(s) with documentation
+- [x] Write failing test(s) with documentation
   - `py/tests/test_fromjson_validation.py`: 3 tests nuevos en clase `TestFromJsonObjectType`
     - `test_accepts_dict_for_object_field` — `dict[str, Any]` pasa validación strict
     - `test_rejects_string_for_object_field` — string donde se espera dict → `ValidationError`
     - `test_rejects_list_for_object_field` — list donde se espera dict → `ValidationError`
   - `py/tests/test_schema_conformance.py`: 1 test nuevo
     - `test_webhook_input_schema_matches_fixture` — schema normalizado coincide con fixture
-- [ ] 🔍 REVIEW GATE: Present documented tests to user for approval
-- [ ] Incorporate user feedback
-- [ ] Implement minimum code to pass
-- [ ] Refactor if needed
-- [ ] Mark completed checks in this RUNBOOK
-- [ ] `git add . && git commit -m "feat(py): strip additionalProperties + object type conformance (closes #8)"` (all tests green, RUNBOOK updated)
+- [x] 🔍 REVIEW GATE: skipReview
+- [x] Incorporate user feedback
+- [x] Implement minimum code to pass
+- [x] Refactor if needed
+- [x] Mark completed checks in this RUNBOOK
+- [x] `git add . && git commit -m "feat(py): strip additionalProperties + object type conformance (closes #8)"` (all tests green, RUNBOOK updated)
 
 ### Step 4: Fixture compartida + parity validation + CHANGELOGs
 
-- [ ] Crear fixture `tests/fixtures/webhook_input_schema.json` con el schema target:
+- [x] Crear fixture `tests/fixtures/webhook_input_schema.json` con el schema target:
   ```json
   {
     "type": "object",
@@ -136,13 +136,13 @@ Cambios:
     "example": { "instruction_id": "20260323ABC", "transfer_details": { "amount": 2300, "currency": "PEN" } }
   }
   ```
-- [ ] Correr tests en los 3 SDKs: `dart test`, `cd ts && npx vitest run`, `cd py && python -m pytest`
-- [ ] Actualizar CHANGELOGs de los 3 SDKs bajo `[0.4.5]`:
+- [x] Correr tests en los 3 SDKs: `dart test`, `cd ts && npx vitest run`, `cd py && python -m pytest`
+- [x] Actualizar CHANGELOGs de los 3 SDKs bajo `[0.4.5]`:
   - Dart: `Added` — `SchemaField.object()` factory + `'object'` case en `_isJsonTypeValid` + `_inferOpenApiType`
   - TS: `Added` — `Field.object()` decorator + `'object'` case en `isJsonTypeValid`
   - Python: `Fixed` — `_normalize_schema` strips `additionalProperties` para paridad cross-SDK
-- [ ] Mark completed checks in this RUNBOOK
-- [ ] `git add . && git commit -m "feat: shared fixture + CHANGELOGs v0.4.5 (closes #8)"` (all tests green, RUNBOOK updated)
+- [x] Mark completed checks in this RUNBOOK
+- [x] `git add . && git commit -m "feat: shared fixture + CHANGELOGs v0.4.5 (closes #8)"` (all tests green, RUNBOOK updated)
 
 ## Constraints
 
