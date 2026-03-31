@@ -5,7 +5,7 @@
 /// the spec.  Styling, dark mode, and Swagger UI loading are handled
 /// entirely by docs-ui — no inline CSS or JS in this template.
 ///
-/// See: https://github.com/macss-dev/modular_api/tree/main/docs-ui
+/// See: https://github.com/macss-dev/modular_api/tree/main/code/docs-ui
 library;
 
 import 'package:shelf/shelf.dart';

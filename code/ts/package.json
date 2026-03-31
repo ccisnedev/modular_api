@@ -28,12 +28,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/macss-dev/modular_api.git",
-    "directory": "ts"
+    "directory": "code/ts"
   },
   "bugs": {
     "url": "https://github.com/macss-dev/modular_api/issues"
   },
-  "homepage": "https://github.com/macss-dev/modular_api/tree/main/ts#readme",
+  "homepage": "https://github.com/macss-dev/modular_api/tree/main/code/ts#readme",
   "dependencies": {
     "express": "^4.22.1"
   },
