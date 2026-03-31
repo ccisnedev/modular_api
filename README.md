@@ -20,11 +20,13 @@ A methodology for building modular, contract-first, AI-ready APIs — distribute
 
 ```
 modular_api/
-  dart/          →  pub.dev: modular_api
-  ts/            →  npm: @macss/modular-api
-  py/            →  PyPI: macss-modular-api
+  code/
+    dart/        →  pub.dev: modular_api
+    ts/          →  npm: @macss/modular-api
+    py/          →  PyPI: macss-modular-api
+    docs-ui/     →  npm: @macss/docs-ui
+    tests/       →  cross-language parity tests
   docs/          →  specification and methodology
-  tests/         →  cross-language parity tests
   README.md
 ```
 
@@ -36,9 +38,9 @@ Each SDK is independently versioned and published. The methodology they implemen
 
 | SDK | Package | Registry | Status |
 |---|---|---|---|
-| `dart/` | `modular_api` | [pub.dev](https://pub.dev/packages/modular_api) | ✅ Published |
-| `ts/` | `@macss/modular-api` | [npm](https://www.npmjs.com/package/@macss/modular-api) | ✅ Published |
-| `py/` | `macss-modular-api` | [PyPI](https://pypi.org/project/macss-modular-api/) | ✅ Published |
+| `code/dart/` | `modular_api` | [pub.dev](https://pub.dev/packages/modular_api) | ✅ Published |
+| `code/ts/` | `@macss/modular-api` | [npm](https://www.npmjs.com/package/@macss/modular-api) | ✅ Published |
+| `code/py/` | `macss-modular-api` | [PyPI](https://pypi.org/project/macss-modular-api/) | ✅ Published |
 
 ---
 
@@ -144,7 +146,7 @@ curl -X POST http://localhost:8080/api/greetings/hello \
 # → {"message": "Hello, World!"}
 ```
 
-See `dart/example/`, `ts/example/`, `py/example/` for full implementations including Input, Output, UseCase with `validate()`, health checks, and custom metrics.
+See `code/dart/example/`, `code/ts/example/`, `code/py/example/` for full implementations including Input, Output, UseCase with `validate()`, health checks, and custom metrics.
 
 ---
 

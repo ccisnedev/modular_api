@@ -23,12 +23,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/macss-dev/modular_api.git",
-    "directory": "docs-ui"
+    "directory": "code/docs-ui"
   },
   "bugs": {
     "url": "https://github.com/macss-dev/modular_api/issues"
   },
-  "homepage": "https://github.com/macss-dev/modular_api/tree/main/docs-ui#readme",
+  "homepage": "https://github.com/macss-dev/modular_api/tree/main/code/docs-ui#readme",
   "devDependencies": {
     "vite": "^6.0.0",
     "vitest": "^4.0.0"

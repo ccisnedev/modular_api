@@ -43,7 +43,7 @@ Versioning follows semantic versioning strictly:
   - `GET /metrics` — Prometheus text exposition format (opt-in)
   - `GET /openapi.json` — OpenAPI 3.0 specification
   - `GET /openapi.yaml` — OpenAPI 3.0 specification (YAML)
-- [x] **Monorepo structure finalized** — `dart/` · `ts/` · `py/` · `docs/` · `tests/`
+- [x] **Monorepo structure finalized** — `code/dart/` · `code/ts/` · `code/py/` · `docs/` · `code/tests/`
 - [x] **CHANGELOG discipline** established across all three SDKs
 
 ---
