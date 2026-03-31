@@ -79,7 +79,7 @@ pip install modular-api[serve]
 ## Error handling
 
 ```python
-async def execute(self) -> None:
+async def execute(self) -> FoundUserOutput:
     user = await repository.find_by_id(self.input.user_id)
     if not user:
         raise UseCaseException(
@@ -87,7 +87,7 @@ async def execute(self) -> None:
             message="User not found",
             error_code="USER_NOT_FOUND",
         )
-    self._output = FoundUserOutput(name=user.name)
+    return FoundUserOutput(name=user.name)
 ```
 
 ---
@@ -95,13 +95,13 @@ async def execute(self) -> None:
 ## Testing
 
 ```python
-def test_hello_world():
+async def test_hello_world():
     usecase = HelloWorld(HelloInput(name="World"))
     error = usecase.validate()
     assert error is None
 
-    await usecase.execute()
-    assert usecase.output.message == "Hello, World!"
+    output = await usecase.execute()
+    assert output.message == "Hello, World!"
 ```
 
 See [doc/testing_guide.md](doc/testing_guide.md) for the full testing guide.
