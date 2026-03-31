@@ -83,7 +83,7 @@ async execute() {
       errorCode: 'USER_NOT_FOUND',
     });
   }
-  this.output = new GetUserOutput(user);
+  return new GetUserOutput(user);
 }
 ```
 
@@ -156,8 +156,8 @@ For integration tests against real infrastructure, use `UseCase.fromJson()` dire
 ```ts
 it('integration — end to end with real DB', async () => {
   const usecase = SayHello.fromJson({ name: 'World' });
-  await usecase.execute();
-  expect(usecase.output.message).toBe('Hello, World!');
+  const output = await usecase.execute();
+  expect(output.message).toBe('Hello, World!');
 });
 ```
 

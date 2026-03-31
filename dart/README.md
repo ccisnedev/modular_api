@@ -55,7 +55,7 @@ See `example/example.dart` for the full implementation including Input, Output, 
 - `Output.statusCode` — custom HTTP status codes per response
 - `UseCaseException` — structured error handling (status code, message, error code, details)
 - `ModularApi` + `ModuleBuilder` — module registration and routing
-- `cors()` middleware — built-in CORS support
+- `corsMiddleware()` — configurable CORS support
 - Swagger UI at `/docs` — auto-generated from registered use cases
 - OpenAPI spec at `/openapi.json` and `/openapi.yaml` — raw spec download
 - Health check at `GET /health` — [IETF Health Check Response Format](doc/health_check_guide.md)
@@ -69,7 +69,7 @@ See `example/example.dart` for the full implementation including Input, Output, 
 
 ```yaml
 dependencies:
-  modular_api: ^0.4.3
+  modular_api: ^0.4.5
 ```
 
 ```bash
@@ -82,7 +82,7 @@ dart pub add modular_api
 
 ```dart
 @override
-Future<void> execute() async {
+Future<GetUserOutput> execute() async {
   final user = await repository.findById(input.userId);
   if (user == null) {
     throw UseCaseException(
@@ -91,7 +91,7 @@ Future<void> execute() async {
       errorCode: 'USER_NOT_FOUND',
     );
   }
-  output = GetUserOutput(user: user);
+  return GetUserOutput(user: user);
 }
 ```
 
@@ -110,8 +110,8 @@ void main() {
   test('HelloWorld returns greeting', () async {
     final useCase = HelloWorld(HelloInput(name: 'World'));
     expect(useCase.validate(), isNull);
-    await useCase.execute();
-    expect(useCase.output.message, 'Hello, World!');
+    final output = await useCase.execute();
+    expect(output.message, 'Hello, World!');
   });
 }
 ```
