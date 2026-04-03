@@ -43,6 +43,7 @@ this specification by adapting the contracts to their native HTTP framework.
 | **Standards over invention** | Every subsystem adopts an established standard (RFC, IETF draft, Prometheus, OpenAPI). |
 | **Zero dependencies when possible** | Prefer native implementations over third-party libraries. External dependencies are justified only when reimplementation is unreasonably costly. |
 | **Opt-in subsystems** | Built-in capabilities (metrics, GraphQL) ship with the package but require explicit activation. |
+| **CQRS by protocol** | Commands (POST/PUT/PATCH/DELETE) use REST. Queries (GET) use GraphQL. The separation is structural — enforced by transport, not convention. UseCases GET are query resolvers; all others are commands. |
 
 ---
 

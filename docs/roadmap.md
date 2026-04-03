@@ -2,7 +2,7 @@
 
 > *"The spec is the source of truth. The code is its consequence."*
 
-This roadmap covers the full development of the `modular_api` ecosystem: core SDKs, plugin architecture, Spec Driven Development tooling, MCP integration, and community infrastructure. Each version is a coherent, shippable milestone — not a collection of features.
+This roadmap covers the development of the `modular_api` ecosystem: core SDKs, plugin architecture, CQRS via GraphQL, and production readiness. Each version is a coherent, shippable milestone — not a collection of features. Spec Driven Development (pragma_spec) and MCP integration (pragma_mcp) are documented as v2.0+ vision.
 
 ---
 
@@ -190,7 +190,7 @@ Built-in capabilities refactored as first-class plugins using the public plugin 
 
 ### Milestone: Native CQRS
 
-At the end of Phase 1, `modular_api` becomes a **native CQRS system**:
+At the end of Phase 1, `modular_api` becomes a **native CQRS (Command Query Responsibility Segregation) system**:
 
 - **Queries** — GraphQL. The frontend requests exactly the fields it needs. No over-fetching, no under-fetching. GraphQL is used exclusively for reads (SELECT).
 - **Commands** — REST endpoints. Each module use case is an explicit command with validated Input, typed Output, and a single responsibility. POST/PUT/PATCH/DELETE remain in the module's REST API.
@@ -199,113 +199,23 @@ This separation is not optional — it is structural. Queries and commands flow 
 
 ---
 
-## Phase 2 — Spec Driven Development `v0.7.0`
-
-> *The specification governs the code. Not the other way around.*
-
-### `pragma_spec` Plugin (Dart + TypeScript + Python)
-
-- [ ] Define the full `pragma_spec.yaml` schema (the Momento Zero file)
-  - `states` — FSM states
-  - `transitions` — FSM transition function
-  - `server` — name, version, instructions
-  - `tools` — workflows with risk levels and confirmation flags
-  - `resources` — readable context with operationId references
-  - `prompts` — reusable conversation templates
-- [ ] Implement **build-time validation**:
-  - Every `operationId` referenced in `tools.workflow` must exist in the generated `openapi.json`/`openapi.yaml`
-  - Every `operationId` referenced in `resources` must exist in the generated `openapi.json`/`openapi.yaml`
-  - Workflows must not cross module boundaries
-  - Duplicate tool names across modules → build error
-  - Multiple security blocks → build error
-  - All errors: precise, actionable, with suggestions
-- [ ] Implement **module composition**: merge all `pragma_spec.yaml` files across modules into a single `pragma.yaml`
-- [ ] Implement **`auth/` special handling**: `security` block injected into composed `pragma.yaml` and into `server.instructions`
-- [ ] Register `GET /pragma.yaml` endpoint — live, always reflects current state
-- [ ] Publish to all three registries:
-  - pub.dev: `pragma_spec`
-  - npm: `@macss/pragma-spec`
-  - PyPI: `macss-pragma-spec`
-- [ ] Full documentation: `pragma_spec.yaml` field reference, validation error catalog, lifecycle
-
-### `pragma_spec.yaml` Format Specification
-
-- [ ] Publish `pragma_spec.yaml` format as a versioned open specification at `pragmaspec.dev` *(planned)*
-- [ ] JSON Schema for `pragma_spec.yaml` — enables IDE validation and autocompletion
-- [ ] VSCode extension: YAML schema association for `pragma_spec.yaml` files *(stretch goal)*
-
-**Exit criterion:** A MACSS project with three modules and an `auth/` module can run `modular_api` with `PragmaSpec()` registered, serve `GET /pragma.yaml`, and have the build fail with a precise error if any `operationId` in any `pragma_spec.yaml` does not match the implemented code.
-
----
-
-## Phase 3 — MCP Integration `v0.8.0`
-
-> *The bridge between precision engineering and AI agents.*
-
-### `pragma_mcp` (Dart + TypeScript + Python)
-
-- [ ] Implement `PragmaMCP` — reads `GET /pragma.yaml` from a URI, produces a fully compliant MCP server
-- [ ] Support MCP transports:
-  - `McpTransport.stdio` — for CLI agent integration
-  - `McpTransport.sse` — for HTTP-based agent integration
-- [ ] Map all `pragma.yaml` primitives to MCP primitives:
-  - `tools[]` → MCP Tools
-  - `resources[]` → MCP Resources
-  - `prompts[]` → MCP Prompts
-  - `server.instructions` → MCP system prompt
-- [ ] `risk: high` + `confirmation: true` → agent confirmation flow before execution
-- [ ] Security context from `security` block injected into system prompt
-- [ ] Publish to all three registries:
-  - pub.dev: `pragma_mcp`
-  - npm: `@macss/pragma-mcp`
-  - PyPI: `macss-pragma-mcp`
-- [ ] Full documentation: transport options, MCP primitive mapping, security context
-
-### Integration Test
-
-- [ ] End-to-end test: `macss-imc` module → `pragma_spec` plugin → `/pragma.yaml` → `pragma_mcp` → working MCP server
-- [ ] AI agent (Claude via MCP) successfully executes all tools, reads all resources, and uses all prompts defined in `pragma_spec.yaml`
-
-**Exit criterion:**
-
-```dart
-PragmaMCP(
-  pragma: "https://imc-api.com/pragma.yaml",
-  transport: McpTransport.stdio,
-).run();
-```
-
-One URI. One call. Working MCP server. AI agent operates correctly against a live MACSS API.
-
----
-
-## Phase 4 — Reference Implementation `v0.9.0`
+## Phase 2 — Reference Implementation `v0.7.0`
 
 > *The methodology is only credible if it has been applied.*
 
 ### `macss-imc` — The Reference Module
 
-The IMC (Body Mass Index) module built entirely under the MACSS SDD methodology. This is the canonical example of how the full lifecycle works — from FSM to MCP.
+The IMC (Body Mass Index) module built entirely under the MACSS methodology. This is the canonical example of how the full lifecycle works.
 
-**Etapa 1 — FSM**
-- [ ] Define user stories for IMC
-- [ ] Translate to FSM: states, events, transition function
-- [ ] FSM encoded in `pragma_spec.yaml` under `states` and `transitions`
+**Etapa 1 — Database**
+- [ ] Derive schema from domain: tables, views
+- [ ] SQL-as-code: all schema via DDL scripts, no ORMs
+- [ ] Every table traces to at least one use case
 
-**Etapa 2 — Database**
-- [ ] Derive schema from FSM: tables, views, stored procedures
-- [ ] SQL-as-code: all schema changes via migration files, no ORMs
-- [ ] Insert-only pattern for measurement history — no UPDATE on historical data
-- [ ] Every table traces to at least one FSM state or transition
-
-**Etapa 3 — Use Cases**
-- [ ] Derive endpoints from database schema and FSM transitions
-- [ ] Each endpoint implements exactly one FSM transition
+**Etapa 2 — Use Cases**
+- [ ] Derive endpoints from database schema and business rules
+- [ ] Each endpoint implements exactly one business operation
 - [ ] `operationId` names defined before implementation — honored by code
-
-**Momento Zero**
-- [ ] Complete `pragma_spec.yaml` — tools, resources, prompts, states, transitions
-- [ ] This file is frozen before any code is written
 
 **TDD — Phase 1: Repositories**
 - [ ] Tests written against ephemeral PostgreSQL (Docker container)
@@ -319,17 +229,16 @@ The IMC (Body Mass Index) module built entirely under the MACSS SDD methodology.
 
 **TDD — Phase 3: Flows**
 - [ ] End-to-end HTTP tests: request → response
-- [ ] `pragma_spec` plugin validates `pragma_spec.yaml` against implemented code at test startup
+- [ ] GraphQL query tests against the same use cases
 - [ ] 100% pass = module is complete
 
 **Deliverables**
 - [ ] `macss-imc` published as open source reference implementation
 - [ ] Full walkthrough article on `blog.macss.dev` *(planned)*
-- [ ] Video on YouTube (@macssdev): "Building an API from Momento Zero"
 
 ---
 
-## Phase 5 — Authentication `v1.0.0`
+## Phase 3 — Production Ready `v1.0.0`
 
 > *v1.0.0 is the first version that can be used in production without reservation.*
 
@@ -337,7 +246,6 @@ The IMC (Body Mass Index) module built entirely under the MACSS SDD methodology.
 
 - [ ] JWT bearer token flow: login, refresh, logout
 - [ ] Integration with `AuthModule` for scope resolution
-- [ ] `pragma_spec.yaml` `security` block wired to OAuth2 plugin at runtime
 - [ ] Configurable token lifetime, secret, algorithm
 - [ ] Publish to all three registries:
   - pub.dev: `modular_api_oauth2`
@@ -352,51 +260,43 @@ The IMC (Body Mass Index) module built entirely under the MACSS SDD methodology.
 - [ ] `macss-imc` running in production as reference deployment
 - [ ] `macss.dev` documentation site live with full ecosystem overview *(planned)*
 
-**Exit criterion:** A team outside MACSS can build a production-grade API — with authentication, MCP integration, and Spec Driven Development — using only public MACSS packages and public documentation.
+**Exit criterion:** A team outside MACSS can build a production-grade API — with authentication, CQRS via GraphQL + REST, and the plugin system — using only public MACSS packages and public documentation.
 
 ---
 
-## Phase 6 — Community & Tooling `v1.1.0`
+## Horizon — v2.0+ (En evaluación)
 
-> *An ecosystem without community tooling is a library. With it, it becomes a platform.*
+Features whose timing depends on ecosystem maturity and community demand. These are documented as vision, not committed scope.
 
-### Custom API Documentation UI
+### Spec Driven Development — `pragma_spec`
 
-- [ ] Build a custom API documentation web interface — inspired by Scalar's design, with Swagger UI's familiarity
-- [ ] Features beyond standard Swagger UI:
-  - PowerShell `curl` command generation (not just bash)
-  - WhatsApp-formatted API request sharing
-  - Modern, responsive design
-- [ ] Replaces CDN-served Swagger UI in all three SDKs
-- [ ] Published as a standalone package usable outside MACSS
+> *The specification governs the code. Not the other way around.*
 
-### Developer Experience
+- [ ] Define the full `pragma_spec.yaml` schema (the Momento Zero file) — states, transitions, tools, resources, prompts
+- [ ] Build-time validation: every `operationId` in `pragma_spec.yaml` must exist in `openapi.json`
+- [ ] Module composition: merge all `pragma_spec.yaml` files into a single `pragma.yaml`
+- [ ] `GET /pragma.yaml` endpoint — live, always reflects current state
+- [ ] Publish to all three registries (pub.dev, npm, PyPI)
+- [ ] Publish `pragma_spec.yaml` format as a versioned open specification at `pragmaspec.dev` *(planned)*
 
+### MCP Integration — `pragma_mcp`
+
+> *The bridge between precision engineering and AI agents.*
+
+- [ ] `PragmaMCP` — reads `GET /pragma.yaml` from a URI, produces a fully compliant MCP server
+- [ ] Support MCP transports: `stdio` (CLI agents), `sse` (HTTP agents)
+- [ ] Map `pragma.yaml` primitives to MCP primitives (tools, resources, prompts)
+- [ ] Publish to all three registries (pub.dev, npm, PyPI)
+
+### Community & Tooling
+
+- [ ] Custom API documentation UI — inspired by Scalar's design
 - [ ] VSCode extension: `pragma_spec.yaml` schema validation and autocompletion
-- [ ] VSCode extension: MACSS module scaffolding command (`New MACSS Module`)
-- [ ] CLI tool: `macss new module <name>` — generates module structure + empty `pragma_spec.yaml`
-- [ ] CLI tool: `macss validate` — runs `pragma_spec` validation without starting the server
-- [ ] CLI tool: `macss diff pragma` — shows what changed between two versions of `pragma.yaml`
-
-### Community Infrastructure
-
-- [ ] Plugin registry page on `macss.dev` *(planned)* — curated list of community plugins
+- [ ] CLI tool: `macss new module`, `macss validate`, `macss diff pragma`
+- [ ] Plugin registry page on `macss.dev` *(planned)*
 - [ ] Plugin starter template repository for each language
-- [ ] `modular_api_plugins` contribution guide with review criteria
-- [ ] Badge system for community plugin quality tiers: Experimental → Stable → Certified
 
-### Documentation
-
-- [ ] Full methodology documentation at `macss.dev/methodology` *(planned)*
-- [ ] SDD lifecycle guide: FSM → DB → Use Cases → Momento Zero → TDD
-- [ ] Plugin authoring guide per language
-- [ ] `pragma_spec.yaml` complete field reference at `pragmaspec.dev` *(planned)*
-
----
-
-## Horizon — No Fixed Version
-
-Features that belong in the roadmap but whose timing depends on ecosystem maturity and community demand.
+### Other Planned Packages
 
 | Feature | Description |
 |---|---|
@@ -407,8 +307,7 @@ Features that belong in the roadmap but whose timing depends on ecosystem maturi
 | `modular_api_i18n` | Internationalization for error messages and API docs |
 | `pragma_mcp` multi-server | Single `pragma_mcp` consuming multiple `/pragma.yaml` endpoints |
 | `pragma_spec` IDE server | Language Server Protocol for `pragma_spec.yaml` |
-| GAINLINE integration | `pragma_spec` plugin for GAINLINE task tracking |
-| Academic publication | MACSS SDD methodology as a formal software engineering paper |
+| Academic publication | MACSS methodology as a formal software engineering paper |
 
 ---
 
@@ -421,12 +320,10 @@ v0.4.3  ████████████████████████
 v0.4.4  ████████████████████████████  Swagger UI → @macss/docs-ui                   ✅
 v0.4.5  ████████████████████████████  servers + CORS + trace_id + Field.object       ✅
 v0.5.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Foundation hardening (interfaces + OpenAPI 3.1)
-v0.6.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Plugin infrastructure (plugins + GraphQL + metrics)
-v0.7.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Spec Driven Development (pragma_spec)
-v0.8.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  MCP integration (pragma_mcp)
-v0.9.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Reference implementation (macss-imc)
+v0.6.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Plugin infrastructure (plugins + GraphQL = CQRS)
+v0.7.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Reference implementation (macss-imc)
 v1.0.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Production ready (oauth2 + stability)
-v1.1.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Custom docs UI + community tooling + CLI
+v2.0+   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  pragma_spec + pragma_mcp + community tooling
 ```
 
 ---
@@ -444,4 +341,4 @@ Regardless of version, these never change:
 ---
 
 *modular_api Ecosystem Roadmap*
-*macss-dev · macss.dev (planned) · pragmaspec.dev (planned)*
+*macss-dev · macss.dev (planned)*
