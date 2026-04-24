@@ -1,6 +1,6 @@
 {
   "name": "@macss/modular-api",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Use-case-centric toolkit for building modular APIs with Express. Define UseCase classes (input → validate → execute → output), connect them to HTTP routes, and expose Swagger/OpenAPI documentation automatically.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
+    "prepublishOnly": "npm run build",
     "dev": "ts-node src/index.ts",
     "test": "vitest run",
     "format": "prettier --write .",
