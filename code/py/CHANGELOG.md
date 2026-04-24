@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.6] - 2026-04-24
+
+### Changed
+
+- **Version bump for cross-SDK parity** — aligns with TypeScript 0.4.6 re-release (see ADR-0002). No functional changes.
+
 ## [0.4.5] - 2026-03-28
 
 ### Added

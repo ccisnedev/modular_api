@@ -7,6 +7,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+## [0.4.6] - 2026-04-24
+
+### Fixed
+
+- **Re-release** — v0.4.5 npm package was published with a stale `dist/` that did not include `Field.object()` or body-parser error handler changes. All v0.4.5 changelog features are now correctly included in the published build.
+
+### Changed
+
+- **`prepublishOnly` script** — `npm run build` now runs automatically before `npm publish`, preventing stale build artifacts from being published (see ADR-0002).
+
 ## [0.4.5] - 2026-03-28
 
 ### Added

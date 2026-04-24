@@ -122,21 +122,71 @@ Versioning follows semantic versioning strictly:
 
 ---
 
-## Phase 0 — Foundation Hardening `v0.5.0`
+## v0.5.0 — Plugin Architecture + CQRS
 
-> *Before building the ecosystem, the core must be production-grade.*
+> *The ecosystem cannot grow until the plugin contract is public. Queries and commands flow through different paths.*
 
-### Core SDKs (Dart + TypeScript + Python)
+### Plugin Interface — `modular_api_plugins`
+
+The package that enables anyone to build a first-class plugin.
+
+- [ ] Define and publish the **`ModularApiPlugin`** contract as a standalone package
+  - Lifecycle hooks: `onRegister`, `onModulesLoaded`, `onMount`, `onOpenApiGenerated`, `onShutdown`
+  - `PluginContext` — read-only access to registry, basePath, title, version, logger, metrics
+  - `MacssModule` and `OpenApiSpec` type definitions
+- [ ] `.plugin()` method on `ModularApi` — the public API for plugin registration
+- [ ] Plugin registration validated at startup: duplicate names, duplicate endpoints → startup error with precise message
+- [ ] Publish to all three registries:
+  - pub.dev: `modular_api_plugins`
+  - npm: `@macss/modular-api-plugins`
+  - PyPI: `macss-modular-api-plugins`
+- [ ] Full documentation: what each hook receives, when it is called, what it can do
+- [ ] Reference implementation: a minimal `HelloWorldPlugin` that demonstrates every hook
+
+### Built-in Endpoints as Plugins (Dart + TypeScript + Python)
+
+Built-in capabilities refactored as first-class plugins — they are plugins, not special cases:
+
+- [ ] **DocsPlugin** — `/docs` endpoint refactored to use the plugin interface
+- [ ] **HealthPlugin** — `/health` endpoint refactored; `.addHealthCheck()` migrates to plugin configuration
+- [ ] **MetricsPlugin** — `/metrics` endpoint refactored (Counter, Gauge, Histogram already native)
+- [ ] **OpenApiPlugin** — `/openapi.json` and `/openapi.yaml` refactored to use the plugin interface
+- [ ] `modular_api` core updated to depend on `modular_api_plugins` — core eats its own dog food
+
+### GraphQL Plugin — `modular_api_graphql`
+
+Auto-generated **read-only** GraphQL layer from module DTOs:
+
+- [ ] GraphQL handles **Queries only** (SELECT) — the frontend requests exactly the data it needs, no over-fetching
+- [ ] **Commands** (mutations) remain as REST endpoints — each use case is an explicit, validated command
+- [ ] `operationId` values become GraphQL resolver names for query fields
+- [ ] GraphQL Playground at `/graphql/playground`
+- [ ] Publish as separate package to all three registries:
+  - pub.dev: `modular_api_graphql`
+  - npm: `@macss/modular-api-graphql`
+  - PyPI: `macss-modular-api-graphql`
+
+### Milestone: Native CQRS
+
+At the end of v0.5.0, `modular_api` becomes a **native CQRS (Command Query Responsibility Segregation) system**:
+
+- **Queries** — GraphQL. The frontend requests exactly the fields it needs. No over-fetching, no under-fetching. GraphQL is used exclusively for reads (SELECT).
+- **Commands** — REST endpoints. Each module use case is an explicit command with validated Input, typed Output, and a single responsibility. POST/PUT/PATCH/DELETE remain in the module's REST API.
+
+This separation is not optional — it is structural. Queries and commands flow through different paths, different protocols, and different validation rules. The GraphQL plugin reads from the same data the commands produce, but never mutates it.
+
+**Exit criterion:** A developer outside the MACSS team can build, test, and publish a working `modular_api` plugin using only the public `modular_api_plugins` package and its documentation. The built-in endpoints (docs, health, metrics, OpenAPI) and the GraphQL plugin serve as reference implementations — proving the plugin interface is powerful enough to express even the framework's own capabilities.
+
+---
+
+## v0.6.0 — Foundation Hardening
+
+> *Before scaling the ecosystem, the core must be production-grade.*
 
 - [ ] Formalize and document the **Module Interface** contract — the exact API any module must implement
-- [ ] Formalize and document the **Plugin Interface** contract — `onModulesLoaded`, `onOpenApiGenerated`, lifecycle hooks
 - [ ] Migrate to **OpenAPI 3.1** maintaining backward compatibility with 3.0 consumers where possible
 - [ ] Validate that all three SDKs produce structurally identical OpenAPI output for the same module definition
-- [ ] Add integration tests for all three SDKs against a reference module (`imc`)
 - [ ] Document the internal architecture: how modules are registered, how endpoints are composed, how OpenAPI is generated
-
-### Repository
-
 - [ ] CI/CD pipeline: test on every PR, publish on tag for each SDK independently
 - [ ] Contribution guide and code style per language
 
@@ -144,62 +194,7 @@ Versioning follows semantic versioning strictly:
 
 ---
 
-## Phase 1 — Plugin Infrastructure `v0.6.0`
-
-> *The ecosystem cannot grow until the plugin contract is public.*
-
-### `modular_api_plugins` — Base Package
-
-The package that enables anyone to build a first-class plugin.
-
-- [ ] Define and publish the **Plugin Interface** as a standalone package (not bundled with core)
-  - `ModularApiPlugin` abstract class / interface
-  - `MacssModule` type definitions
-  - `OpenApiSpec` type definitions
-  - Lifecycle hook signatures
-- [ ] Publish to all three registries:
-  - pub.dev: `modular_api_plugins`
-  - npm: `@macss/modular-api-plugins`
-  - PyPI: `macss-modular-api-plugins`
-- [ ] Full documentation: what each hook receives, when it is called, what it can do
-- [ ] Reference implementation: a minimal `HelloWorldPlugin` that demonstrates every hook
-- [ ] Plugin authoring guide published on `macss.dev` *(planned)*
-
-### Internal Plugins (Dart + TypeScript + Python)
-
-Built-in capabilities refactored as first-class plugins using the public plugin interface — they are plugins, not special cases:
-
-- [ ] **Metrics plugin** — `/metrics` endpoint refactored to use the plugin interface (Counter, Gauge, Histogram already implemented natively)
-- [ ] **GraphQL plugin** — auto-generated **read-only** GraphQL layer from module DTOs:
-  - GraphQL handles **Queries only** (SELECT) — the frontend requests exactly the data it needs, no over-fetching
-  - **Commands** (mutations) remain as REST endpoints in the module — each use case is an explicit, validated command
-  - `operationId` values become GraphQL resolver names for query fields
-  - GraphQL Playground at `/graphql/playground`
-  - Publish as separate package to all three registries:
-    - pub.dev: `modular_api_graphql`
-    - npm: `@macss/modular-api-graphql`
-    - PyPI: `macss-modular-api-graphql`
-- [ ] `/docs` and `/health` also refactored to use the plugin interface
-
-### Core Integration
-
-- [ ] `modular_api` (Dart + TS + Python) updated to depend on `modular_api_plugins` for its own plugin interface — core eats its own dog food
-- [ ] Plugin registration validated at startup: duplicate names, duplicate endpoints → startup error with precise message
-
-**Exit criterion:** A developer outside the MACSS team can build, test, and publish a working `modular_api` plugin using only the public `modular_api_plugins` package and its documentation. The internal GraphQL and Metrics plugins serve as reference implementations.
-
-### Milestone: Native CQRS
-
-At the end of Phase 1, `modular_api` becomes a **native CQRS (Command Query Responsibility Segregation) system**:
-
-- **Queries** — GraphQL. The frontend requests exactly the fields it needs. No over-fetching, no under-fetching. GraphQL is used exclusively for reads (SELECT).
-- **Commands** — REST endpoints. Each module use case is an explicit command with validated Input, typed Output, and a single responsibility. POST/PUT/PATCH/DELETE remain in the module's REST API.
-
-This separation is not optional — it is structural. Queries and commands flow through different paths, different protocols, and different validation rules. The GraphQL plugin reads from the same data the commands produce, but never mutates it.
-
----
-
-## Phase 2 — Reference Implementation `v0.7.0`
+## v0.7.0 — Reference Implementation
 
 > *The methodology is only credible if it has been applied.*
 
@@ -238,7 +233,7 @@ The IMC (Body Mass Index) module built entirely under the MACSS methodology. Thi
 
 ---
 
-## Phase 3 — Production Ready `v1.0.0`
+## v1.0.0 — Production Ready
 
 > *v1.0.0 is the first version that can be used in production without reservation.*
 
@@ -319,8 +314,8 @@ v0.4.2  ████████████████████████
 v0.4.3  ████████████████████████████  execute() returns Output (BREAKING)           ✅
 v0.4.4  ████████████████████████████  Swagger UI → @macss/docs-ui                   ✅
 v0.4.5  ████████████████████████████  servers + CORS + trace_id + Field.object       ✅
-v0.5.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Foundation hardening (interfaces + OpenAPI 3.1)
-v0.6.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Plugin infrastructure (plugins + GraphQL = CQRS)
+v0.5.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Plugin architecture + GraphQL = CQRS
+v0.6.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Foundation hardening (OpenAPI 3.1 + CI/CD)
 v0.7.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Reference implementation (macss-imc)
 v1.0.0  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Production ready (oauth2 + stability)
 v2.0+   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  pragma_spec + pragma_mcp + community tooling
