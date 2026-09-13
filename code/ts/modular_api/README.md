@@ -42,6 +42,25 @@ curl -X POST http://localhost:8080/api/greetings/hello \
 
 See `example/example.ts` for the full implementation including Input, Output, UseCase with `validate()`, and the builder.
 
+### JSON body limit
+
+Set `jsonBodyLimit` in `ModularApiOptions` to configure the JSON parser installed by
+`serve()`. It accepts a size string such as `'1mb'` or a number of bytes:
+
+```ts
+const api = new ModularApi({
+  basePath: '/api',
+  jsonBodyLimit: '1mb', // Equivalent to 1_048_576 bytes.
+});
+api.module('greetings', buildGreetingsModule);
+await api.serve({ port: 8080 });
+```
+
+Omitting the option or passing `undefined` keeps the default `'100kb'` (102,400
+bytes). The limit measures UTF-8 body bytes, applies only to bodies handled by the
+JSON parser, and is independent for each `ModularApi` instance. Oversized bodies
+keep the existing error response.
+
 ---
 
 ## Features

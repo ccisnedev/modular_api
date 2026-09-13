@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1
+
+- Version bump for cross-SDK parity (ADR-0002); no functional changes.
+
 ## 0.7.0
 
 - **`trace_id` changes shape when tracing is configured.** Without `tracing` it stays a dashed UUID

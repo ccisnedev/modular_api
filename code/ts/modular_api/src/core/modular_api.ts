@@ -26,6 +26,11 @@ import type { GraphqlOptions } from '../graphql/runtime/graphql_runtime_options'
 export interface ModularApiOptions {
   /** Base path prefix for all module routes. Default: '/api' */
   basePath?: string;
+  /**
+   * Maximum JSON request body size. Number in bytes or a size string (e.g. '1mb').
+   * Default: '100kb' (102400 bytes), matching Express/body-parser.
+   */
+  jsonBodyLimit?: string | number;
   /** API title shown in Swagger UI. Default: 'API' */
   title?: string;
   /** API version string (e.g. '1.0.0'). Used in health check response. Default: '0.0.0' */
@@ -87,6 +92,7 @@ export class ModularApi {
   private readonly app: Express;
   private readonly rootRouter: Router;
   private readonly basePath: string;
+  private readonly jsonBodyLimit: string | number;
   private readonly title: string;
   private readonly version: string;
   private readonly middlewares: RequestHandler[] = [];
@@ -120,6 +126,7 @@ export class ModularApi {
 
   constructor(options: ModularApiOptions = {}) {
     this.basePath = options.basePath ?? '/api';
+    this.jsonBodyLimit = options.jsonBodyLimit ?? '100kb';
     this.title = options.title ?? 'Modular API';
     this.version = options.version ?? 'x.y.z';
 
@@ -358,7 +365,7 @@ export class ModularApi {
       );
 
       // Body parsing AFTER loggingMiddleware — SyntaxErrors now have trace_id.
-      this.app.use(express.json());
+      this.app.use(express.json({ limit: this.jsonBodyLimit }));
       this.app.use(bodyParserErrorHandler);
 
       pluginHost.applyMiddlewares('preRouting', this.app);
