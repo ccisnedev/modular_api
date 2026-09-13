@@ -1,6 +1,6 @@
 {
   "name": "@macss/modular-api",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Use-case-centric toolkit for building modular APIs with Express. Define UseCase classes (input \u2192 validate \u2192 execute \u2192 output), connect them to HTTP routes, and expose Swagger/OpenAPI documentation automatically.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.1] - 2026-09-13
+
+### Fixed
+
+- Allow configuring the JSON body size limit through `ModularApiOptions.jsonBodyLimit`
+  (size string or number of bytes), applied per instance by `serve()`. The default
+  remains `'100kb'` (102,400 bytes); oversized bodies keep the existing error response.
+
 ## [0.7.0] - 2026-08-01
 
 - **`trace_id` changes shape when tracing is configured.** Without `tracing` it stays a dashed UUID

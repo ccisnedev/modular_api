@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1
+
+- Version bump for cross-SDK parity (ADR-0002); no functional changes.
+
 ## 0.7.0
 
 - version bump for cross-SDK parity (ADR-0002); no functional changes
