@@ -901,9 +901,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.check.outputs.skip != 'true'
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install --include=optional
+        run: npm ci --include=optional
 
       - name: Ensure package is publishable
         if: steps.check.outputs.skip != 'true'

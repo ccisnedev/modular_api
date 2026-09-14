@@ -34,9 +34,7 @@ jobs:
           cache-dependency-path: code/ts/modular_api_graphql_client/package-lock.json
 
       - name: Install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install --include=optional
+        run: npm ci --include=optional
 
       - name: Ensure tag matches package version
         if: github.event_name == 'push'
