@@ -4,7 +4,8 @@ Date: 2026-06-13
 
 ## Status
 
-Accepted
+Accepted — **corrected 2026-11-11**: the last consequence restated a misreading of ADR-0002 (see its
+erratum). The decision itself is unchanged.
 
 ## Context
 
@@ -65,5 +66,10 @@ adapter, not the package.
 - **READMEs no longer promise bindings** — the "Current slice" section is renamed and points here.
 - **Driver-backed introspection is out of scope for the packages** — a schema metadata reader that
   needs a driver belongs to the consumer or to documentation, consistent with point 4 (#24).
-- **Parity remains coordinated** — per ADR-0002, all ecosystem packages move together; a
-  contracts-only change still ships as a synchronized version bump.
+- **Parity stays per package** — per ADR-0002, the Dart, TypeScript and Python versions of a
+  database package move together. A contracts-only change releases that package in its three
+  languages, and nothing else.
+
+  > *Corrected 2026-11-11.* This consequence originally read "all ecosystem packages move together; a
+  > contracts-only change still ships as a synchronized version bump". That was the 15-package
+  > misreading of ADR-0002, not part of this decision. See ADR-0002's erratum and ADR-0006.
