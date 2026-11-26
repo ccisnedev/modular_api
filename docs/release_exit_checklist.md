@@ -41,8 +41,9 @@ Post-merge execution plan:
 2. Verify successful workflow runs and registry versions.
 3. Update this checklist to GO-FOR-RELEASE once publish verification is complete.
 
-## F. Coordinated Release Mechanism (since 0.5.0)
+## F. Release Mechanism
 
-- The whole ecosystem is released with a SINGLE tag `v<version>` that triggers `.github/workflows/release.yml` (validate -> wave 1 -> wave 2 -> verify, idempotent per package).
-- Do NOT push per-package tags in bulk: GitHub suppresses tag push events when more than 3 tags are pushed at once, so multi-tag pushes silently publish nothing.
-- The per-package `publish-*.yml` workflows are `workflow_dispatch`-only and exist for individual republication.
+Superseded. This checklist is a record of 2026-06-06. Since ADR-0006 each project is released on
+its own by release-please (`.github/workflows/release-please.yml`): merging the Release PR tags the
+released projects (`<project>-v<version>`) and publishes them to their three registries. The single
+`v<version>` tag, `release.yml` and the per-package `publish-*.yml` workflows were retired.

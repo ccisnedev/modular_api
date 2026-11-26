@@ -1,0 +1,172 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "55cf0b31062b758d6022ca1fdd6278fb26776858",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "include-component-in-tag": true,
+  "include-v-in-tag": true,
+  "tag-separator": "-",
+  "separate-pull-requests": false,
+  "packages": {
+    "code/modular_api": {
+      "release-type": "simple",
+      "component": "modular_api",
+      "package-name": "modular_api",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "dart/pubspec.yaml"
+        },
+        {
+          "type": "json",
+          "path": "ts/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "ts/package-lock.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "ts/package-lock.json",
+          "jsonpath": "$.packages[''].version"
+        },
+        {
+          "type": "toml",
+          "path": "py/pyproject.toml",
+          "jsonpath": "$.project.version"
+        }
+      ]
+    },
+    "code/modular_api_rest_client": {
+      "release-type": "simple",
+      "component": "modular_api_rest_client",
+      "package-name": "modular_api_rest_client",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "dart/pubspec.yaml"
+        },
+        {
+          "type": "json",
+          "path": "ts/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "ts/package-lock.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "ts/package-lock.json",
+          "jsonpath": "$.packages[''].version"
+        },
+        {
+          "type": "toml",
+          "path": "py/pyproject.toml",
+          "jsonpath": "$.project.version"
+        }
+      ]
+    },
+    "code/modular_api_graphql_client": {
+      "release-type": "simple",
+      "component": "modular_api_graphql_client",
+      "package-name": "modular_api_graphql_client",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "dart/pubspec.yaml"
+        },
+        {
+          "type": "json",
+          "path": "ts/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "ts/package-lock.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "ts/package-lock.json",
+          "jsonpath": "$.packages[''].version"
+        },
+        {
+          "type": "toml",
+          "path": "py/pyproject.toml",
+          "jsonpath": "$.project.version"
+        }
+      ]
+    },
+    "code/modular_api_sqlserver": {
+      "release-type": "simple",
+      "component": "modular_api_sqlserver",
+      "package-name": "modular_api_sqlserver",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "dart/pubspec.yaml"
+        },
+        {
+          "type": "json",
+          "path": "ts/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "ts/package-lock.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "ts/package-lock.json",
+          "jsonpath": "$.packages[''].version"
+        },
+        {
+          "type": "toml",
+          "path": "py/pyproject.toml",
+          "jsonpath": "$.project.version"
+        }
+      ]
+    },
+    "code/modular_api_postgres": {
+      "release-type": "simple",
+      "component": "modular_api_postgres",
+      "package-name": "modular_api_postgres",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "dart/pubspec.yaml"
+        },
+        {
+          "type": "json",
+          "path": "ts/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "ts/package-lock.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "ts/package-lock.json",
+          "jsonpath": "$.packages[''].version"
+        },
+        {
+          "type": "toml",
+          "path": "py/pyproject.toml",
+          "jsonpath": "$.project.version"
+        }
+      ]
+    },
+    "code/docs-ui": {
+      "release-type": "node",
+      "component": "docs-ui",
+      "package-name": "@macss/docs-ui"
+    }
+  }
+}

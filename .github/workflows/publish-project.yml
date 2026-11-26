@@ -1,0 +1,246 @@
+# Publishes one project to its three registries: pub.dev, npm and PyPI (ADR-0006).
+#
+# Called only by release-please.yml, after release-please has created the project's tag. The three jobs
+# run in parallel; a project's packages do not depend on each other.
+#
+# Every job is idempotent (gate 4): a version already in the registry is skipped with a notice, so a
+# failed run can be re-run from the Actions UI without republishing what went out.
+#
+# The project's CHANGELOG.md lives at code/<project>/ and is copied into dart/ and ts/ on the runner
+# only, because pub.dev and npm read the changelog from inside the package. The copy is never
+# committed.
+
+name: Publish project
+
+on:
+  workflow_call:
+    inputs:
+      project:
+        description: Directory under code/, e.g. modular_api_postgres. Also the pub.dev package name.
+        required: true
+        type: string
+      version:
+        description: The version release-please just released.
+        required: true
+        type: string
+      npm-package:
+        description: npm package name, e.g. @macss/modular-api-postgres.
+        required: true
+        type: string
+      pypi-package:
+        description: PyPI distribution name, e.g. macss-modular-api-postgres.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  npm:
+    name: npm ${{ inputs.npm-package }}
+    runs-on: ubuntu-latest
+    # id-token is for `npm publish --provenance` and is granted to this job only. With an OIDC token in
+    # scope, setup-dart switches `dart pub publish` to GitHub-OIDC publishing, which pub.dev rejects
+    # unless automated publishing is enabled per package.
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: code/${{ inputs.project }}/ts
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Skip if already published
+        id: check
+        env:
+          PACKAGE: ${{ inputs.npm-package }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.npmjs.org/${PACKAGE/\//%2F}/$VERSION")
+          if [ "$status" = "200" ]; then
+            echo "::notice::$PACKAGE@$VERSION is already on npm. Skipping (idempotent re-run)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Manifest matches the release
+        if: steps.check.outputs.skip != 'true'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          actual=$(node -p "require('./package.json').version")
+          [ "$actual" = "$VERSION" ] || { echo "package.json is $actual, release is $VERSION" >&2; exit 1; }
+
+      - uses: actions/setup-node@v5
+        if: steps.check.outputs.skip != 'true'
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: code/${{ inputs.project }}/ts/package-lock.json
+
+      # Gate 5: `npm ci`, so the lockfile is authoritative at publish time.
+      - name: Install from the lockfile
+        if: steps.check.outputs.skip != 'true'
+        run: npm ci
+
+      - name: Typecheck and test
+        if: steps.check.outputs.skip != 'true'
+        run: npm test
+
+      - name: Build
+        if: steps.check.outputs.skip != 'true'
+        run: npm run build
+
+      - name: Copy the project changelog into the package
+        if: steps.check.outputs.skip != 'true'
+        run: cp ../CHANGELOG.md CHANGELOG.md
+
+      - name: Publish to npm
+        if: steps.check.outputs.skip != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "Missing NPM_TOKEN secret." >&2
+            exit 1
+          fi
+          npm publish --access public --provenance
+
+  pub:
+    name: pub.dev ${{ inputs.project }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: code/${{ inputs.project }}/dart
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Skip if already published
+        id: check
+        env:
+          PACKAGE: ${{ inputs.project }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" "https://pub.dev/api/packages/$PACKAGE/versions/$VERSION")
+          if [ "$status" = "200" ]; then
+            echo "::notice::$PACKAGE $VERSION is already on pub.dev. Skipping (idempotent re-run)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Manifest matches the release
+        if: steps.check.outputs.skip != 'true'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          actual=$(sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*/\1/p' pubspec.yaml)
+          [ "$actual" = "$VERSION" ] || { echo "pubspec.yaml is $actual, release is $VERSION" >&2; exit 1; }
+
+      - uses: dart-lang/setup-dart@v1
+        if: steps.check.outputs.skip != 'true'
+
+      - name: Resolve dependencies
+        if: steps.check.outputs.skip != 'true'
+        run: dart pub get
+
+      - name: Analyze
+        if: steps.check.outputs.skip != 'true'
+        run: dart analyze
+
+      - name: Test
+        if: steps.check.outputs.skip != 'true'
+        run: dart test
+
+      - name: Copy the project changelog into the package
+        if: steps.check.outputs.skip != 'true'
+        run: cp ../CHANGELOG.md CHANGELOG.md
+
+      - name: Configure pub.dev credentials
+        if: steps.check.outputs.skip != 'true'
+        env:
+          PUB_CREDENTIALS_JSON: ${{ secrets.DART_PUB_CREDENTIALS_JSON }}
+        run: |
+          if [ -z "$PUB_CREDENTIALS_JSON" ]; then
+            echo "Missing DART_PUB_CREDENTIALS_JSON secret." >&2
+            exit 1
+          fi
+          mkdir -p "$HOME/.config/dart"
+          printf '%s' "$PUB_CREDENTIALS_JSON" > "$HOME/.config/dart/pub-credentials.json"
+
+      - name: Publish to pub.dev
+        if: steps.check.outputs.skip != 'true'
+        run: dart pub publish --force
+
+  pypi:
+    name: PyPI ${{ inputs.pypi-package }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: code/${{ inputs.project }}/py
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Skip if already published
+        id: check
+        env:
+          PACKAGE: ${{ inputs.pypi-package }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/$PACKAGE/$VERSION/json")
+          if [ "$status" = "200" ]; then
+            echo "::notice::$PACKAGE $VERSION is already on PyPI. Skipping (idempotent re-run)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v6
+        if: steps.check.outputs.skip != 'true'
+        with:
+          python-version: '3.12'
+
+      - name: Manifest matches the release
+        if: steps.check.outputs.skip != 'true'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          actual=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          [ "$actual" = "$VERSION" ] || { echo "pyproject.toml is $actual, release is $VERSION" >&2; exit 1; }
+
+      # Installs the package with its declared dependencies, so the tests run against what a consumer
+      # installs rather than against `pythonpath = ["src"]`.
+      - name: Install the package under test
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m pip install -e ".[dev]"
+
+      - name: Test
+        if: steps.check.outputs.skip != 'true'
+        run: python -m pytest
+
+      - name: Build and check the distribution
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          python -m build
+          python -m twine check dist/*
+
+      - name: Publish to PyPI
+        if: steps.check.outputs.skip != 'true'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          if [ -z "$TWINE_PASSWORD" ]; then
+            echo "Missing PYPI_TOKEN secret." >&2
+            exit 1
+          fi
+          python -m twine upload dist/*

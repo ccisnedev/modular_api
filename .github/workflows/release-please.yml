@@ -1,0 +1,190 @@
+# Releases, per project (ADR-0006).
+#
+# On every push to main, release-please updates one Release PR with the next version and changelog of
+# each project that has unreleased commits. Which project a commit belongs to is decided by the paths it
+# touches under code/<project>/. Merging a feature publishes nothing.
+#
+# Merging the Release PR creates one tag per released project (`<project>-v<version>`), and the jobs
+# below publish exactly those projects, reading release-please's outputs. No tag push triggers
+# anything.
+#
+# Token: RELEASE_PLEASE_TOKEN (a fine-grained token with contents and pull-requests write) when it
+# exists. With the default GITHUB_TOKEN, GitHub does not run CI on the Release PR it opens, so the
+# required checks never report and the PR can only be merged by an admin override.
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: release-please
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      modular_api: ${{ steps.rp.outputs['code/modular_api--release_created'] }}
+      modular_api_version: ${{ steps.rp.outputs['code/modular_api--version'] }}
+      modular_api_rest_client: ${{ steps.rp.outputs['code/modular_api_rest_client--release_created'] }}
+      modular_api_rest_client_version: ${{ steps.rp.outputs['code/modular_api_rest_client--version'] }}
+      modular_api_graphql_client: ${{ steps.rp.outputs['code/modular_api_graphql_client--release_created'] }}
+      modular_api_graphql_client_version: ${{ steps.rp.outputs['code/modular_api_graphql_client--version'] }}
+      modular_api_sqlserver: ${{ steps.rp.outputs['code/modular_api_sqlserver--release_created'] }}
+      modular_api_sqlserver_version: ${{ steps.rp.outputs['code/modular_api_sqlserver--version'] }}
+      modular_api_postgres: ${{ steps.rp.outputs['code/modular_api_postgres--release_created'] }}
+      modular_api_postgres_version: ${{ steps.rp.outputs['code/modular_api_postgres--version'] }}
+      docs_ui: ${{ steps.rp.outputs['code/docs-ui--release_created'] }}
+      docs_ui_version: ${{ steps.rp.outputs['code/docs-ui--version'] }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: rp
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  # Gate 3, dependency order: modular_api before modular_api_sqlserver, modular_api_rest_client before
+  # modular_api_graphql_client. A dependent never needs its dependency's release from the same run — a
+  # breaking change in a dependency is released in two steps (ADR-0006 §6) — but when both release
+  # together the dependency goes first, and a failed dependency stops the dependent.
+
+  modular_api:
+    needs: release-please
+    if: needs.release-please.outputs.modular_api == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-project.yml
+    with:
+      project: modular_api
+      version: ${{ needs.release-please.outputs.modular_api_version }}
+      npm-package: '@macss/modular-api'
+      pypi-package: macss-modular-api
+    secrets: inherit
+
+  modular_api_rest_client:
+    needs: release-please
+    if: needs.release-please.outputs.modular_api_rest_client == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-project.yml
+    with:
+      project: modular_api_rest_client
+      version: ${{ needs.release-please.outputs.modular_api_rest_client_version }}
+      npm-package: '@macss/modular-api-rest-client'
+      pypi-package: macss-modular-api-rest-client
+    secrets: inherit
+
+  modular_api_postgres:
+    needs: release-please
+    if: needs.release-please.outputs.modular_api_postgres == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-project.yml
+    with:
+      project: modular_api_postgres
+      version: ${{ needs.release-please.outputs.modular_api_postgres_version }}
+      npm-package: '@macss/modular-api-postgres'
+      pypi-package: macss-modular-api-postgres
+    secrets: inherit
+
+  modular_api_sqlserver:
+    needs: [release-please, modular_api]
+    if: >-
+      always()
+      && needs.release-please.outputs.modular_api_sqlserver == 'true'
+      && (needs.modular_api.result == 'success' || needs.modular_api.result == 'skipped')
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-project.yml
+    with:
+      project: modular_api_sqlserver
+      version: ${{ needs.release-please.outputs.modular_api_sqlserver_version }}
+      npm-package: '@macss/modular-api-sqlserver'
+      pypi-package: macss-modular-api-sqlserver
+    secrets: inherit
+
+  modular_api_graphql_client:
+    needs: [release-please, modular_api_rest_client]
+    if: >-
+      always()
+      && needs.release-please.outputs.modular_api_graphql_client == 'true'
+      && (needs.modular_api_rest_client.result == 'success' || needs.modular_api_rest_client.result == 'skipped')
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-project.yml
+    with:
+      project: modular_api_graphql_client
+      version: ${{ needs.release-please.outputs.modular_api_graphql_client_version }}
+      npm-package: '@macss/modular-api-graphql-client'
+      pypi-package: macss-modular-api-graphql-client
+    secrets: inherit
+
+  docs-ui:
+    name: npm @macss/docs-ui
+    needs: release-please
+    if: needs.release-please.outputs.docs_ui == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: code/docs-ui
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Skip if already published
+        id: check
+        env:
+          VERSION: ${{ needs.release-please.outputs.docs_ui_version }}
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.npmjs.org/@macss%2Fdocs-ui/$VERSION")
+          if [ "$status" = "200" ]; then
+            echo "::notice::@macss/docs-ui@$VERSION is already on npm. Skipping (idempotent re-run)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v5
+        if: steps.check.outputs.skip != 'true'
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: code/docs-ui/package-lock.json
+
+      - name: Install from the lockfile
+        if: steps.check.outputs.skip != 'true'
+        run: npm ci
+
+      # `npm test` builds with vite and then runs vitest, so dist/ is fresh when it is published.
+      - name: Build and test
+        if: steps.check.outputs.skip != 'true'
+        run: npm test
+
+      - name: Publish to npm
+        if: steps.check.outputs.skip != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "Missing NPM_TOKEN secret." >&2
+            exit 1
+          fi
+          npm publish --access public --provenance

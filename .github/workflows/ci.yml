@@ -148,3 +148,18 @@ jobs:
       - name: Typecheck
         shell: pwsh
         run: pwsh ../../tests/typecheck.ps1 -Package ${{ matrix.package }}
+
+  # Gate 1 of ADR-0006: the Dart, TypeScript and Python manifests of each project carry the version in
+  # .release-please-manifest.json. release-please writes them together; this catches the hand edit.
+  versions:
+    name: versions · parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check version parity
+        run: python code/tests/version_parity.py
