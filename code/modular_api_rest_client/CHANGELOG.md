@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/ccisnedev/modular_api/compare/modular_api_rest_client-v0.7.1...modular_api_rest_client-v0.7.2) (2026-11-26)
+
+
+### Miscellaneous Chores
+
+* **release:** release modular_api and modular_api_rest_client as 0.7.2 ([#55](https://github.com/ccisnedev/modular_api/issues/55)) ([77b357e](https://github.com/ccisnedev/modular_api/commit/77b357ef6ded03defda15e96ea34b2d7fa448778))
+
 ## [0.7.1 and earlier] Before release-please
 
 Until 0.7.1 each language kept its own changelog. They are reproduced below unchanged, one

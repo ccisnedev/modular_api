@@ -1,6 +1,6 @@
 name: modular_api
 description: Use-case centric API toolkit for Dart — Shelf UseCase base class, HTTP adapters, CORS middleware, and automatic OpenAPI documentation.
-version: 0.7.1 # x-release-please-version
+version: 0.7.2 # x-release-please-version
 
 repository: https://github.com/ccisnedev/modular_api/tree/main/code/modular_api/dart
 homepage: https://github.com/ccisnedev/modular_api
