@@ -1,0 +1,11 @@
+# Text files are stored and checked out with LF on every platform.
+# The release tooling (release-please) and the registries read these files as committed; a CRLF
+# checkout on Windows made local tools disagree with what CI sees.
+* text=auto eol=lf
+
+# Binary assets are never normalized.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

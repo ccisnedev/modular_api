@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: code/dart/modular_api_sqlserver
+        working-directory: code/modular_api_sqlserver/dart
 
     steps:
       - name: Checkout

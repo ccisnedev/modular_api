@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: code/py/modular_api
+        working-directory: code/modular_api/py
 
     steps:
       - name: Checkout

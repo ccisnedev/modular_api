@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: code/py/modular_api_graphql_client
+        working-directory: code/modular_api_graphql_client/py
 
     steps:
       - name: Checkout
