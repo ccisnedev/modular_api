@@ -162,11 +162,6 @@
           "jsonpath": "$.project.version"
         }
       ]
-    },
-    "code/docs-ui": {
-      "release-type": "node",
-      "component": "docs-ui",
-      "package-name": "@macss/docs-ui"
     }
   }
 }

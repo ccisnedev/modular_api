@@ -9,6 +9,9 @@ Usage, from the repository root:
 
     python code/tests/version_parity.py
 
+docs-ui has its own manifest, `.release-please-manifest.docs-ui.json`; its package.json is checked
+against it.
+
 Exits non-zero, listing every mismatch, when a project disagrees with itself.
 """
 
@@ -21,6 +24,7 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+MANIFESTS = (".release-please-manifest.json", ".release-please-manifest.docs-ui.json")
 
 # `version: 0.7.1 # x-release-please-version` — the annotation is what the generic updater targets.
 PUBSPEC_VERSION = re.compile(r"^version:\s*([^\s#]+)", re.MULTILINE)
@@ -47,7 +51,9 @@ def node_versions(project: Path) -> dict[str, str | None]:
 
 
 def main() -> int:
-    manifest = json.loads((ROOT / ".release-please-manifest.json").read_text(encoding="utf-8"))
+    manifest: dict[str, str] = {}
+    for name in MANIFESTS:
+        manifest.update(json.loads((ROOT / name).read_text(encoding="utf-8")))
     failures: list[str] = []
 
     for path, expected in manifest.items():
