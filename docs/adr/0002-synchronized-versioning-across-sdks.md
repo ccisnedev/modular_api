@@ -4,10 +4,12 @@ Date: 2026-04-24
 
 ## Status
 
-Accepted — **corrected 2026-11-11** (see the Erratum section). To be superseded by
-[ADR-0006](0006-per-project-versioning-across-the-three-sdks.md), which keeps the decision below — the
-three SDKs of one package share a version — and replaces how it is carried out. Until ADR-0006 is
-accepted, the decision below stays in force; the 15-package extension never was a decision.
+Superseded by [ADR-0006](0006-per-project-versioning-across-the-three-sdks.md) on 2026-11-26.
+Accepted 2026-04-24, corrected 2026-11-11 (see the Erratum section).
+
+ADR-0006 keeps the decision below — the three SDKs of one package share a version — and replaces how it
+is carried out: release-please, one component per project. The 15-package extension never was a
+decision.
 
 ## Context
 

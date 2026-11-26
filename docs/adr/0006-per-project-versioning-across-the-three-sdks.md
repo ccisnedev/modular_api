@@ -1,17 +1,15 @@
 # 6. Per-Project Versioning Across the Three SDKs
 
-Date: 2026-08-02 — **revised 2026-11-11**
+Date: 2026-08-02 — **revised 2026-11-11**, **accepted 2026-11-26**
 
 ## Status
 
-Proposed
+Accepted (2026-11-26). Supersedes [ADR-0002](0002-synchronized-versioning-across-sdks.md).
 
-Supersedes [ADR-0002](0002-synchronized-versioning-across-sdks.md) once accepted. It is accepted when
-the repository layout, the release-please configuration and the publish workflow described below
-exist, and each per-project publish has been proven once (issue
-[#32](https://github.com/ccisnedev/modular_api/issues/32)). Until then ADR-0002's decision — the three
-SDKs of one package share a version — stays in force; its 15-package extension does not, see the
-erratum in ADR-0002.
+The condition for acceptance was that the repository layout, the release-please configuration and the
+publish workflow described below exist, and that each per-project publish has been proven once (issue
+[#32](https://github.com/ccisnedev/modular_api/issues/32)). All five projects were released as `0.7.2`
+through this mechanism on 2026-11-26 — see "Proven end to end" under Evidence.
 
 > **Revision note (2026-11-11).** The first draft of this ADR (2026-08-02) kept the per-project rule
 > but proposed a home-grown trigger: publish on a push to the default branch whenever a project's three
@@ -219,9 +217,28 @@ updated anyway, for coherence.
 The `toml` updater fails on files with CRLF line endings. The Action is not affected (the index stores
 LF), but local tooling on Windows checkouts is: the repository needs a `.gitattributes` that fixes LF.
 
-Not yet verified: the end-to-end behaviour against GitHub — path-to-component routing, tag names,
-changelog rendering, `bootstrap-sha`. That is checked with `release-please release-pr --dry-run`
-against the reorganization branch before any publish.
+### Proven end to end (2026-11-26)
+
+Each project was released once through the mechanism, with a `Release-As: 0.7.2` footer because no
+real change was pending:
+
+| Step | Pull requests | Result |
+| --- | --- | --- |
+| Leaves | #51 → Release PR #52 | `modular_api_postgres`, `modular_api_sqlserver`, `modular_api_graphql_client` `0.7.2` on pub.dev, npm and PyPI; tags `<project>-v0.7.2` |
+| Cores | #55 → Release PR #56 | `modular_api`, `modular_api_rest_client` `0.7.2` on the three registries |
+
+Observed along the way, and settled:
+
+- Path-to-component routing, tag names and changelog rendering are as designed; the `Release-As:`
+  footer survives the squash merge, because the squash commit message is the pull request's commits.
+- The Release PR is opened with `RELEASE_PLEASE_TOKEN`, so CI runs on it and its required checks
+  report. With the default `GITHUB_TOKEN` they would never run.
+- `docs-ui` would have been released along with the leaves, on the strength of an old commit that only
+  touched its lockfile. It has its own configuration and Release PR since #53 (§3).
+- Gate 2 was stated here but not implemented until #57 (`code/tests/sibling_constraints.py`, CI job
+  `versions · sibling constraints`). `bootstrap-sha` was removed in the same pull request (§8).
+- npm packages ship `CHANGELOG.md` only if it is listed in `files`; the cores list it since #55, the
+  leaves on their next release.
 
 ## Alternatives considered
 
@@ -272,3 +289,6 @@ Tracked in [issue #32](https://github.com/ccisnedev/modular_api/issues/32).
    `modular_api_sqlserver`, `modular_api_graphql_client`), with a `Release-As:` patch if no real change
    is pending. `modular_api` and `modular_api_rest_client` are proven on their first real release.
 6. Mark this ADR `Accepted` and ADR-0002 `Superseded`.
+
+Steps 2 to 6 were completed on 2026-11-26 (#49, #50, #51/#52, #55/#56, and this status change). The
+cores were proven with a `Release-As:` patch as well, rather than waiting for a real release.
