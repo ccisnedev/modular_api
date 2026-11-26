@@ -20,7 +20,8 @@ from pathlib import Path
 
 import pytest
 
-_PY_ROOT = Path(__file__).resolve().parents[2]
+# code/<package>/py/tests/test_packaging.py -> code/
+_CODE_ROOT = Path(__file__).resolve().parents[3]
 
 _PACKAGES = (
     "modular_api",
@@ -32,7 +33,7 @@ _PACKAGES = (
 
 
 def _manifest(package: str) -> dict[str, object]:
-    return tomllib.loads((_PY_ROOT / package / "pyproject.toml").read_text(encoding="utf-8"))
+    return tomllib.loads((_CODE_ROOT / package / "py" / "pyproject.toml").read_text(encoding="utf-8"))
 
 
 def _import_package_dir(package: str) -> Path:
@@ -41,7 +42,7 @@ def _import_package_dir(package: str) -> Path:
     Found rather than assumed: the distribution name, the directory under ``src/`` and the import name
     are three different strings in this repo, and an ``egg-info`` directory sits alongside.
     """
-    source = _PY_ROOT / package / "src"
+    source = _CODE_ROOT / package / "py" / "src"
     candidates = [child for child in source.iterdir() if (child / "__init__.py").is_file()]
     assert len(candidates) == 1, f"expected exactly one importable package under {source}"
     return candidates[0]
