@@ -3,7 +3,7 @@
 ## [0.7.1 and earlier] Before release-please
 
 Until 0.7.1 each language kept its own changelog. They are reproduced below unchanged, one
-subsection per language, with their headings moved down two levels. From the next release on,
+subsection per language, with their headings moved down two levels. From 0.7.2 on,
 this file is written by release-please and covers the three languages at once
 ([ADR-0006](https://github.com/ccisnedev/modular_api/blob/main/docs/adr/0006-per-project-versioning-across-the-three-sdks.md)).
 
