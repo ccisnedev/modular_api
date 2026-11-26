@@ -86,8 +86,11 @@ Each language directory keeps its native layout (`pubspec.yaml`, `package.json`,
 
 ### 3. Releases are driven by release-please
 
-One release-please manifest configuration with **one component per project**, plus `docs-ui`
-(`release-type: node`). A project component is `release-type: simple`, and its three manifests are
+One release-please manifest configuration with **one component per project**. `docs-ui`
+(`release-type: node`) has a configuration and manifest of its own
+(`release-please-config.docs-ui.json`, `.release-please-manifest.docs-ui.json`) and so its own Release
+PR: it is not an SDK project, and a release of it reaches every running application at once, because
+the SDKs load `@macss/docs-ui@0.1` from a CDN. A project component is `release-type: simple`, and its three manifests are
 updated through `extra-files`:
 
 | File | `extra-files` entry |

@@ -8,6 +8,10 @@
 # below publish exactly those projects, reading release-please's outputs. No tag push triggers
 # anything.
 #
+# docs-ui has its own release-please configuration (release-please-config.docs-ui.json and its
+# manifest) and therefore its own Release PR: it is a front end loaded by the SDKs from a CDN, not one of
+# the SDK projects, and it is released on its own schedule.
+#
 # Token: RELEASE_PLEASE_TOKEN (a fine-grained token with contents and pull-requests write) when it
 # exists. With the default GITHUB_TOKEN, GitHub does not run CI on the Release PR it opens, so the
 # required checks never report and the PR can only be merged by an admin override.
@@ -43,8 +47,8 @@ jobs:
       modular_api_sqlserver_version: ${{ steps.rp.outputs['code/modular_api_sqlserver--version'] }}
       modular_api_postgres: ${{ steps.rp.outputs['code/modular_api_postgres--release_created'] }}
       modular_api_postgres_version: ${{ steps.rp.outputs['code/modular_api_postgres--version'] }}
-      docs_ui: ${{ steps.rp.outputs['code/docs-ui--release_created'] }}
-      docs_ui_version: ${{ steps.rp.outputs['code/docs-ui--version'] }}
+      docs_ui: ${{ steps.rp-docs-ui.outputs['code/docs-ui--release_created'] }}
+      docs_ui_version: ${{ steps.rp-docs-ui.outputs['code/docs-ui--version'] }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: rp
@@ -52,6 +56,15 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # separate-pull-requests in this configuration names its branch after the component, so its Release
+      # PR does not collide with the SDK projects' one.
+      - uses: googleapis/release-please-action@v4
+        id: rp-docs-ui
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.docs-ui.json
+          manifest-file: .release-please-manifest.docs-ui.json
 
   # Gate 3, dependency order: modular_api before modular_api_sqlserver, modular_api_rest_client before
   # modular_api_graphql_client. A dependent never needs its dependency's release from the same run — a
