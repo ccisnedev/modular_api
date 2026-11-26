@@ -4,11 +4,10 @@ Date: 2026-04-24
 
 ## Status
 
-Accepted
-
-Amended by [ADR-0006](0006-per-project-versioning-across-the-three-sdks.md), which keeps the decision
-below — the three SDKs of one package share a version — and drops the extension that made all fifteen
-packages share one. ADR-0002 stays in force until ADR-0006 is accepted.
+Accepted — **corrected 2026-11-11** (see the Erratum section). To be superseded by
+[ADR-0006](0006-per-project-versioning-across-the-three-sdks.md), which keeps the decision below — the
+three SDKs of one package share a version — and replaces how it is carried out. Until ADR-0006 is
+accepted, the decision below stays in force; the 15-package extension never was a decision.
 
 ## Context
 
@@ -36,9 +35,23 @@ Additionally, the TypeScript `package.json` will include a `prepublishOnly` scri
 - **Minor changelog noise** — parity bumps add entries with no functional content. This is an accepted trade-off for version consistency.
 - **Release process** — all three publishes happen in the same session; no SDK is left behind.
 
-## Current package set (0.5.0)
+## Erratum (2026-11-11)
 
-Synchronized versioning now covers 15 packages (5 per ecosystem):
+The section below was appended for `0.5.0`. Its first sentence said "Synchronized versioning now
+covers 15 packages", and its release mechanism validated all fifteen manifests against one tag. That
+stretched the decision above — **the three SDKs of one package** share a version — into "all fifteen
+packages share one", with no argument of its own. It was a misreading, not a decision, and it is
+corrected here instead of being kept as if it had been one. ADR-0006 lays out what it cost: releases
+with no content (twelve of them in `0.7.1`, for a TypeScript-only fix), a convention that broke at
+`0.6.1`, and constraints between packages it never checked.
+
+What the decision covers is each package across its three languages. The table below lists the
+packages of each language; it does not make them one versioning unit. `release.yml` still enforces the
+misreading and is retired by ADR-0006.
+
+## Package set (as of 0.5.0)
+
+Five packages, each published in three ecosystems:
 
 | Ecosystem | Packages |
 | --- | --- |
@@ -46,6 +59,6 @@ Synchronized versioning now covers 15 packages (5 per ecosystem):
 | Dart (pub.dev) | `modular_api`, `modular_api_rest_client`, `modular_api_graphql_client`, `modular_api_sqlserver`, `modular_api_postgres` |
 | Python (PyPI) | `macss-modular-api`, `macss-modular-api-rest-client`, `macss-modular-api-graphql-client`, `macss-modular-api-sqlserver`, `macss-modular-api-postgres` |
 
-`docs-ui` is **not** part of the synchronized set; it follows its own independent 0.1.x line.
+`docs-ui` follows its own independent 0.1.x line.
 
-**Release mechanism:** a single tag `v<version>` triggers `.github/workflows/release.yml`, which validates that all 15 manifests match the tag version and publishes everything in dependency-safe waves. Per-package multi-tag pushes are prohibited: GitHub suppresses push events when more than 3 tags are pushed at once, so they silently publish nothing. The per-package `publish-*.yml` workflows remain `workflow_dispatch`-only for individual republication.
+**Release mechanism, as built (the misreading in practice):** a single tag `v<version>` triggers `.github/workflows/release.yml`, which validates that all 15 manifests match the tag version and publishes everything in dependency-safe waves. Per-package multi-tag pushes are prohibited: GitHub suppresses push events when more than 3 tags are pushed at once, so they silently publish nothing. The per-package `publish-*.yml` workflows remain `workflow_dispatch`-only for individual republication.

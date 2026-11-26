@@ -15,7 +15,7 @@ The requirement describes errors that can be communicated over HTTP. It cannot t
 ### Method and level of certainty
 
 - Source code, configuration, ADRs, architecture, roadmap, relevant tests, and dependencies already present were read. No tests, builds, installations, git commands, or servers were run.
-- Python is in code/py, not code/python. All three roots contain core, rest_client, graphql_client, sqlserver, and postgres. docs-ui was also reviewed: it is a documentation consumer, not a fourth API server. The set of fifteen packages is listed in docs/adr/0002-synchronized-versioning-across-sdks.md:41; docs-ui is listed separately on line 49.
+- Python is in code/py, not code/python. All three roots contain core, rest_client, graphql_client, sqlserver, and postgres. docs-ui was also reviewed: it is a documentation consumer, not a fourth API server. The fifteen packages (five packages in three languages) are listed in the "Package set" section of docs/adr/0002-synchronized-versioning-across-sdks.md; docs-ui is listed separately there.
 - “Today” means behavior inferred from the inspected local code. Dependency branches are identified as such; there is no claim that every request was reproduced over the network. The three core manifests declare 0.7.0: code/ts/modular_api/package.json:3, code/dart/modular_api/pubspec.yaml:3, code/py/modular_api/pyproject.toml:7. The deployed or published version was not checked.
 - The file:line references were verified in this review. References to installed dependencies are not treated as canonical specifications: they explain delegated responses.
 - The table is exhaustive by **producer family and response path**, not by every possible exception text or arbitrary plugin. Extensions allow infinitely many messages and statuses; listing them as a closed set would fabricate data.
@@ -31,8 +31,8 @@ The requirement describes errors that can be communicated over HTTP. It cannot t
 | Output | Must declare statusCode: docs/architecture.md:140; the handler transmits it: code/ts/modular_api/src/core/usecase_handler.ts:89, code/dart/modular_api/lib/src/core/usecase/usecase_http_handler.dart:61, code/py/modular_api/src/modular_api/core/usecase_handler.py:113. | An Output with 4xx/5xx must go through the problem contract; it cannot be an alternative error path. |
 | Plugins | Official and third-party plugins use the same contract: docs/architecture.md:298. Documentable plugin routes: docs/adr/0003-plugin-routes-first-class-in-openapi-and-metrics.md:39. | An error response writer and host conformance checks for plugins as well. |
 | Health | 503 for fail and application/health+json: docs/architecture.md:525. | Preserve status 503; change the fail representation to Problem Details with a health extension. Requires amending §8 of the canonical documentation. |
-| Version parity | ADR-0002 Accepted, fifteen packages; ADR-0006 still Proposed: docs/adr/0002-synchronized-versioning-across-sdks.md:7, docs/adr/0006-per-project-versioning-across-the-three-sdks.md:7. | Apply the current policy; do not assume the proposal has been accepted. |
-| Major | A breaking change to the core or plugin contract requires a major release: docs/roadmap.md:11. | A coordinated major release; do not call it a patch or hide it as a 413 fix. |
+| Version parity | Per package across its three languages (ADR-0002 as corrected; ADR-0006). The 15-package lockstep was a misreading, corrected on 2026-11-11. | Each affected package releases its three languages at one version; unaffected packages do not release. |
+| Breaking release | A breaking change to the core or plugin contract is a breaking release: in `0.x` it moves the minor number (`0.7.x → 0.8.0`), from `1.0.0` the major one (docs/roadmap.md, ADR-0006). | A breaking release of every affected package; do not call it a patch or hide it as a 413 fix. |
 
 Documentation issues to correct during future implementation: docs/architecture.md:205 has an unrelated metrics line embedded in the RFC paragraph; the example uses validation-failed on line 738 and the plan uses validation-error on line 749. The roadmap says Current State 0.6.0 in docs/roadmap.md:29, and the architecture matrix still shows 0.4.5 in docs/architecture.md:786. Corrections are proposed, without modifying them in this task. There is no Problem Details-specific ADR among the six existing ADRs.
 
@@ -321,16 +321,21 @@ DB/SQL do not need to change their local errors for this HTTP contract. Their co
 
 ### ADR-0002 versus ADR-0006
 
-**Current policy:** ADR-0002 Accepted covers fifteen packages and coordinated releases; ADR-0006 remains Proposed and conditions its effect on acceptance and workflows. It must not be interpreted as current policy simply because it is newer. docs/adr/0002-synchronized-versioning-across-sdks.md:9, :27, :41; docs/adr/0006-per-project-versioning-across-the-three-sdks.md:7 and :9. The file .github/workflows/release.yml:3 still describes publishing fifteen packages and its version guard on line 45.
+> *Corrected 2026-11-11.* This subsection originally treated the 15-package lockstep as current policy, and concluded that Problem Details required a common major version in all fifteen manifests with parity bumps for packages without changes. That lockstep was a misreading of ADR-0002, corrected in its erratum; ADR-0006 records the version rules. The subsection is rewritten accordingly.
+
+**Policy:** parity is per package across its three languages (ADR-0002, as corrected). ADR-0006 replaces the release mechanism (release-please, one component per package) and states the pre-1.0 version rules; until it is accepted, `release.yml` is the only publish path, and releases are frozen during the migration.
 
 Consequence for this migration:
 
-- **Under current policy:** a common major version in all fifteen manifests, with actual changes to all three cores and coordinated client work; satellite packages without functional changes receive a parity bump. All three core SDKs must have the same version and format. A bump without implementation in D/P is insufficient.
-- **If ADR-0006 is accepted and implemented first:** core TS/Dart/Python publishes a shared major version; REST client and GraphQL client have their respective common versions per project and ship within a coordinated compatibility window. They do not all need the same number as the core. SQLServer/Postgres change only when constraints or APIs require it, with each project aligned across three languages. docs/adr/0006-per-project-versioning-across-the-three-sdks.md:54 and :81.
-- Changing the release policy is not a technical prerequisite for Problem Details: it can be done correctly under ADR-0002. Do not combine both projects for convenience.
-- The next value is undecided. From 0.7.0, a numerical major version would be 1.0.0; the roadmap also associates 1.0.0 with stability/LTS (docs/roadmap.md:15). Resolve whether those criteria are met or whether the pre-1.0 policy is explicitly amended. Do not call a client-breaking contract a “non-breaking minor” or invent an already approved version.
+- The core publishes one breaking release in TypeScript, Dart and Python at the same version. A version bump without the implementation in Dart and Python is insufficient: parity is of behaviour, not of numbers.
+- The REST client and the GraphQL client release at their own versions, each aligned across its three languages, as breaking releases if their result or API changes. They ship within a coordinated compatibility window, but they do not need the core's number.
+- SQL Server and Postgres release only if their constraints or APIs require it.
+- The version: in `0.x`, a breaking release moves the minor number (`0.7.x → 0.8.0`, ADR-0006). `1.0.0` is a separate, deliberate decision — the roadmap ties it to stability and long-term support — and Problem Details does not imply it. Do not call a client-breaking contract a non-breaking change.
+- Changing the release mechanism is not a technical prerequisite for Problem Details. Do not combine both efforts for convenience.
 
 ### Recommended strategy: clean major release
+
+*Terminology (2026-11-11):* throughout this document, "major release" means a **breaking release**. Under the pre-1.0 rules of ADR-0006 that moves the minor number (`0.7.x → 0.8.0`); from `1.0.0` it moves the major one.
 
 **Recommendation: a clean major release, without a per-endpoint legacy output flag.** A feature flag applied only to the parser or UseCaseException directly violates the requirement. A global flag, applied to all families in all three SDKs, could serve testing/preview; it is not the final architecture and temporarily doubles the test matrix.
 
@@ -353,7 +358,7 @@ The current TS chain is express.json() without options (code/ts/modular_api/src/
 
 In full adoption, entity.too.large must become Q4/413 with exactly the same writer/media type/correlation as E01, E13, E15, and the rest. Measure and document whether the limit applies to received or decompressed bytes; in current TS, the reader uses a decompression stream before applying reading/limit (code/ts/modular_api/node_modules/body-parser/lib/read.js:54 and :165). Define the same semantics when implementing this in Dart/Python.
 
-**Separate change:** adding optional jsonBodyLimit in TS, with the existing default and pass-through to express.json({limit:...}), may be released earlier as an additive non-breaking capability. It does not require changing error bodies and does not constitute partial RFC adoption. Under ADR-0002, that release still follows versioning discipline. If a new default limit is also introduced in D/P or the existing one is reduced, previously accepted requests are now restricted: evaluate that separately; compatibility of an additive TS option does not prove that imposing a limit on the entire ecosystem is non-breaking.
+**Separate change:** adding optional jsonBodyLimit in TS, with the existing default and pass-through to express.json({limit:...}), may be released earlier as an additive non-breaking capability. It does not require changing error bodies and does not constitute partial RFC adoption. That release followed the versioning rules (it shipped as `0.7.1`; under ADR-0006 it would have released only the core, in its three languages). If a new default limit is also introduced in D/P or the existing one is reduced, previously accepted requests are now restricted: evaluate that separately; compatibility of an additive TS option does not prove that imposing a limit on the entire ecosystem is non-breaking.
 
 Design cases for 413: exact limit and +1 byte; known Content-Length and chunked; multibyte text; compressed body; requests without a length header; parser bypass by media type; parser applied before route matching in TS. Determine precedence: 413/415 before 404 if an invalid body reaches a nonexistent route? Recommendation: transport validation before routing when the host processes that body, with the same policy in all three. Do not limit only DTO handlers while leaving GraphQL or plugins outside; binary transports may declare their own admission policy and share the same rejection representation.
 
@@ -453,7 +458,7 @@ Adoption is complete only when all errors that can be emitted before response co
 | instance and correlation | Occurrence URN; trace_id consistent with the current mechanism even without an access log; incoming header validation. | Risk of using path as a false identity or breaking W3C/UUID/request ID. |
 | Extension/streaming boundary | Typed writers and a guard before sending; prohibit error bypasses in conforming plugins; define response commitment. | Middleware may reintroduce legacy without a catch intercepting it. |
 | New statuses and precedence | Explicitly approve parser 400/413/415 and method 405; transport errors before routing with an identical policy. | More than body shape changes without a defined status contract. |
-| Effective versioning and release | ADR-0002 while it remains current; clean major release; resolve the relationship with 1.0/LTS; coordinated release, verified constraints. | A partial release or one treated as minor violates the mandate and roadmap. |
+| Effective versioning and release | Per-package parity (ADR-0002 as corrected, ADR-0006); a clean breaking release of each affected package (`0.x`: minor number); 1.0/LTS is a separate decision; releases in dependency order, verified constraints. | A partial release, or one presented as non-breaking, violates the mandate and roadmap. |
 | Preview/flag | Avoid a production flag; if essential, global for all producers with coordinated removal. | The matrix doubles and “full adoption” remains pending. |
 | jsonBodyLimit | Separate additive work with the default intact; define cross-SDK limits under another explicit scope. | Risk of mixing capability expansion with an error-contract break. |
 
@@ -470,7 +475,7 @@ These are team decisions for the next phase, not requests for permission to writ
 7. **Migrate GraphQL and health as part of the same work.** Engine errors and native responses, partial data, status, and safe messages; health fail/timeout/exception; negative operational cases.
 8. **Align OpenAPI, documentation, and clients.** Components/responses, plugin contributions, domain metadata, complete examples and changelogs; compatibility across the five projects.
 9. **Ecosystem conformance gate.** Green TDD in all three SDKs, complete-object parity matrix, consumer tests, and no duplicate output. Re-audit producers and every directly emitted error status.
-10. **Prepare a coordinated major release.** Version under the current ADR, constraints, breaking-change notes, and publication/retry plan. Verify all three packages of each affected project before the announcement.
+10. **Prepare a coordinated breaking release.** Version under ADR-0006's rules, constraints, breaking-change notes, and publication/retry plan. Verify all three packages of each affected project before the announcement.
 11. **Publish and communicate the complete set during the authorized implementation phase.** This document does not execute that phase. Do not release only 413 or one SDK ahead of the others as completed RFC adoption.
 
 The jsonBodyLimit option may be developed and released before these steps as an independent capability change, under the applicable versioning policy and without altering the error format. It does not eliminate any task in this sequence.
