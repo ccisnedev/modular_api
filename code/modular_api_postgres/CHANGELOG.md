@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/ccisnedev/modular_api/compare/modular_api_postgres-v0.7.1...modular_api_postgres-v0.7.2) (2026-11-26)
+
+
+### Miscellaneous Chores
+
+* **release:** release the leaf projects as 0.7.2 ([#51](https://github.com/ccisnedev/modular_api/issues/51)) ([eb3b293](https://github.com/ccisnedev/modular_api/commit/eb3b293f2c5989fc83caae796e39eb0ed624f693))
+
 ## [0.7.1 and earlier] Before release-please
 
 Until 0.7.1 each language kept its own changelog. They are reproduced below unchanged, one
