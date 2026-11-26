@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "macss-modular-api-sqlserver"
+version = "0.7.1"
+description = "Official MACSS SQL Server integration package for Python."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "ccisne.dev" }]
+keywords = ["macss", "sqlserver", "database"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    # Configured below at `typeCheckingMode = "strict"`. Declared here because a checker the
+    # repo configures and never installs is a checker that has never run.
+    "pyright>=1.1.400",
+    "pytest>=8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ccisnedev/modular_api"
+Repository = "https://github.com/ccisnedev/modular_api/tree/main/code/modular_api_sqlserver/py"
+Issues = "https://github.com/ccisnedev/modular_api/issues"
+Documentation = "https://github.com/ccisnedev/modular_api/tree/main/code/modular_api_sqlserver/py#readme"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.pyright]
+pythonVersion = "3.11"
+# `src/` is checked at full strict, because it is what a consumer's own type checker sees: these
+# packages ship `py.typed`, so every annotation here becomes part of the public contract.
+typeCheckingMode = "strict"
+
+# `tests/` is strict too, minus the family that means "annotate this expression". Test code binds
+# only this repo, and most of those diagnostics come from incomplete third-party stubs — annotating
+# around them adds noise to a test without making anything more correct. Everything that can indicate
+# a real defect stays on.
+[[tool.pyright.executionEnvironments]]
+root = "tests"
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportUnknownParameterType = false
+reportUnknownLambdaType = false
+reportMissingParameterType = false
+reportMissingTypeArgument = false
+# A pytest fixture is called by name through collection, never by a reference the checker can see, so
+# `reportUnusedFunction` reports every `autouse` fixture in this tree. That is the tool not modelling
+# pytest, not dead code. `reportUnusedImport` and `reportUnusedVariable` stay on — those do find dead
+# code, and they did.
+reportUnusedFunction = false
+reportUnusedClass = false
+# Tests legitimately reach into internals to exercise them directly. In `src/` this rule found real
+# coupling and it was fixed rather than silenced.
+reportPrivateUsage = false
+# `example/` is documentation a consumer copies, not a published typed surface — same relaxed family
+# as `tests/`, and the same expectation that nothing which can indicate a real defect is silenced.
+[[tool.pyright.executionEnvironments]]
+root = "example"
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportUnknownParameterType = false
+reportUnknownLambdaType = false
+reportMissingParameterType = false
+reportMissingTypeArgument = false

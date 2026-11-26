@@ -1,0 +1,45 @@
+{
+  "name": "@macss/modular-api-rest-client",
+  "version": "0.7.1",
+  "description": "Official MACSS outbound REST client for TypeScript.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && vitest run",
+    "test:unit": "vitest run"
+  },
+  "keywords": [
+    "macss",
+    "http",
+    "rest",
+    "client"
+  ],
+  "author": "ccisne.dev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ccisnedev/modular_api.git",
+    "directory": "code/modular_api_rest_client/ts"
+  },
+  "bugs": {
+    "url": "https://github.com/ccisnedev/modular_api/issues"
+  },
+  "homepage": "https://github.com/ccisnedev/modular_api/tree/main/code/modular_api_rest_client/ts#readme",
+  "devDependencies": {
+    "@opentelemetry/core": "^2.10.0",
+    "@opentelemetry/sdk-trace-node": "^2.10.0",
+    "@types/node": "^22.19.11",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0"
+  }
+}

@@ -268,8 +268,8 @@ expression" family relaxed under `tests/` and `example/` — but a configuration
 check:
 
 ```powershell
-pwsh .\code\py\typecheck.ps1                               # all five packages
-pwsh .\code\py\typecheck.ps1 -Package modular_api_postgres  # just one
+pwsh .\code	ests	ypecheck.ps1                               # all five packages
+pwsh .\code	ests	ypecheck.ps1 -Package modular_api_postgres  # just one
 ```
 
 It exits non-zero if any package reports an error, so it can gate a commit, a pre-push hook or a CI
