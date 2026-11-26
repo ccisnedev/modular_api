@@ -163,3 +163,28 @@ jobs:
 
       - name: Check version parity
         run: python code/tests/version_parity.py
+
+  # Gate 2 of ADR-0006: a project is not released with a constraint that excludes a sibling's version.
+  # Only the projects whose version changes against the base branch are checked, so it bites on a
+  # Release PR and is a no-op elsewhere; a dependent left behind by a breaking release of its sibling is
+  # fine until it is released (ADR-0006 §6).
+  siblings:
+    name: versions · sibling constraints
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Fetch the base branch
+        env:
+          BASE: ${{ github.base_ref }}
+        run: git fetch --depth=1 origin "$BASE"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check constraints on siblings
+        env:
+          BASE: ${{ github.base_ref }}
+        run: python code/tests/sibling_constraints.py --base "origin/$BASE"
