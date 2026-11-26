@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/ccisnedev/modular_api/compare/modular_api_graphql_client-v0.7.2...modular_api_graphql_client-v0.7.3) (2026-11-26)
+
+
+### Bug Fixes
+
+* **ts:** ship CHANGELOG.md in the npm package ([#59](https://github.com/ccisnedev/modular_api/issues/59)) ([64687f1](https://github.com/ccisnedev/modular_api/commit/64687f191e8ca0e57b1e39c5f38100759a1ef601))
+
 ## [0.7.2](https://github.com/ccisnedev/modular_api/compare/modular_api_graphql_client-v0.7.1...modular_api_graphql_client-v0.7.2) (2026-11-26)
 
 
