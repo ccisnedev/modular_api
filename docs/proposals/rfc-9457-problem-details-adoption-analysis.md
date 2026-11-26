@@ -323,7 +323,7 @@ DB/SQL do not need to change their local errors for this HTTP contract. Their co
 
 > *Corrected 2026-11-11.* This subsection originally treated the 15-package lockstep as current policy, and concluded that Problem Details required a common major version in all fifteen manifests with parity bumps for packages without changes. That lockstep was a misreading of ADR-0002, corrected in its erratum; ADR-0006 records the version rules. The subsection is rewritten accordingly.
 
-**Policy:** parity is per package across its three languages (ADR-0002, as corrected). ADR-0006 replaces the release mechanism (release-please, one component per package) and states the pre-1.0 version rules; until it is accepted, `release.yml` is the only publish path, and releases are frozen during the migration.
+**Policy:** parity is per package across its three languages (ADR-0002, as corrected). ADR-0006 replaces the release mechanism (release-please, one component per package) and states the pre-1.0 version rules; releases go through `release-please.yml`, one Release PR for all projects with unreleased changes.
 
 Consequence for this migration:
 

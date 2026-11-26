@@ -1,6 +1,6 @@
 name: modular_api_graphql_client
 description: Official MACSS outbound GraphQL client for Dart.
-version: 0.7.1
+version: 0.7.1 # x-release-please-version
 
 repository: https://github.com/ccisnedev/modular_api/tree/main/code/modular_api_graphql_client/dart
 homepage: https://github.com/ccisnedev/modular_api
