@@ -4,7 +4,9 @@ Date: 2026-08-02 — **revised 2026-11-11**, **accepted 2026-11-26**
 
 ## Status
 
-Accepted (2026-11-26). Supersedes [ADR-0002](0002-synchronized-versioning-across-sdks.md).
+Accepted (2026-11-26) — **amended 2026-11-27**: the second paragraph of §6 and the consequence that
+a breaking change takes two Release PRs are superseded by the Amendment at the end. Everything else
+stands. Supersedes [ADR-0002](0002-synchronized-versioning-across-sdks.md).
 
 The condition for acceptance was that the repository layout, the release-please configuration and the
 publish workflow described below exist, and that each per-project publish has been proven once (issue
@@ -168,6 +170,9 @@ dependent is released in its own Release PR. Updating dependents after a breakin
 publisher's responsibility, as it would be for any independent package. Every combination tested in
 CI is one that exists in the registries.
 
+> **Superseded 2026-11-27** by the Amendment at the end: a release may not leave an in-repo dependent
+> behind, so the dependent is widened *before* the breaking release and released with it.
+
 ### 7. One changelog per project
 
 release-please writes `code/<project>/CHANGELOG.md`. It is the only source of truth. pub.dev reads
@@ -266,7 +271,8 @@ Observed along the way, and settled:
   stops holding **across** projects and keeps holding **within** one.
 - **In `0.x`, a new capability is a patch release**, as long as it breaks nothing. Breaking changes —
   and only those — move the minor number and require dependents to widen their constraints.
-- **A breaking change in `modular_api` or `modular_api_rest_client` takes two Release PRs.**
+- ~~**A breaking change in `modular_api` or `modular_api_rest_client` takes two Release PRs.**~~
+  Superseded by the Amendment: it takes one, after a `fix(deps)` pull request that widens the dependents.
 - **Commit titles carry the version.** Conventional Commits stop being style and become input, so PR
   titles are validated.
 - **The by-language paths disappear.** `ci.yml`, the cross-SDK test scripts, every manifest's
@@ -292,3 +298,30 @@ Tracked in [issue #32](https://github.com/ccisnedev/modular_api/issues/32).
 
 Steps 2 to 6 were completed on 2026-11-26 (#49, #50, #51/#52, #55/#56, and this status change). The
 cores were proven with a `Release-As:` patch as well, rather than waiting for a real release.
+
+## Amendment — 2026-11-27: a release may not leave an in-repo dependent behind
+
+The second paragraph of §6 is **superseded**, and with it the consequence "a breaking change takes two
+Release PRs". The original text is kept, because the reasoning is the point of an ADR.
+
+**What happened:** the Release PR for `modular_api` `0.8.0` (breaking) was proposed while
+`modular_api_sqlserver` still declared `modular_api: ^0.7.0`, which excludes `0.8.0`. No check failed,
+because gate 2 only looked at projects whose version changes (§5.2) and accepted that a dependent falls
+behind until its own release. The consequence was a plugin that could not be installed next to the newest
+core, for as long as nobody remembered to widen it.
+
+**The rule now:** a release may not publish a version that the declared constraint of any in-repo
+dependent excludes. If it would, the dependent must be released in the same Release PR. Plugins must
+always ship compatible with the newest core.
+
+**How it works with registry-resolved siblings:** the objection in §6 was that the dependent cannot ask for
+a version that does not exist yet. It does not have to. Before the breaking release, a `fix(deps):` pull
+request widens the dependent to a range that admits both the current and the next version (for example
+`>=0.7.0 <0.9.0` for `0.8.0`), which resolves against what is on the registry today. release-please sees
+a releasable change in the dependent and includes it in the same Release PR as the core. Dependency
+order (§5.3) publishes the core first. Every combination tested in CI still exists in the registries.
+
+**Enforcement:** gate 2 (`code/tests/sibling_constraints.py`) now checks, in addition to the constraints
+of released projects, every in-repo dependent of a released project, whether or not the dependent is
+released. A Release PR whose version a dependent excludes fails `versions · sibling constraints`, and the
+message names the dependent, its constraint and the new version.
