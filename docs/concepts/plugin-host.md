@@ -135,9 +135,13 @@ pipeline positions).
 
 **Plugin middlewares are GLOBAL** (source-verified: `applyMiddlewares` mounts each
 handler with `app.use(handler)` — no path argument). There is no per-route
-middleware. If a middleware should only affect certain requests, the plugin is
-responsible for self-filtering on `req.path` / `req.method` and calling `next()`
-for everything else.
+middleware. If a middleware should only affect certain use cases, the plugin is
+responsible for self-filtering and calling `next()` for everything else. Filter by
+the resolved route the host attaches before any plugin middleware runs
+(`resolvedRoute(res)` in TS, `resolved_route(request)` in Python,
+`resolvedRoute(request)` in Dart), not by comparing the raw path: a list of
+protected paths fails open. For access control, deny by default; see
+[Protecting use cases](../guides/protecting-use-cases.md).
 
 Ordering inside a slot: lower `order` first, plugin setup order breaks ties.
 Middleware handlers use the native continuation semantics of the host framework —

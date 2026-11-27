@@ -30,8 +30,20 @@ mirror the same slot semantics on Shelf and Starlette.
                   |
                   v
  +--------------------------------------+
+ | 2b. route resolver                   |  attaches the use case that will run
+ |                                      |  (resolvedRoute), or nothing
+ +--------------------------------------+
+                  |
+                  v
+ +--------------------------------------+
  | 3. preRouting plugin middlewares     |  metrics middleware lives here
  |                                      |  (slot preRouting, order 0)
+ +--------------------------------------+
+                  |
+                  v
+ +--------------------------------------+
+ | 3b. canonical path guard             |  404 to `//` and a trailing slash
+ |     (TS, strictRouting)              |  (except `/`)
  +--------------------------------------+
                   |
                   v
@@ -64,6 +76,13 @@ mirror the same slot semantics on Shelf and Starlette.
  | 8. unhandled request handler         |  structured JSON 404 / error
  +--------------------------------------+
 ```
+
+Notes on steps 2b and 3b (since 0.8.0, issue #47): the route resolver runs in the
+three SDKs (in Python and Dart right after error normalization, before
+`preRouting`). The canonical path guard exists only in TypeScript; in Python and
+Dart the router itself rejects the same variants. All routers are strict: a
+different case or a trailing slash does not resolve. See
+[Protecting use cases](../guides/protecting-use-cases.md).
 
 Notes on step 7: plugin routes are applied onto the same root router that already
 holds the module routes (`pluginHost.applyRoutes(rootRouter)` runs during `serve()`,
@@ -115,8 +134,12 @@ order breaks ties (user plugins set up before official plugins, so a user-plugin
 preRouting middleware with `order: 0` runs before the official metrics middleware).
 
 Plugin middlewares are **global** — they see every request. There is no per-route
-middleware registration; a middleware that should only apply to some routes must
-filter on `req.path` / `req.method` itself. See [plugin-host.md](plugin-host.md).
+middleware registration; a middleware that should only apply to some use cases
+must decide by the resolved route (`resolvedRoute(res)` in TS, `resolved_route`
+in Python, `resolvedRoute(request)` in Dart), not by comparing the raw path. For
+access control, deny by default: see
+[Protecting use cases](../guides/protecting-use-cases.md) and
+[plugin-host.md](plugin-host.md).
 
 ## Security warning: preHandler does NOT protect api.use() routers
 
@@ -131,7 +154,9 @@ and may have already sent a response by the time the guard runs.
 | Everything, including routers mounted via `api.use()` | `preRouting` |
 
 Rule of thumb: a security guard belongs in `preRouting` unless you have a specific
-reason to let `api.use()` middlewares run unauthenticated.
+reason to let `api.use()` middlewares run unauthenticated. Whatever the slot, it
+must deny by default and read the resolved route; see
+[Protecting use cases](../guides/protecting-use-cases.md).
 
 ## Where things attach
 
