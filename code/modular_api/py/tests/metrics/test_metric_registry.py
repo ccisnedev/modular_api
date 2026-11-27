@@ -110,6 +110,28 @@ class TestMetricRegistrySerialization:
         assert "# TYPE http_requests_total counter" in output
         assert 'http_requests_total{method="GET",status_code="200"} 42' in output
 
+    def test_serializes_unlabeled_counter_at_zero_after_registration(self) -> None:
+        registry = MetricRegistry()
+        registry.create_counter(name="writer_errors_total", help="Errors")
+
+        assert "writer_errors_total 0" in registry.serialize().split("\n")
+
+    def test_serializes_root_value_of_unlabeled_counter_after_inc(self) -> None:
+        registry = MetricRegistry()
+        counter = registry.create_counter(name="writer_errors_total", help="Errors")
+        counter.inc()
+        counter.inc()
+
+        assert "writer_errors_total 2" in registry.serialize().split("\n")
+
+    def test_labeled_counter_adds_no_unlabeled_line(self) -> None:
+        registry = MetricRegistry()
+        counter = registry.create_counter(name="jobs_total", help="Jobs")
+        counter.labels({"queue": "a"}).inc()
+
+        samples = [l for l in registry.serialize().split("\n") if l.startswith("jobs_total")]
+        assert samples == ['jobs_total{queue="a"} 1']
+
     def test_serializes_gauge(self) -> None:
         registry = MetricRegistry()
         gauge = registry.create_gauge(name="temperature", help="Current temperature")

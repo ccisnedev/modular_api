@@ -116,6 +116,37 @@ void main() {
         expect(helpLines, hasLength(1)); // only process_start_time_seconds
       });
 
+      test('serializes an unlabeled counter at 0 right after registration', () {
+        registry.createCounter(name: 'writer_errors_total', help: 'Errors');
+
+        expect(registry.serialize().split('\n'),
+            contains('writer_errors_total 0'));
+      });
+
+      test('serializes the root value of an unlabeled counter after inc()', () {
+        final counter =
+            registry.createCounter(name: 'writer_errors_total', help: 'Errors');
+        counter.inc();
+        counter.inc();
+
+        expect(registry.serialize().split('\n'),
+            contains('writer_errors_total 2'));
+      });
+
+      test('adds no unlabeled line next to the children of a labeled counter',
+          () {
+        final counter =
+            registry.createCounter(name: 'jobs_total', help: 'Jobs');
+        counter.labels({'queue': 'a'}).inc();
+
+        final samples = registry
+            .serialize()
+            .split('\n')
+            .where((l) => l.startsWith('jobs_total'))
+            .toList();
+        expect(samples, ['jobs_total{queue="a"} 1']);
+      });
+
       test('serializes counter with HELP, TYPE, and value lines', () {
         final counter = registry.createCounter(
           name: 'http_requests_total',
