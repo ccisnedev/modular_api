@@ -95,6 +95,33 @@ describe('MetricRegistry', () => {
       expect(output).toContain('status_code="200"');
     });
 
+    it('serializes an unlabeled counter at 0 right after registration', () => {
+      registry.createCounter({ name: 'writer_errors_total', help: 'Errors' });
+
+      const lines = registry.serialize().split('\n');
+      expect(lines).toContain('writer_errors_total 0');
+    });
+
+    it('serializes the root value of an unlabeled counter after inc()', () => {
+      const counter = registry.createCounter({ name: 'writer_errors_total', help: 'Errors' });
+      counter.inc();
+      counter.inc();
+
+      const lines = registry.serialize().split('\n');
+      expect(lines).toContain('writer_errors_total 2');
+    });
+
+    it('adds no unlabeled line next to the children of a labeled counter', () => {
+      const counter = registry.createCounter({ name: 'jobs_total', help: 'Jobs' });
+      counter.inc({ queue: 'a' });
+
+      const samples = registry
+        .serialize()
+        .split('\n')
+        .filter((l) => l.startsWith('jobs_total'));
+      expect(samples).toEqual(['jobs_total{queue="a"} 1']);
+    });
+
     it('serializes gauge', () => {
       const gauge = registry.createGauge({
         name: 'temperature',
