@@ -36,6 +36,9 @@ class ModularApi {
   /// Distributed tracing options, or `null` when tracing is off (ADR-0005).
   final TracingOptions? tracing;
 
+  /// Default maximum size in bytes of a use case request body; `null` = no limit.
+  final int? jsonBodyLimit;
+
   // ── OpenAPI ──
   final List<Map<String, String>>? servers;
 
@@ -71,6 +74,12 @@ class ModularApi {
   /// no tracing middleware is installed and no span is ever created. The
   /// application supplies the tracer provider; the framework depends on the
   /// OpenTelemetry API only. See [TracingOptions].
+  /// [jsonBodyLimit] — Opt-in default maximum size, in bytes, of a use case
+  /// request body. `null` (the default) means no limit. A body over the limit
+  /// is answered with 413 `{"error":"Request body too large"}` before it is
+  /// fully buffered. A use case can override it with its own `jsonBodyLimit`
+  /// in [ModuleBuilder.usecase]. A negative value throws [ArgumentError] when a
+  /// use case is registered.
   ModularApi({
     this.basePath = '/api',
     this.title = 'Modular API',
@@ -83,6 +92,7 @@ class ModularApi {
     List<String>? excludedMetricsRoutes,
     this.logLevel = LogLevel.info,
     this.tracing,
+    this.jsonBodyLimit,
   })  : _healthService = HealthService(
           version: version,
           releaseId: releaseId,
@@ -124,6 +134,7 @@ class ModularApi {
       basePath: basePath,
       moduleName: name,
       root: _root,
+      jsonBodyLimit: jsonBodyLimit,
     );
 
     build(m);
@@ -382,18 +393,27 @@ class ModuleBuilder {
   final Router _root;
   final Router _module = Router();
   final List<ResolvedRoute> _resolvedRoutes = [];
+  final int? _defaultJsonBodyLimit;
 
   ModuleBuilder({
     required this.basePath,
     required this.moduleName,
     required Router root,
-  }) : _root = root;
+    int? jsonBodyLimit,
+  })  : _root = root,
+        _defaultJsonBodyLimit = jsonBodyLimit;
 
   /// Registers a use case as an HTTP endpoint on this module.
   ///
   /// [command] becomes the route segment and the OpenAPI operationId root.
   /// Convention: command, class name, and file name share the same root.
   /// Example: command `'hello-world'` → class `HelloWorld` → file `hello_world.dart`.
+  ///
+  /// [jsonBodyLimit] — maximum size, in bytes, of this use case's request body.
+  /// Overrides the `jsonBodyLimit` of [ModularApi]; when neither is set there is
+  /// no limit. `0` rejects any non-empty body. A body over the limit is answered
+  /// with 413 `{"error":"Request body too large"}`. Throws [ArgumentError] when
+  /// negative. Does not apply to `GET`, which has no body.
   ModuleBuilder usecase(
     String command,
     UseCaseFactory usecaseFactory, {
@@ -402,8 +422,15 @@ class ModuleBuilder {
     String? description,
     required Input inputExample,
     required Output outputExample,
+    int? jsonBodyLimit,
   }) {
-    Handler h = useCaseHttpHandler(usecaseFactory, inputExample: inputExample);
+    final effectiveLimit = jsonBodyLimit ?? _defaultJsonBodyLimit;
+    if (effectiveLimit != null && effectiveLimit < 0) {
+      throw ArgumentError.value(
+          effectiveLimit, 'jsonBodyLimit', 'must not be negative');
+    }
+    Handler h = useCaseHttpHandler(usecaseFactory,
+        inputExample: inputExample, jsonBodyLimit: effectiveLimit);
 
     command = command.trim();
     if (command.startsWith('/')) {
