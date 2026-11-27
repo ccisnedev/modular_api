@@ -73,7 +73,11 @@ def _bad_request(request: Request, message: str, cause: BaseException | None) ->
 
 def _declared_length(request: Request) -> int | None:
     declared = request.headers.get("content-length")
-    if declared is not None and declared.strip().isdigit():
+    if declared is None:
+        return None
+    declared = declared.strip()
+    # ASCII only: str.isdigit() also accepts digits such as '²' that int() rejects.
+    if declared.isascii() and declared.isdigit():
         return int(declared)
     return None
 

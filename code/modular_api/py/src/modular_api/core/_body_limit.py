@@ -18,7 +18,7 @@ _UNITS: dict[str, int] = {
     "pb": 1024**5,
 }
 
-_PATTERN = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*(b|kb|mb|gb|tb|pb)?\s*$", re.IGNORECASE)
+_PATTERN = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*(b|kb|mb|gb|tb|pb)?\s*$", re.IGNORECASE | re.ASCII)
 
 
 def parse_body_limit(value: int | str) -> int:

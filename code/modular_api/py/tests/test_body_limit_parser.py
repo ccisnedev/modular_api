@@ -31,7 +31,7 @@ def test_valid(value: int | str, expected: int) -> None:
     assert parse_body_limit(value) == expected
 
 
-@pytest.mark.parametrize("value", ["", "abc", "10xb", "kb", "-1kb", "-5", "1..5mb", "1 2mb", -1, True, 1.5])
+@pytest.mark.parametrize("value", ["", "abc", "10xb", "kb", "-1kb", "-5", "1..5mb", "1 2mb", "١٠", "²", "1٫5mb", -1, True, 1.5])
 def test_invalid(value: object) -> None:
     with pytest.raises(ValueError):
         parse_body_limit(value)  # type: ignore[arg-type]
