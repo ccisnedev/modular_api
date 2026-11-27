@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
@@ -12,6 +13,7 @@ import 'use_case_exception.dart';
 Handler useCaseHttpHandler(
   UseCase Function(Map<String, dynamic>) fromJson, {
   Input? inputExample,
+  int? jsonBodyLimit,
 }) {
   const jsonHeaders = {'content-type': 'application/json; charset=utf-8'};
 
@@ -24,7 +26,7 @@ Handler useCaseHttpHandler(
       // 1. Extract JSON (either from body or params)
       final data = req.method.toUpperCase() == 'GET'
           ? await _jsonFromUrl(req)
-          : await _jsonFromBody(req);
+          : await _jsonFromBody(req, jsonBodyLimit);
 
       // 2. Pre-validate BEFORE fromJson (when example provides schema)
       if (preValidationFields != null) {
@@ -93,6 +95,18 @@ Handler useCaseHttpHandler(
         headers: jsonHeaders,
         body: jsonEncode({'error': e.message}),
       );
+    } on _BodyTooLarge catch (e) {
+      final logger = req.context[loggerContextKey] as ModularLogger?;
+      logger?.warning('Request body too large', fields: {
+        'status': 413,
+        'limit': e.limit,
+        if (e.length != null) 'length': e.length,
+      });
+      return Response(
+        413,
+        headers: jsonHeaders,
+        body: jsonEncode({'error': 'Request body too large'}),
+      );
     } on _BadRequest catch (e) {
       // A client error: the cause goes to the log at warning level, never into the response.
       final logger = req.context[loggerContextKey] as ModularLogger?;
@@ -119,8 +133,27 @@ Handler useCaseHttpHandler(
 }
 
 /// Extracts JSON directly from the body (POST/PATCH)
-Future<Map<String, dynamic>> _jsonFromBody(Request req) async {
-  final payload = await req.readAsString();
+///
+/// With a [limit] (bytes), a declared Content-Length over it is refused unread, and the
+/// byte stream is counted so a chunked or understated body stops at limit + 1 bytes.
+Future<Map<String, dynamic>> _jsonFromBody(Request req, int? limit) async {
+  final String payload;
+  if (limit == null) {
+    payload = await req.readAsString();
+  } else {
+    final declared = req.contentLength;
+    if (declared != null && declared > limit) {
+      throw _BodyTooLarge(limit, declared);
+    }
+    final bytes = BytesBuilder(copy: false);
+    var count = 0;
+    await for (final chunk in req.read()) {
+      count += chunk.length;
+      if (count > limit) throw _BodyTooLarge(limit, declared);
+      bytes.add(chunk);
+    }
+    payload = (req.encoding ?? utf8).decode(bytes.takeBytes());
+  }
   final Object? decoded;
   try {
     decoded = jsonDecode(payload); // an empty body is a FormatException too
@@ -131,6 +164,13 @@ Future<Map<String, dynamic>> _jsonFromBody(Request req) async {
     throw const _BadRequest('Request body must be a JSON object');
   }
   return decoded;
+}
+
+/// A body over the configured limit; answered with 413.
+class _BodyTooLarge implements Exception {
+  final int limit;
+  final int? length;
+  const _BodyTooLarge(this.limit, this.length);
 }
 
 /// A body that cannot become the use case input; answered with 400.
