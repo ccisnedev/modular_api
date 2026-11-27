@@ -10,11 +10,14 @@
 # time, and a Python publish job that ran pytest without installing the package under test. Two of them
 # were found *after* publishing to three registries, where nothing can be undone.
 #
-# What this file does NOT catch, said here so nobody assumes otherwise: the satellites resolve their
-# sibling from the registry, not from the working tree. `modular_api_sqlserver` asks pub.dev for
-# `modular_api ^0.7.0`, so a pull request that breaks the Dart core will not turn its tests red.
-# Covering that needs local overrides in CI, which means testing a combination no consumer will ever
-# have — a separate decision, not an oversight.
+# What this file does NOT catch, said here so nobody assumes otherwise: the other satellites resolve
+# their sibling from the registry, not from the working tree. Today the only dependency on the core is
+# `modular_api_sqlserver` (Dart), and it is the one exception: a committed `pubspec_overrides.yaml`
+# makes its analysis and tests run against the core in this working tree, so a pull request that
+# breaks the core turns them red. The trade-off is that no CI run tests the plugin against the
+# *published* core. The range it declares (`modular_api >=0.7.0 <0.9.0`) is guarded only by
+# `code/tests/sibling_constraints.py`, which checks that it admits the core's released version; it
+# does not run the tests against any version in the range.
 
 name: CI
 
