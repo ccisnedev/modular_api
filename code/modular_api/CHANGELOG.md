@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.3](https://github.com/ccisnedev/modular_api/compare/modular_api-v0.7.2...modular_api-v0.7.3) (2026-11-27)
+
+
+### Bug Fixes
+
+* **handler:** answer 400, not 500, to a body that cannot become the input ([#64](https://github.com/ccisnedev/modular_api/issues/64)) ([fc4c1a9](https://github.com/ccisnedev/modular_api/commit/fc4c1a9e5c8f6b732617ffe67b0632b3a6bb5578)), closes [#44](https://github.com/ccisnedev/modular_api/issues/44)
+* **metrics:** serialize the root value of an unlabeled counter ([#61](https://github.com/ccisnedev/modular_api/issues/61)) ([559a39e](https://github.com/ccisnedev/modular_api/commit/559a39e9c24e58a4a1d22b48180c357911f79b21)), closes [#46](https://github.com/ccisnedev/modular_api/issues/46)
+* **openapi:** carry the ModularApi version into info.version in Dart ([#62](https://github.com/ccisnedev/modular_api/issues/62)) ([b73c8e8](https://github.com/ccisnedev/modular_api/commit/b73c8e871eaaf8de1f0cb65a1aae16271901b833)), closes [#38](https://github.com/ccisnedev/modular_api/issues/38)
+* **schema:** fail at class definition when @Field is a legacy decorator ([#65](https://github.com/ccisnedev/modular_api/issues/65)) ([87015b8](https://github.com/ccisnedev/modular_api/commit/87015b851f28cf46607c75c14a64e2be9068c021)), closes [#19](https://github.com/ccisnedev/modular_api/issues/19)
+
 ## [0.7.2](https://github.com/ccisnedev/modular_api/compare/modular_api-v0.7.1...modular_api-v0.7.2) (2026-11-26)
 
 
