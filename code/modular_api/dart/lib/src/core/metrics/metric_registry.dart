@@ -105,7 +105,12 @@ class MetricRegistry {
 
   void _serializeCounter(StringBuffer buf, Counter counter) {
     final samples = counter.collect();
-    if (samples.isEmpty) return;
+    if (samples.isEmpty) {
+      // Root counter with no labeled children — emit the root value, like a gauge.
+      // Once a labeled child exists, the root value is not serialized.
+      buf.writeln('${counter.name} ${_formatValue(counter.value)}');
+      return;
+    }
     for (final s in samples) {
       buf.writeln(
           '${counter.name}${_formatLabels(s.labels)} ${_formatValue(s.value)}');

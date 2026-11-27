@@ -126,7 +126,13 @@ class MetricRegistry:
 
     @staticmethod
     def _serialize_counter(parts: list[str], counter: Counter) -> None:
-        for sample in counter.collect():
+        samples = counter.collect()
+        if not samples:
+            # Root counter with no labeled children — emit the root value, like a gauge.
+            # Once a labeled child exists, the root value is not serialized.
+            parts.append(f"{counter.name} {_format_value(counter.value)}")
+            return
+        for sample in samples:
             parts.append(
                 f"{counter.name}{_format_labels(sample.labels)} {_format_value(sample.value)}"
             )

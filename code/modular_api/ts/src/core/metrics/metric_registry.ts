@@ -109,7 +109,12 @@ export class MetricRegistry {
 
   private serializeCounter(lines: string[], counter: Counter): void {
     const samples = counter.collect();
-    if (samples.length === 0) return;
+    if (samples.length === 0) {
+      // Root counter with no labeled children — emit the root value, like a gauge.
+      // Once a labeled child exists, the root value is not serialized.
+      lines.push(`${counter.name} ${formatValue(counter.value)}`);
+      return;
+    }
     for (const s of samples) {
       lines.push(`${counter.name}${formatLabels(s.labels)} ${formatValue(s.value)}`);
     }
