@@ -41,6 +41,7 @@ from modular_api.core.tracing.tracing_middleware import tracing_middleware
 from modular_api.core.tracing.tracing_options import TracingOptions
 from modular_api.core.metrics.metric import Counter, Gauge, Histogram
 from modular_api.core.metrics.metric_registry import MetricRegistry, MetricsRegistrar
+from modular_api.core._body_limit import parse_body_limit
 from modular_api.core.module_builder import ModuleBuilder
 from modular_api.core.official_plugins import (
     OperationalRoutePaths,
@@ -79,7 +80,20 @@ class ModularApi:
         log_level: LogLevel = LogLevel.info,
         graphql: GraphqlOptions | None = None,
         tracing: TracingOptions | None = None,
+        json_body_limit: int | str | None = None,
     ) -> None:
+        """Create the application.
+
+        ``json_body_limit`` is the instance-wide maximum size of a JSON request body for use cases,
+        as a number of bytes or a size string (``'100kb'``, ``'2mb'``, ``'1.5MB'``; base 1024).
+        A body over the limit is rejected with 413. ``None`` (the default) means no limit. A use
+        case can override it with ``ModuleBuilder.usecase(json_body_limit=...)``. An invalid or
+        negative value raises ``ValueError``.
+        """
+        # Validated now, so a bad value fails at construction, not on the first request.
+        if json_body_limit is not None:
+            parse_body_limit(json_body_limit)
+        self._json_body_limit = json_body_limit
         self._base_path = base_path
         self._title = title
         self._version = version
@@ -139,7 +153,9 @@ class ModularApi:
 
     def module(self, name: str, build: Callable[[ModuleBuilder], Any]) -> ModularApi:
         """Register a group of use cases under a named module."""
-        builder = ModuleBuilder(base_path=self._base_path, module_name=name)
+        builder = ModuleBuilder(
+            base_path=self._base_path, module_name=name, json_body_limit=self._json_body_limit
+        )
         build(builder)
         mount_path = f"{self._normalize_base(self._base_path)}/{name}"
         self._module_routers.append((mount_path, builder.build_router()))

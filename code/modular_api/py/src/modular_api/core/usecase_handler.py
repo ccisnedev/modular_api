@@ -71,8 +71,51 @@ def _bad_request(request: Request, message: str, cause: BaseException | None) ->
     )
 
 
-def usecase_handler(factory: UseCaseFactory) -> Any:
+def _declared_length(request: Request) -> int | None:
+    declared = request.headers.get("content-length")
+    if declared is None:
+        return None
+    declared = declared.strip()
+    # ASCII only: str.isdigit() also accepts digits such as '²' that int() rejects.
+    if declared.isascii() and declared.isdigit():
+        return int(declared)
+    return None
+
+
+async def _read_limited(request: Request, limit: int) -> bytes | None:
+    """The body, or ``None`` as soon as it is known to exceed ``limit`` bytes."""
+    length = _declared_length(request)
+    if length is not None and length > limit:
+        return None
+    chunks: list[bytes] = []
+    total = 0
+    async for chunk in request.stream():
+        total += len(chunk)
+        if total > limit:
+            return None
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _too_large(request: Request, limit: int) -> Response:
+    fields: dict[str, object] = {"status": 413, "limit": limit}
+    length = _declared_length(request)
+    if length is not None:
+        fields["length"] = length
+    logger = getattr(request.state, LOGGER_STATE_KEY, None)
+    if logger is not None:
+        logger.warning("Request body too large", fields=fields)
+    return Response(
+        content=json.dumps({"error": "Request body too large"}),
+        status_code=413,
+        media_type=_JSON_CONTENT_TYPE,
+    )
+
+
+def usecase_handler(factory: UseCaseFactory, *, body_limit: int | None = None) -> Any:
     """Wraps a UseCase factory into an async Starlette endpoint.
+
+    ``body_limit`` is the effective maximum body size in bytes, or ``None`` for no limit (#43).
 
     Lifecycle:
       1. Parse body (POST/PUT/PATCH) or query + path params (GET/DELETE).
@@ -98,7 +141,13 @@ def usecase_handler(factory: UseCaseFactory) -> Any:
                 # the result a dict made a type checker call that guard dead code, which is exactly
                 # backwards: the annotation was the thing that was wrong.
                 try:
-                    payload: object = await request.json()
+                    if body_limit is None:
+                        payload: object = await request.json()
+                    else:
+                        raw = await _read_limited(request, body_limit)
+                        if raw is None:
+                            return _too_large(request, body_limit)
+                        payload = json.loads(raw)
                 except ValueError:  # json.JSONDecodeError, also for an empty body
                     return _bad_request(request, "Invalid JSON in request body", None)
 
