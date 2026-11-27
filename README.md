@@ -162,6 +162,8 @@ See `code/modular_api/dart/example/`, `code/modular_api/ts/example/`, and `code/
 - [docs/architecture.md](docs/architecture.md) - canonical architecture specification
 - [docs/plugin_guide.md](docs/plugin_guide.md) - definition of the reference plugin deliverable and acceptance criteria
 - [docs/plugin_host_guide.md](docs/plugin_host_guide.md) - current public plugin-host and authoring guide
+- [docs/guides/protecting-use-cases.md](docs/guides/protecting-use-cases.md) - deny-by-default auth middlewares and strict routing
+- [docs/migration/0.7-to-0.8.md](docs/migration/0.7-to-0.8.md) - migrating to 0.8.0 (strict routing in TypeScript)
 - [docs/release_validation_matrix.md](docs/release_validation_matrix.md) - validation matrix for complementary package release readiness
 - [docs/release_exit_checklist.md](docs/release_exit_checklist.md) - go/no-go checklist for release closure
 - [docs/roadmap.md](docs/roadmap.md) - product roadmap focused on the API and plugin milestones
