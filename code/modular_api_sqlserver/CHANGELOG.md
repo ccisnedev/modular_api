@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4](https://github.com/ccisnedev/modular_api/compare/modular_api_sqlserver-v0.7.3...modular_api_sqlserver-v0.7.4) (2026-11-27)
+
+
+### Bug Fixes
+
+* **deps:** accept modular_api 0.8 in the Dart SQL Server plugin ([#71](https://github.com/ccisnedev/modular_api/issues/71)) ([cced509](https://github.com/ccisnedev/modular_api/commit/cced509c4769a3c65a66db4d7d485ec97bf5ce95))
+
 ## [0.7.3](https://github.com/ccisnedev/modular_api/compare/modular_api_sqlserver-v0.7.2...modular_api_sqlserver-v0.7.3) (2026-11-26)
 
 

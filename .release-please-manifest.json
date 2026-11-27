@@ -1,7 +1,7 @@
 {
-  "code/modular_api": "0.7.3",
+  "code/modular_api": "0.8.0",
   "code/modular_api_rest_client": "0.7.2",
   "code/modular_api_graphql_client": "0.7.3",
-  "code/modular_api_sqlserver": "0.7.3",
+  "code/modular_api_sqlserver": "0.7.4",
   "code/modular_api_postgres": "0.7.3"
 }
