@@ -1,0 +1,45 @@
+{
+  "name": "@macss/modular-api-postgres",
+  "version": "0.7.3",
+  "private": false,
+  "description": "Official MACSS Postgres integration package for TypeScript.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && vitest run",
+    "test:unit": "vitest run"
+  },
+  "keywords": [
+    "macss",
+    "postgres",
+    "database"
+  ],
+  "author": "ccisne.dev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ccisnedev/modular_api.git",
+    "directory": "code/modular_api_postgres/ts"
+  },
+  "bugs": {
+    "url": "https://github.com/ccisnedev/modular_api/issues"
+  },
+  "homepage": "https://github.com/ccisnedev/modular_api/tree/main/code/modular_api_postgres/ts#readme",
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0"
+  },
+  "devDependencies": {
+    "@opentelemetry/sdk-trace-node": "^2.10.0",
+    "@types/node": "^22.19.11",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

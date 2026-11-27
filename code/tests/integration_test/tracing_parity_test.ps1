@@ -21,16 +21,16 @@
 # Prerequisites:
 #   - Dart SDK on PATH
 #   - Node.js / npx on PATH
-#   - Python venv at code/py/modular_api/.venv with modular_api installed
+#   - Python venv at code/modular_api/py/.venv with modular_api installed
 # =============================================================================
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
-$dartDir  = Join-Path (Join-Path $repoRoot 'dart') 'modular_api'
-$tsDir    = Join-Path (Join-Path $repoRoot 'ts') 'modular_api'
-$pyDir    = Join-Path (Join-Path $repoRoot 'py') 'modular_api'
+$dartDir  = Join-Path (Join-Path $repoRoot 'modular_api') 'dart'
+$tsDir    = Join-Path (Join-Path $repoRoot 'modular_api') 'ts'
+$pyDir    = Join-Path (Join-Path $repoRoot 'modular_api') 'py'
 $fixture  = Join-Path $repoRoot 'tests\fixtures\tracing\span_shape.json'
 
 $env:NO_PROXY = 'localhost,127.0.0.1'

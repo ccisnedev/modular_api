@@ -6,7 +6,10 @@ Date: 2026-07-25
 
 Accepted — **amended 2026-07-30**. Decisions 2, 3 and 9 below are superseded by A1–A6 in the
 Amendment section; decisions 1, 4, 5, 6, 7, 8 and 10 stand. The superseded text is preserved
-deliberately: the reasoning that led to a reversal is part of the record.
+deliberately: the reasoning that led to a reversal is part of the record. **Corrected
+2026-11-11**: decision 10 is aligned with ADR-0006's version rules (with a note), and the
+consequence formerly titled "A coordinated multi-package release" now says what it meant: several
+packages released in dependency order, each at its own version.
 
 ## Context
 
@@ -159,10 +162,15 @@ by hand with no client library. It therefore falls on the owned side of the line
 10. **This amends the roadmap.** The roadmap stated that the architecture was complete and that
     every release up to 1.0.0 would be a refinement rather than a fundamentally new capability.
     That stance is revised: two foundational capabilities remain inside the 0.x line — tracing
-    (this ADR) and a gRPC transport. Both are minor releases under the existing semver rules. The
-    revision is recorded rather than quietly ignored, for the same reason ADR-0004 retracted the
-    "first slice" phrasing: a roadmap that no longer describes the project is worse than one that
-    admits a change of direction.
+    (this ADR) and a gRPC transport. Both are new capabilities (`feat`), released under the version
+    rules of ADR-0006. The revision is recorded rather than quietly ignored, for the same reason
+    ADR-0004 retracted the "first slice" phrasing: a roadmap that no longer describes the project is
+    worse than one that admits a change of direction.
+
+    > *Corrected 2026-11-11.* This decision originally said "Both are minor releases under the
+    > existing semver rules". ADR-0006 adopts the pre-1.0 convention: in `0.x` a capability that
+    > breaks nothing is a patch release, and only a breaking change moves the minor number. Tracing
+    > shipped in `0.7.0` under the old rules; gRPC, if it breaks nothing, ships as a `0.x` patch.
 
 ## Amendment — 2026-07-30: depend on the OpenTelemetry API, own only the instrumentation
 
@@ -278,9 +286,10 @@ implementation across three languages for years.
 
 - **Traces join logs and metrics**, completing the observability surface. Core takes one new
   dependency — the OpenTelemetry **API** — and never an SDK or exporter (A1, A2).
-- **A coordinated multi-package release.** The contract lives in core, but instrumentation touches
-  `modular_api_postgres` (span around `DbCommand` execution) and `modular_api_rest_client`
-  (client span plus `traceparent` injection). Because the database packages are contracts-only
+- **Releases of several packages, in dependency order.** The contract lives in core, but
+  instrumentation touches `modular_api_postgres` (span around `DbCommand` execution) and
+  `modular_api_rest_client` (client span plus `traceparent` injection). Each package is released in
+  its three languages at its own version (ADR-0006); they do not share one number. Because the database packages are contracts-only
   (ADR-0004), instrumenting the contract means every adapter is instrumented for free — a direct
   dividend of that decision.
 - **Three SDKs, three bindings to official APIs** (A4). Parity compares the spans our

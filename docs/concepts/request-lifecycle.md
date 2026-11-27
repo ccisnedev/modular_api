@@ -2,7 +2,7 @@
 
 This page documents the exact order of the HTTP pipeline assembled by
 `ModularApi.serve()`. The order below is verified against the TypeScript source
-(`code/ts/modular_api/src/core/modular_api.ts`, method `serve`); Dart and Python
+(`code/modular_api/ts/src/core/modular_api.ts`, method `serve`); Dart and Python
 mirror the same slot semantics on Shelf and Starlette.
 
 ## Pipeline order

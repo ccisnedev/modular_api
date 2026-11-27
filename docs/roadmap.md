@@ -6,15 +6,20 @@
 
 ## Versioning Philosophy
 
-Every release must be coherent on its own.
+Every release must be coherent on its own. Each of the five packages versions independently, and
+its Dart, TypeScript and Python releases always share a version
+([ADR-0006](adr/0006-per-project-versioning-across-the-three-sdks.md)). Versions follow semver,
+with the pre-1.0 convention that npm and pub caret ranges already assume:
 
-- **Major** - breaking changes to the core contract or plugin contract
-- **Minor** - new capabilities, new public APIs
-- **Patch** - bug fixes, documentation, and performance improvements
+| Change | In `0.x` | From `1.0.0` |
+| --- | --- | --- |
+| Breaking change to a public contract (core, plugin, client, db contracts) | minor (`0.7.1 → 0.8.0`) | major |
+| New capability or public API that breaks nothing | patch (`0.7.1 → 0.7.2`) | minor |
+| Bug fix, performance, documentation | patch | patch |
 
 **Up to `1.0.0`, releases refine, harden, and consolidate the surfaces that already shipped, with
-two deliberate exceptions** — tracing and gRPC, each a **minor** under the rules above (new
-capability, new public API), each justified in an ADR before implementation. `1.0.0` is the point
+two deliberate exceptions** — tracing and gRPC, new capabilities released under the rules above,
+each justified in an ADR before implementation. `1.0.0` is the point
 at which the ecosystem is declared stable for long-term support. The bar for admitting anything
 else to that list is an ADR that explains why it is foundational rather than convenient.
 

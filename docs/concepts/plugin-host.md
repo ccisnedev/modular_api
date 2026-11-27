@@ -6,8 +6,8 @@ conceptual model in TypeScript, Dart, and Python, and the official plugins
 third-party plugins.
 
 Facts on this page marked "(source-verified)" were confirmed against
-`code/ts/modular_api/src/core/plugin.ts` and
-`code/ts/modular_api/src/core/official_plugins.ts` on the 0.5.0 line.
+`code/modular_api/ts/src/core/plugin.ts` and
+`code/modular_api/ts/src/core/official_plugins.ts` on the 0.5.0 line.
 
 ## What a plugin can do
 
