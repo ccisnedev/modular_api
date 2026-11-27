@@ -131,3 +131,28 @@ describe('@Field decorator metadata storage', () => {
     expect(getFieldMetadata(PlainClass)).toEqual([]);
   });
 });
+
+// ── Legacy decorator convention (issue #19) ──────────────────
+
+describe('@Field compiled with experimentalDecorators', () => {
+  // With `experimentalDecorators: true`, tsc and transformers call a property decorator as
+  // `decorator(prototype, propertyKey)` instead of the Stage 3 `(undefined, context)`. The field
+  // metadata is then never registered; it must fail at class definition with a clear message,
+  // not later with `toJson() not implemented` or a TypeError about `Symbol(FieldMeta)`.
+  const legacyCall = (decorator: unknown) => () =>
+    (decorator as (target: object, key: string) => void)({}, 'name');
+
+  it.each([
+    ['string', Field.string()],
+    ['integer', Field.integer()],
+    ['optional', Field.optional(Field.string())],
+    ['array', Field.array(Field.string())],
+  ])('Field.%s throws a clear error under the legacy convention', (_, decorator) => {
+    expect(legacyCall(decorator)).toThrow(/experimentalDecorators/);
+  });
+
+  it('throws a clear error when the context carries no metadata', () => {
+    const context = { kind: 'field', name: 'name' } as unknown as ClassFieldDecoratorContext;
+    expect(() => Field.string()(undefined, context)).toThrow(/experimentalDecorators/);
+  });
+});

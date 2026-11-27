@@ -58,6 +58,7 @@ function makeFieldDecorator(
   extra: Partial<FieldMeta> = {},
 ): FieldDecorator {
   return function (_value: undefined, context: ClassFieldDecoratorContext): void {
+    assertStage3Context(context);
     const meta: FieldMeta = {
       name: String(context.name),
       type,
@@ -76,6 +77,30 @@ function makeFieldDecorator(
     }
     metadata[FIELD_KEY].push(meta);
   };
+}
+
+/**
+ * Fails at class definition when `@Field` is not called as a Stage 3 decorator.
+ *
+ * With `experimentalDecorators: true` the compiler calls `decorator(prototype, propertyKey)`, so
+ * `context` is the property name, and a transformer without Stage 3 metadata passes a context
+ * without `metadata`. Either way the field would never be registered and the DTO would break
+ * later, far from the cause (`toJson() not implemented`).
+ */
+function assertStage3Context(context: unknown): asserts context is ClassFieldDecoratorContext {
+  const ctx = context as Partial<ClassFieldDecoratorContext> | null | undefined;
+  if (typeof ctx === 'object' && ctx !== null && typeof ctx.metadata === 'object' && ctx.metadata) {
+    return;
+  }
+  const property =
+    typeof context === 'string' || typeof context === 'symbol' ? String(context) : ctx?.name;
+  throw new TypeError(
+    `@Field${property !== undefined ? ` on '${String(property)}'` : ''} was not called as a ` +
+      'TC39 Stage 3 decorator, so its metadata cannot be registered. Remove ' +
+      '`experimentalDecorators` from every tsconfig of the project (including the ones it ' +
+      'extends) and use a transformer with Stage 3 decorator support (tsc 5, esbuild). ' +
+      'See docs/pitfalls.md.',
+  );
 }
 
 // ── Wrapper for optional fields ──────────────────────────────
