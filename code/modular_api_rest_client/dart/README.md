@@ -2,6 +2,14 @@
 
 Official MACSS outbound REST client for Dart.
 
+## Install
+
+```bash
+dart pub add modular_api_rest_client
+```
+
+In a Flutter app, `flutter pub add modular_api_rest_client` works the same.
+
 ## Quick start
 
 ```dart

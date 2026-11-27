@@ -2,6 +2,14 @@
 
 Official MACSS outbound GraphQL client for Dart.
 
+## Install
+
+```bash
+dart pub add modular_api_graphql_client
+```
+
+In a Flutter app, `flutter pub add modular_api_graphql_client` works the same.
+
 ## Quick start
 
 ```dart

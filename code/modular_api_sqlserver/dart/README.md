@@ -2,6 +2,16 @@
 
 Official MACSS SQL Server integration package for Dart.
 
+## Install
+
+```bash
+dart pub add modular_api_sqlserver
+```
+
+In a Flutter app, `flutter pub add modular_api_sqlserver` works the same.
+
+It installs no database driver: the application supplies the adapter for its engine ([ADR-0004](../../../docs/adr/0004-contracts-only-database-packages.md)).
+
 ## Quick start
 
 ```dart

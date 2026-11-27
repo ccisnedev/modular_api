@@ -2,6 +2,12 @@
 
 Official MACSS outbound REST client for TypeScript.
 
+## Install
+
+```bash
+npm install @macss/modular-api-rest-client
+```
+
 ## Quick start
 
 ```ts

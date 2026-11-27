@@ -127,14 +127,11 @@ class HelloPlugin implements Plugin, ValidatingPlugin {
 
 ## Installation
 
-```yaml
-dependencies:
-  modular_api: ^0.5.0
-```
-
 ```bash
 dart pub add modular_api
 ```
+
+In a Flutter app, `flutter pub add modular_api` works the same.
 
 ---
 

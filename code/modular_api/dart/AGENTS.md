@@ -888,13 +888,6 @@ dart compile exe bin/main.dart -o build/server
 
 ## Installation
 
-```yaml
-# pubspec.yaml
-dependencies:
-  modular_api: ^0.0.7
-```
-
-Or:
 ```bash
 dart pub add modular_api
 ```

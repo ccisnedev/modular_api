@@ -5,21 +5,28 @@ manifests themselves — `dependencies` in `pubspec.yaml`, `dependencies` and `p
 `package.json`, `project.dependencies` in `pyproject.toml` — so a new edge is checked without editing
 this file.
 
-For every project being released, each constraint on a sibling must admit the version of that sibling
-in `.release-please-manifest.json`. This is the defect found while preparing 0.7.0: three packages
-still asked for `^0.6.0` of a sibling that was about to be 0.7.0.
+Two rules, both on the version in `.release-please-manifest.json`:
+
+1. A project being released must not declare a constraint on a sibling that excludes the sibling's
+   version. This is the defect found while preparing 0.7.0: three packages still asked for `^0.6.0` of
+   a sibling that was about to be 0.7.0.
+2. A project being released must not get a version that the constraint of *any* in-repo dependent
+   excludes, even a dependent that is not being released. This is what happened with `modular_api`
+   0.8.0 and `modular_api_sqlserver ^0.7.0`: the plugin could not be installed next to the newest core.
+   The dependent is released in the same Release PR by widening its constraint in a `fix(deps):` pull
+   request first (ADR-0006 §6).
 
 Usage, from the repository root:
 
     python code/tests/sibling_constraints.py --base origin/main   # projects whose version changes
     python code/tests/sibling_constraints.py                      # every project
 
-With `--base`, only the projects whose version in the release-please manifest differs from `--base`
-are checked: on a Release PR, the ones it releases; on any other pull request, none. That is
-deliberate. After a breaking release of `modular_api`, `modular_api_sqlserver` keeps `^0.7.0` until a
-later pull request widens it (ADR-0006 §6); it is only an error to *release* it that way.
+With `--base`, only the edges that touch a project whose version in the release-please manifest
+differs from `--base` are checked: on a Release PR, the ones it releases; on any other pull request,
+none. A dependent may fall behind after a breaking release only until that Release PR: it cannot be
+merged while the dependent still excludes the new version.
 
-Exits non-zero, listing every violation, when a released project excludes a sibling's version.
+Exits non-zero, listing every violation, when either rule is broken.
 """
 
 from __future__ import annotations
@@ -177,6 +184,43 @@ def edges(projects: dict[str, Path]) -> list[Edge]:
     return found
 
 
+def check(
+    found: list[Edge], manifest: dict[str, str], released: set[str]
+) -> tuple[list[str], list[str]]:
+    """Check every edge that touches a released project; returns (ok lines, failures).
+
+    An edge is checked when its dependent is released (it must not ship a constraint that excludes the
+    sibling) or when its sibling is released (the new version must not be excluded by a dependent, even
+    one that is not being released).
+    """
+    oks: list[str] = []
+    failures: list[str] = []
+    for edge in found:
+        dependent_released = edge.project in released
+        sibling_released = edge.sibling in released
+        if not (dependent_released or sibling_released):
+            continue
+        version = manifest[edge.sibling]
+        line = f"{edge.project} ({edge.language}) -> {edge.sibling} {edge.constraint!r} vs {version}"
+        try:
+            ok = admits_pep440(edge.constraint, version) if edge.language == "py" else admits(edge.constraint, version)
+        except ValueError as error:
+            failures.append(f"{edge.project} ({edge.language}) -> {edge.sibling}: {error}")
+            continue
+        if ok:
+            oks.append(line)
+        elif sibling_released and not dependent_released:
+            failures.append(
+                f"{edge.sibling} is released as {version}, which {edge.project} ({edge.language}) excludes "
+                f"with its constraint {edge.constraint!r}, and {edge.project} is not in this release. "
+                f"Widen the constraint of {edge.project} in a `fix(deps):` pull request, so release-please "
+                f"releases {edge.project} in the same Release PR as {edge.sibling} {version}."
+            )
+        else:
+            failures.append(f"{line}: excluded")
+    return oks, failures
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--base", help="git ref to compare the release-please manifest against")
@@ -192,29 +236,17 @@ def main() -> int:
     if released:
         print("Released: " + ", ".join(sorted(released)))
 
-    failures: list[str] = []
-    for edge in edges(projects):
-        if edge.project not in released:
-            continue
-        version = manifest[edge.sibling]
-        try:
-            ok = admits_pep440(edge.constraint, version) if edge.language == "py" else admits(edge.constraint, version)
-        except ValueError as error:
-            failures.append(f"{edge.project} ({edge.language}) -> {edge.sibling}: {error}")
-            continue
-        line = f"{edge.project} ({edge.language}) -> {edge.sibling} {edge.constraint!r} vs {version}"
-        if ok:
-            print(f"ok    {line}")
-        else:
-            failures.append(f"{line}: excluded")
+    oks, failures = check(edges(projects), manifest, released)
+    for line in oks:
+        print(f"ok    {line}")
 
     if not released:
         print("No project changes version against the base; nothing is being released.")
     if failures:
-        print("\nA released project excludes a sibling's version:", file=sys.stderr)
+        print("\nA release would leave a project and its sibling incompatible:", file=sys.stderr)
         for failure in failures:
             print(f"  {failure}", file=sys.stderr)
-        print("\nWiden the constraint in a pull request before releasing (ADR-0006 §6).", file=sys.stderr)
+        print("\nSee ADR-0006 §6: a release may not publish a version that an in-repo dependent excludes.", file=sys.stderr)
         return 1
     return 0
 
