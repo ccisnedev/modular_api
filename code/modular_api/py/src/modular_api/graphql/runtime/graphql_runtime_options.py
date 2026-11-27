@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Awaitable, Callable, TypeAlias
 
 from modular_api.graphql.catalog import GraphqlCatalog
-from modular_api.graphql.read import ReadExecutor
+from modular_api.graphql.read import ReadExecutor, SqlReadCompiler
 from modular_api.graphql.schema import GraphqlSchemaSdlGenerator
 
 graphql_default_read_executor_capability_id = "modular_api.sql.read_executor"
@@ -38,6 +38,9 @@ GraphqlSourceDigestFactory: TypeAlias = Callable[[], Awaitable[str] | str]
 class GraphqlOptions:
     catalog_factory: Callable[[], Awaitable[GraphqlCatalog]]
     executor: ReadExecutor | None = None
+    # Dialect of the SQL the runtime emits. Omitted: PostgreSQL when the catalog's provider engine is
+    # "postgres", SQL Server otherwise.
+    read_compiler: SqlReadCompiler | None = None
     execution_capability_id: str | None = None
     introspection_enabled: bool = False
     max_depth: int = 8

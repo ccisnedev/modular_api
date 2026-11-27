@@ -35,6 +35,7 @@ from modular_api.graphql.metadata import (
 	GraphqlRelationMetadata,
 )
 from modular_api.graphql.read import (
+	PostgresReadCompiler,
 	ReadExecutionContext,
 	ReadExecutor,
 	RowSet,
@@ -52,6 +53,7 @@ from modular_api.graphql.read import (
 	SqlReadCommand,
 	SqlReadCommandPurpose,
 	SqlRelationBatchSelection,
+	SqlReadCompiler,
 	SqlServerReadCompiler,
 	SqlSortDirection,
 )
@@ -123,11 +125,13 @@ __all__ = [
 	"SqlFilterOperator",
 	"SqlItemSelection",
 	"SqlOrderByClause",
+	"PostgresReadCompiler",
 	"SqlPage",
 	"SqlParameter",
 	"SqlReadCommand",
 	"SqlReadCommandPurpose",
 	"SqlRelationBatchSelection",
+	"SqlReadCompiler",
 	"SqlServerReadCompiler",
 	"SqlSortDirection",
 	"try_load_graphql_catalog_artifacts",
