@@ -7,6 +7,7 @@ import 'package:modular_api/src/core/metrics/metric_registry.dart';
 import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart'
     show OTelAPI;
 import 'package:modular_api/src/core/official_plugins.dart';
+import 'package:modular_api/src/core/resolved_route.dart';
 import 'package:modular_api/src/core/tracing/tracing_middleware.dart';
 import 'package:modular_api/src/core/usecase/usecase_http_handler.dart';
 import 'package:shelf/shelf.dart';
@@ -20,6 +21,7 @@ typedef UseCaseFactory = UseCase Function(Map<String, dynamic> json);
 class ModularApi {
   final Router _root = Router();
   final List<Middleware> _middlewares = [];
+  final List<ResolvedRoute> _resolvedRoutes = [];
   final List<Plugin> _plugins = [];
   final String basePath;
   final String title;
@@ -126,6 +128,7 @@ class ModularApi {
 
     build(m);
     m._mount();
+    _resolvedRoutes.addAll(m._resolvedRoutes);
 
     return this;
   }
@@ -289,6 +292,10 @@ class ModularApi {
     );
     pipeline = pipeline.addMiddleware(errorResponseMiddleware());
 
+    // Route resolution (#47): every plugin and custom middleware can read the use
+    // case that will run, so access control does not have to compare the raw path.
+    pipeline = pipeline.addMiddleware(routeResolverMiddleware(_resolvedRoutes));
+
     for (final middleware in pluginHost.middlewaresForSlot('preRouting')) {
       pipeline = pipeline.addMiddleware(middleware.handler);
     }
@@ -374,6 +381,7 @@ class ModuleBuilder {
   final String moduleName;
   final Router _root;
   final Router _module = Router();
+  final List<ResolvedRoute> _resolvedRoutes = [];
 
   ModuleBuilder({
     required this.basePath,
@@ -428,6 +436,13 @@ class ModuleBuilder {
       description: description ?? 'Auto-generated documentation for $command',
       tags: [moduleName],
     );
+
+    _resolvedRoutes.add(ResolvedRoute(
+      module: moduleName,
+      useCase: command,
+      method: methodU,
+      path: '${_normalizeBase(basePath)}/$moduleName/$command',
+    ));
 
     apiRegistry.routes.add(
       UseCaseRegistration(

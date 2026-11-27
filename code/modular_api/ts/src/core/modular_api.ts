@@ -20,6 +20,7 @@ import { bodyParserErrorHandler } from './body_parser_error_handler';
 import { unhandledRequestErrorHandler } from './unhandled_request_error_handler';
 import type { Counter, Gauge, Histogram } from './metrics/metric';
 import { buildRuntimePlugins, operationalRoutePaths } from './official_plugins';
+import { routeResolverMiddleware, type ResolvedRoute } from './resolved_route';
 import { canonicalPathMiddleware, STRICT_ROUTER_OPTIONS, STRICT_ROUTING_DEPRECATION } from './canonical_path';
 import { orderPlugins, PluginHostError, RuntimePluginHost, type Plugin } from './plugin';
 import type { GraphqlOptions } from '../graphql/runtime/graphql_runtime_options';
@@ -108,6 +109,7 @@ export class ModularApi {
   private readonly title: string;
   private readonly version: string;
   private readonly middlewares: RequestHandler[] = [];
+  private readonly resolvedRoutes: ResolvedRoute[] = [];
   private readonly healthService: HealthService;
   private readonly plugins: Plugin[] = [];
 
@@ -218,6 +220,7 @@ export class ModularApi {
     const builder = new ModuleBuilder(this.basePath, name, this.rootRouter, this.strictRouting);
     build(builder);
     builder._mount();
+    this.resolvedRoutes.push(...builder._resolvedRoutes);
     return this;
   }
 
@@ -391,6 +394,10 @@ export class ModularApi {
       // Body parsing AFTER loggingMiddleware — SyntaxErrors now have trace_id.
       this.app.use(express.json({ limit: this.jsonBodyLimit }));
       this.app.use(bodyParserErrorHandler);
+
+      // Route resolution: every plugin and user middleware can read the use case that will run,
+      // so access control does not have to compare the raw path (issue #47).
+      this.app.use(routeResolverMiddleware(this.resolvedRoutes));
 
       pluginHost.applyMiddlewares('preRouting', this.app);
 

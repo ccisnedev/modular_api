@@ -39,6 +39,7 @@ from modular_api.core.plugin import (
     RegisteredUseCaseView,
     RuntimePluginHost,
 )
+from modular_api.core.resolved_route import ResolvedRoute, resolved_route
 from modular_api.core.registry import ApiRegistry, UseCaseDocMeta, UseCaseRegistration, api_registry
 from modular_api.core.use_case_exception import UseCaseException
 from modular_api.core.usecase import Input, Output, UseCase
@@ -72,6 +73,8 @@ __all__ = [
     "MetricSample",
     "MetricsRegistrar",
     "ModularApi",
+    "ResolvedRoute",
+    "resolved_route",
     "ModularLogger",
     "ModuleBuilder",
     "ModuleExtensionContribution",

@@ -19,6 +19,8 @@ export { InputValidationError } from './core/input_validation_error';
 // Main orchestrator
 export { ModularApi } from './core/modular_api';
 export type { ModularApiOptions } from './core/modular_api';
+export { resolvedRoute, RESOLVED_ROUTE_LOCALS_KEY } from './core/resolved_route';
+export type { ResolvedRoute } from './core/resolved_route';
 export { HOST_API_VERSION, PluginHostError } from './core/plugin';
 export type {
   Capability,

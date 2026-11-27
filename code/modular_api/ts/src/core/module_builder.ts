@@ -11,6 +11,7 @@ import { useCaseHandler } from './usecase_handler';
 import { apiRegistry } from './registry';
 import { getFieldMetadata } from './schema/field';
 import { STRICT_ROUTER_OPTIONS } from './canonical_path';
+import type { ResolvedRoute } from './resolved_route';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -45,6 +46,8 @@ export interface UseCaseOptions {
  */
 export class ModuleBuilder {
   private readonly router: Router;
+  /** @internal — the use cases registered here, read by ModularApi's route resolver. */
+  readonly _resolvedRoutes: ResolvedRoute[] = [];
 
   constructor(
     private readonly basePath: string,
@@ -84,12 +87,15 @@ export class ModuleBuilder {
       output: outputSchema ?? extracted.output,
     };
 
+    const path = `${this._normalizeBase(this.basePath)}/${this.moduleName}/${cleanCommand}`;
+    this._resolvedRoutes.push({ module: this.moduleName, useCase: cleanCommand, method, path });
+
     // Register in the global registry for OpenAPI generation
     apiRegistry.routes.push({
       module: this.moduleName,
       command: cleanCommand,
       method: method,
-      path: `${this._normalizeBase(this.basePath)}/${this.moduleName}/${cleanCommand}`,
+      path,
       factory: factory as UseCaseFactory<Input, Output>,
       schemas,
       doc: {

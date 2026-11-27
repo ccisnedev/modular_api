@@ -26,6 +26,7 @@ from modular_api.core.registry import (
     UseCaseRegistration,
     api_registry,
 )
+from modular_api.core.resolved_route import ResolvedRoute
 from modular_api.core.usecase import UseCase
 from modular_api.core.usecase_handler import usecase_handler
 
@@ -98,6 +99,7 @@ class ModuleBuilder:
         self._base_path = base_path
         self._module_name = module_name
         self._routes: list[Route] = []
+        self._resolved_routes: list[ResolvedRoute] = []
 
     # ── Public API ────────────────────────────────────────────
 
@@ -137,6 +139,15 @@ class ModuleBuilder:
             tags=[self._module_name],
         )
 
+        self._resolved_routes.append(
+            ResolvedRoute(
+                module=self._module_name,
+                use_case=clean_command,
+                method=method_upper,
+                path=full_path,
+            ),
+        )
+
         api_registry.routes.append(
             UseCaseRegistration(
                 module=self._module_name,
@@ -150,6 +161,11 @@ class ModuleBuilder:
         )
 
         return self
+
+    @property
+    def resolved_routes(self) -> list[ResolvedRoute]:
+        """The use cases registered on this module, as middlewares see them."""
+        return list(self._resolved_routes)
 
     def build_router(self) -> Router:
         """Create a Starlette Router containing all registered use-case routes."""
