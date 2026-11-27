@@ -20,6 +20,7 @@ import { bodyParserErrorHandler } from './body_parser_error_handler';
 import { unhandledRequestErrorHandler } from './unhandled_request_error_handler';
 import type { Counter, Gauge, Histogram } from './metrics/metric';
 import { buildRuntimePlugins, operationalRoutePaths } from './official_plugins';
+import { isValidBodyLimit } from './body_limit';
 import { routeResolverMiddleware, type ResolvedRoute } from './resolved_route';
 import { canonicalPathMiddleware, STRICT_ROUTER_OPTIONS, STRICT_ROUTING_DEPRECATION } from './canonical_path';
 import { orderPlugins, PluginHostError, RuntimePluginHost, type Plugin } from './plugin';
@@ -147,7 +148,16 @@ export class ModularApi {
 
   constructor(options: ModularApiOptions = {}) {
     this.basePath = options.basePath ?? '/api';
-    this.jsonBodyLimit = options.jsonBodyLimit ?? '100kb';
+    const requestedLimit = options.jsonBodyLimit ?? '100kb';
+    if (isValidBodyLimit(requestedLimit)) {
+      this.jsonBodyLimit = requestedLimit;
+    } else {
+      // An unparseable size would make body-parser apply no limit; keep the cap instead.
+      console.warn(
+        `[modular_api] jsonBodyLimit '${String(requestedLimit)}' is not a valid size; using the default '100kb'.`,
+      );
+      this.jsonBodyLimit = '100kb';
+    }
     this.title = options.title ?? 'Modular API';
     this.version = options.version ?? 'x.y.z';
 

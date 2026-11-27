@@ -12,6 +12,7 @@ import { apiRegistry } from './registry';
 import { getFieldMetadata } from './schema/field';
 import { STRICT_ROUTER_OPTIONS } from './canonical_path';
 import type { ResolvedRoute } from './resolved_route';
+import { isValidBodyLimit } from './body_limit';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -97,6 +98,10 @@ export class ModuleBuilder {
 
     const path = `${this._normalizeBase(this.basePath)}/${this.moduleName}/${cleanCommand}`;
     this._resolvedRoutes.push({ module: this.moduleName, useCase: cleanCommand, method, path });
+    if (jsonBodyLimit !== undefined && !isValidBodyLimit(jsonBodyLimit)) {
+      // Fail closed: an unparseable size would make body-parser apply no limit at all.
+      throw new TypeError(`Invalid jsonBodyLimit for ${method} ${path}: '${String(jsonBodyLimit)}'`);
+    }
     if (jsonBodyLimit !== undefined) this._bodyLimits.set(`${method} ${path}`, jsonBodyLimit);
 
     // Register in the global registry for OpenAPI generation

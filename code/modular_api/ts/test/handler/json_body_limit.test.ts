@@ -253,6 +253,60 @@ describe('per-use-case jsonBodyLimit', () => {
     expect((await request(server).get('/api/m/g')).status).toBe(200);
   });
 
+  it.each(['abc', '', -1, Number.NaN, Infinity])(
+    'throws a TypeError at registration for an invalid limit %j',
+    (jsonBodyLimit) => {
+      const api = new ModularApi({ logLevel: LogLevel.emergency });
+      expect(() =>
+        api.module('m', (m) => {
+          m.usecase('x', EchoUseCase.fromJson, { ...echoClasses, jsonBodyLimit });
+        }),
+      ).toThrow(TypeError);
+      expect(() =>
+        api.module('m', (m) => {
+          m.usecase('x', EchoUseCase.fromJson, { ...echoClasses, jsonBodyLimit });
+        }),
+      ).toThrow(/Invalid jsonBodyLimit for POST \/api\/m\/x/);
+    },
+  );
+
+  it('falls back to 100kb and warns once when the instance limit is invalid', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { server } = await serve({ jsonBodyLimit: 'abc' });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain(
+      "[modular_api] jsonBodyLimit 'abc' is not a valid size",
+    );
+    expect((await postJson(server, jsonOfSize(defaultLimit))).status).toBe(200);
+    expectRejected(await postJson(server, jsonOfSize(defaultLimit + 1)));
+    warn.mockRestore();
+  });
+
+  it('logs a warning with status, limit and length for a 413', async () => {
+    const logs: Array<Record<string, unknown>> = [];
+    const write = vi.spyOn(process.stdout, 'write').mockImplementation((chunk: string | Uint8Array) => {
+      for (const line of String(chunk).split('\n')) {
+        if (line.startsWith('{')) logs.push(JSON.parse(line) as Record<string, unknown>);
+      }
+      return true;
+    });
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const api = new ModularApi({ logLevel: LogLevel.info });
+    api.use((req, res) => res.json(req.body));
+    const server = await api.serve({ port: 0 });
+    servers.push(server);
+    const json = jsonOfSize(defaultLimit + 1);
+    expectRejected(await postJson(server, json));
+    write.mockRestore();
+    vi.restoreAllMocks();
+
+    const entry = logs.find((l) => l['msg'] === 'Request body too large');
+    expect(entry).toMatchObject({
+      level: 'warning',
+      fields: { status: 413, limit: defaultLimit, length: defaultLimit + 1 },
+    });
+  });
+
   it('gives a non-canonical path variant the instance default', async () => {
     const server = await serveUseCases((api) =>
       api.module('m', (m) => {
