@@ -7,6 +7,7 @@ import inspect
 import json
 from collections.abc import Awaitable, Iterable
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Any, Callable, TypeAlias, cast
 
 from graphql import (
@@ -66,6 +67,7 @@ from modular_api.graphql.read import (
     SqlOrderByClause,
     SqlPage,
     SqlRelationBatchSelection,
+    PostgresReadCompiler,
     SqlServerReadCompiler,
     SqlSortDirection,
 )
@@ -211,7 +213,12 @@ class GraphqlRuntimePlugin(Plugin):
             return [self._validation_failure("graphql.schema", f"GraphQL schema generation failed: {error}")]
 
         dispatcher = SqlCatalogReadDispatcher(
-            compiler=SqlServerReadCompiler(),
+            compiler=self._options.read_compiler
+            or (
+                PostgresReadCompiler()
+                if catalog.provider.engine == "postgres"
+                else SqlServerReadCompiler()
+            ),
             executor=executor,
         )
         self._state.status = "ready"
@@ -987,7 +994,9 @@ def _extract_total_count(row_set: RowSet) -> int:
     if not row_set.rows:
         return 0
     value = row_set.rows[0].get("totalCount")
-    if isinstance(value, (int, float)):
+    # PostgreSQL's COUNT(*) is a bigint (int in asyncpg and psycopg); Decimal is tolerated for drivers
+    # that surface it as numeric.
+    if isinstance(value, (int, float, Decimal)):
         return int(value)
     raise ValueError(f"Expected totalCount to be numeric, got {value!r}.")
 

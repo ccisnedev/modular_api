@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from decimal import Decimal
 
 import pytest
 from starlette.testclient import TestClient
@@ -33,7 +34,10 @@ from modular_api.graphql import (
     ReadExecutor,
     RowSet,
     SqlReadCommand,
+    PostgresReadCompiler,
     SqlReadCommandPurpose,
+    SqlReadCompiler,
+    SqlServerReadCompiler,
 )
 from modular_api.graphql.sqlserver import PhysicalObjectKind
 
@@ -302,6 +306,64 @@ def test_telemetry_hook_captures_graphql_request_lifecycle_events() -> None:
         _EventSnapshot(phase="started", request_id="req-telemetry", status_code=None),
         _EventSnapshot(phase="completed", request_id="req-telemetry", status_code=200),
     ]
+
+
+_COLLECTION_QUERY = "{ customerRecordList { items { customerId } totalCount } }"
+
+
+def _collection_sql(*, engine: str, read_compiler: SqlReadCompiler | None = None) -> list[SqlReadCommand]:
+    executor = _CapturingExecutor()
+
+    async def catalog_factory() -> GraphqlCatalog:
+        catalog = _catalog_fixture()
+        return replace(catalog, provider=replace(catalog.provider, engine=engine))
+
+    api = ModularApi(
+        base_path="/api",
+        title="GraphQL Runtime API",
+        version="1.0.0",
+        graphql=GraphqlOptions(catalog_factory=catalog_factory, executor=executor, read_compiler=read_compiler),
+    )
+    with TestClient(api.build()) as client:
+        response = client.post("/api/graphql", json={"query": _COLLECTION_QUERY})
+    assert response.status_code == 200
+    assert response.json()["data"]["customerRecordList"]["totalCount"] == 7
+    return executor.commands
+
+
+def test_sqlserver_catalog_still_gets_sqlserver_sql_by_default() -> None:
+    commands = _collection_sql(engine="sqlserver")
+
+    assert {command.engine for command in commands} == {"sqlserver"}
+    assert any("[sales].[Customer]" in command.sql for command in commands)
+
+
+def test_postgres_catalog_picks_the_postgres_compiler_by_default() -> None:
+    commands = _collection_sql(engine="postgres")
+
+    assert {command.engine for command in commands} == {"postgres"}
+    assert any(command.sql.startswith('SELECT "CustomerId" AS "customerId" FROM "sales"."Customer"') for command in commands)
+    assert any(command.sql == 'SELECT COUNT(*) AS "totalCount" FROM "sales"."Customer"' for command in commands)
+
+
+def test_explicit_read_compiler_wins_over_the_catalog_engine() -> None:
+    assert {c.engine for c in _collection_sql(engine="sqlserver", read_compiler=PostgresReadCompiler())} == {"postgres"}
+    assert {c.engine for c in _collection_sql(engine="postgres", read_compiler=SqlServerReadCompiler())} == {
+        "sqlserver"
+    }
+
+
+class _CapturingExecutor(ReadExecutor):
+    """Records the commands and answers them with empty rows, and a Decimal count as numeric drivers do."""
+
+    def __init__(self) -> None:
+        self.commands: list[SqlReadCommand] = []
+
+    async def execute(self, command: SqlReadCommand, context: ReadExecutionContext) -> RowSet:
+        self.commands.append(command)
+        if command.purpose is SqlReadCommandPurpose.COUNT:
+            return RowSet(rows=({"totalCount": Decimal(7)},), row_count=1)
+        return RowSet(rows=(), row_count=0)
 
 
 def _build_api(

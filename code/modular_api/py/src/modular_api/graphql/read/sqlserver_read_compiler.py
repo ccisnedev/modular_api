@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 from modular_api.graphql.catalog import (
     GraphqlCatalog,
@@ -31,7 +31,7 @@ from modular_api.graphql.read.sql_read_contract import (
 )
 
 
-def _sequence_operand(value: object) -> tuple[Any, ...]:
+def sequence_operand(value: object) -> tuple[Any, ...]:
     """The operand of an ``IN`` condition, or empty when it is not a sequence.
 
     A function rather than an inline conditional so the narrowing applies to a parameter: narrowing
@@ -41,6 +41,22 @@ def _sequence_operand(value: object) -> tuple[Any, ...]:
     if isinstance(value, (list, tuple)):
         return tuple(cast("list[Any] | tuple[Any, ...]", value))
     return ()
+
+
+class SqlReadCompiler(Protocol):
+    """What the dispatcher needs from a dialect: one compile method per read shape."""
+
+    def compile_item(self, *, catalog: GraphqlCatalog, selection: SqlItemSelection) -> SqlReadCommand: ...
+
+    def compile_collection(
+        self, *, catalog: GraphqlCatalog, selection: SqlCollectionSelection
+    ) -> SqlReadCommand: ...
+
+    def compile_count(self, *, catalog: GraphqlCatalog, selection: SqlCountSelection) -> SqlReadCommand: ...
+
+    def compile_relation_batch(
+        self, *, catalog: GraphqlCatalog, selection: SqlRelationBatchSelection
+    ) -> SqlReadCommand: ...
 
 
 class SqlServerReadCompiler:
@@ -238,7 +254,7 @@ class SqlServerReadCompiler:
         if condition.operator is SqlFilterOperator.NE:
             return f"{column_ref} <> @{parameters.add(condition.value, type_=field.type)}"
         if condition.operator is SqlFilterOperator.IN_LIST:
-            values = _sequence_operand(condition.value)
+            values = sequence_operand(condition.value)
             if not values:
                 return "1 = 0"
             parameter_refs = ", ".join(f"@{parameters.add(value, type_=field.type)}" for value in values)
@@ -339,7 +355,7 @@ class SqlServerReadCompiler:
 
 
 class SqlCatalogReadDispatcher:
-    def __init__(self, *, compiler: SqlServerReadCompiler, executor: ReadExecutor) -> None:
+    def __init__(self, *, compiler: SqlReadCompiler, executor: ReadExecutor) -> None:
         self.compiler = compiler
         self.executor = executor
 
