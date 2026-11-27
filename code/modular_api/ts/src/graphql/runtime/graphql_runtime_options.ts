@@ -1,4 +1,5 @@
 import type { GraphqlCatalog } from '../catalog/graphql_catalog_builder';
+import type { SqlReadCompiler } from '../read/sql_read_compiler';
 import type { ReadExecutor } from '../read/sql_read_contract';
 import { GraphqlSchemaSdlGenerator } from '../schema/graphql_schema_sdl_generator';
 
@@ -37,6 +38,7 @@ export const graphqlDefaultReadExecutorCapabilityId = 'modular_api.sql.read_exec
 export class GraphqlOptions {
   readonly catalogFactory: () => Promise<GraphqlCatalog>;
   readonly executor?: ReadExecutor;
+  readonly readCompiler?: SqlReadCompiler;
   readonly executionCapabilityId?: string;
   readonly introspectionEnabled: boolean;
   readonly maxDepth: number;
@@ -51,6 +53,8 @@ export class GraphqlOptions {
   constructor(options: {
     catalogFactory: () => Promise<GraphqlCatalog>;
     executor?: ReadExecutor;
+    /** Overrides the SQL dialect compiler; defaults to the catalog engine's compiler. */
+    readCompiler?: SqlReadCompiler;
     executionCapabilityId?: string;
     introspectionEnabled?: boolean;
     maxDepth?: number;
@@ -70,6 +74,7 @@ export class GraphqlOptions {
 
     this.catalogFactory = options.catalogFactory;
     this.executor = options.executor;
+    this.readCompiler = options.readCompiler;
     this.executionCapabilityId = options.executionCapabilityId;
     this.introspectionEnabled = options.introspectionEnabled ?? false;
     this.maxDepth = options.maxDepth ?? 8;

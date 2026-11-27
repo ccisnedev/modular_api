@@ -24,8 +24,9 @@ import {
   SqlRelationBatchSelection,
   SqlSortDirection,
 } from './sql_read_contract';
+import type { SqlReadCompiler } from './sql_read_compiler';
 
-export class SqlServerReadCompiler {
+export class SqlServerReadCompiler implements SqlReadCompiler {
   compileItem(options: { catalog: GraphqlCatalog; selection: SqlItemSelection }): SqlReadCommand {
     const object = this.resolveObject(options.catalog, options.selection.objectId);
     const parameters = new SqlParameterBuilder();
@@ -314,10 +315,10 @@ export class SqlServerReadCompiler {
 }
 
 export class SqlCatalogReadDispatcher {
-  readonly compiler: SqlServerReadCompiler;
+  readonly compiler: SqlReadCompiler;
   readonly executor: ReadExecutor;
 
-  constructor(options: { compiler: SqlServerReadCompiler; executor: ReadExecutor }) {
+  constructor(options: { compiler: SqlReadCompiler; executor: ReadExecutor }) {
     this.compiler = options.compiler;
     this.executor = options.executor;
   }
