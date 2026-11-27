@@ -69,6 +69,7 @@ void mergePluginRoutesIntoSpec(
 Future<List<Plugin>> buildRuntimePlugins({
   required String basePath,
   required String title,
+  required String version,
   required int port,
   required HealthService healthService,
   required List<String> registeredPaths,
@@ -119,6 +120,7 @@ Future<List<Plugin>> buildRuntimePlugins({
       title: title,
       port: port,
       servers: servers,
+      version: version,
     ),
   ) as Map<String, dynamic>;
 
