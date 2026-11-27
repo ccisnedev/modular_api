@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.0](https://github.com/ccisnedev/modular_api/compare/modular_api-v0.7.3...modular_api-v0.8.0) (2026-11-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **routing:** in the TypeScript SDK a client that sends a trailing slash, a double slash or a different case now receives 404. Call the exact path from the OpenAPI document. `strictRouting: false` restores the 0.7.x routing temporarily and logs a deprecation warning at startup.
+
+### Features
+
+* expose the resolved use case to middlewares in the three SDKs ([#68](https://github.com/ccisnedev/modular_api/issues/68)) ([283c168](https://github.com/ccisnedev/modular_api/commit/283c16828fbddbe6e939cbfaababccba15448a1e)), closes [#47](https://github.com/ccisnedev/modular_api/issues/47)
+* **routing:** route TypeScript use cases only through their canonical path ([#66](https://github.com/ccisnedev/modular_api/issues/66)) ([0b3f03b](https://github.com/ccisnedev/modular_api/commit/0b3f03b6cb587647c064315f3b54c23b31370dfc))
+
+
+### Bug Fixes
+
+* **routing:** count non-canonical paths in metrics, as logging and tracing do ([#69](https://github.com/ccisnedev/modular_api/issues/69)) ([c5bd49b](https://github.com/ccisnedev/modular_api/commit/c5bd49b88a2ce8b7d060811ea343b6c424cf936d)), closes [#47](https://github.com/ccisnedev/modular_api/issues/47)
+
 ## [0.7.3](https://github.com/ccisnedev/modular_api/compare/modular_api-v0.7.2...modular_api-v0.7.3) (2026-11-27)
 
 
