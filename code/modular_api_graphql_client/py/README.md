@@ -2,6 +2,12 @@
 
 Official MACSS outbound GraphQL client for Python.
 
+## Install
+
+```bash
+pip install macss-modular-api-graphql-client
+```
+
 ## Quick start
 
 ```python

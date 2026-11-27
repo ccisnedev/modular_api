@@ -2,6 +2,14 @@
 
 Official MACSS Postgres integration package for TypeScript.
 
+## Install
+
+```bash
+npm install @macss/modular-api-postgres
+```
+
+It installs no database driver: the application supplies the adapter for its engine ([ADR-0004](../../../docs/adr/0004-contracts-only-database-packages.md)).
+
 ## Quick start
 
 ```ts

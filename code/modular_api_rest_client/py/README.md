@@ -2,6 +2,12 @@
 
 Official MACSS outbound REST client for Python.
 
+## Install
+
+```bash
+pip install macss-modular-api-rest-client
+```
+
 ## Quick start
 
 ```python

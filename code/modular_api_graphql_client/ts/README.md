@@ -2,6 +2,12 @@
 
 Official MACSS outbound GraphQL client for TypeScript.
 
+## Install
+
+```bash
+npm install @macss/modular-api-graphql-client
+```
+
 ## Quick start
 
 ```ts

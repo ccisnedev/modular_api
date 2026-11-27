@@ -4,14 +4,11 @@ The Dart SDK builds modular APIs on top of Shelf.
 
 ## Installation
 
-```yaml
-dependencies:
-  modular_api: ^0.5.0
-```
-
 ```bash
 dart pub add modular_api
 ```
+
+In a Flutter app, `flutter pub add modular_api` works the same.
 
 ## Minimal module and use case
 

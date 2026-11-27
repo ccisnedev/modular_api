@@ -2,6 +2,14 @@
 
 Official MACSS SQL Server integration package for TypeScript.
 
+## Install
+
+```bash
+npm install @macss/modular-api-sqlserver
+```
+
+It installs no database driver: the application supplies the adapter for its engine ([ADR-0004](../../../docs/adr/0004-contracts-only-database-packages.md)).
+
 ## Quick start
 
 ```ts
