@@ -52,6 +52,25 @@ def _format_validation_message(field: str, error_type: str) -> str:
     return f"Field '{field}' must be of type {openapi_type}"
 
 
+def _bad_request(request: Request, message: str, cause: BaseException | None) -> Response:
+    """A 400 for a body that cannot become the use case input.
+
+    The cause goes to the log at warning level, never into the response: it is a client error,
+    not an unexpected server failure.
+    """
+    logger = getattr(request.state, LOGGER_STATE_KEY, None)
+    if logger is not None:
+        fields: dict[str, object] = {"status": 400}
+        if cause is not None:
+            fields["error"] = f"{type(cause).__name__}: {cause}"
+        logger.warning(message, fields=fields)
+    return Response(
+        content=json.dumps({"error": message}),
+        status_code=400,
+        media_type=_JSON_CONTENT_TYPE,
+    )
+
+
 def usecase_handler(factory: UseCaseFactory) -> Any:
     """Wraps a UseCase factory into an async Starlette endpoint.
 
@@ -78,7 +97,10 @@ def usecase_handler(factory: UseCaseFactory) -> Any:
                 # a bare string, an array, a number — so the guard below is load-bearing. Declaring
                 # the result a dict made a type checker call that guard dead code, which is exactly
                 # backwards: the annotation was the thing that was wrong.
-                payload: object = await request.json()
+                try:
+                    payload: object = await request.json()
+                except ValueError:  # json.JSONDecodeError, also for an empty body
+                    return _bad_request(request, "Invalid JSON in request body", None)
 
                 if not isinstance(payload, dict):
                     return Response(
@@ -89,8 +111,16 @@ def usecase_handler(factory: UseCaseFactory) -> Any:
 
                 data = cast("dict[str, Any]", payload)
 
-            # 2. Build use case
-            use_case = factory(data)
+            # 2. Build use case. `from_json` only maps untrusted input into the use case input, so a
+            #    TypeError, KeyError or ValueError raised there means the body has the wrong shape:
+            #    a client error. Pydantic's ValidationError and UseCaseException keep their own
+            #    handling below.
+            try:
+                use_case = factory(data)
+            except (UseCaseException, ValidationError):
+                raise
+            except (TypeError, KeyError, ValueError) as exc:
+                return _bad_request(request, "Invalid request body", exc)
 
             # 2b. Inject request-scoped logger (if logging middleware placed one)
             logger = getattr(request.state, LOGGER_STATE_KEY, None)
