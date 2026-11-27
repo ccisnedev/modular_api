@@ -2,7 +2,7 @@ import type { Server } from 'http';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { LogLevel, ModularApi, type ModularApiOptions } from '../../src';
+import { Input, LogLevel, ModularApi, Output, UseCase, type ModularApiOptions } from '../../src';
 
 const defaultLimit = 102_400;
 const servers: Server[] = [];
@@ -45,9 +45,8 @@ function postJson(server: Server, json: string) {
 }
 
 function expectRejected(response: request.Response) {
-  // Preserve the host's current error contract for oversized bodies.
-  expect(response.status).toBe(500);
-  expect(response.body).toEqual({ error: 'Internal server error' });
+  expect(response.status).toBe(413);
+  expect(response.body).toEqual({ error: 'Request body too large' });
   expect(response.headers['content-type']).toMatch(/^application\/json\b/);
 }
 
@@ -66,7 +65,7 @@ describe('ModularApi JSON body limit through serve()', () => {
       expect(handled).toHaveBeenCalledExactlyOnceWith(JSON.parse(json));
     });
 
-    it('rejects 102401 bytes with the existing error response', async () => {
+    it('rejects 102401 bytes with 413', async () => {
       const { server, handled } = await serve(options);
       expectRejected(await postJson(server, jsonOfSize(defaultLimit + 1)));
       expect(handled).not.toHaveBeenCalled();
@@ -118,5 +117,202 @@ describe('ModularApi JSON body limit through serve()', () => {
     const { server, handled } = await serve({ jsonBodyLimit: 0 });
     expectRejected(await postJson(server, '{}'));
     expect(handled).not.toHaveBeenCalled();
+  });
+});
+
+// ── Per-use-case limit (issue #43) ───────────────────────────
+
+class EchoInput extends Input {
+  constructor(readonly data: Record<string, unknown> = {}) {
+    super();
+  }
+  toJson() {
+    return this.data;
+  }
+  toSchema() {
+    return { type: 'object', properties: {} };
+  }
+}
+
+class EchoOutput extends Output {
+  get statusCode() {
+    return 200;
+  }
+  toJson() {
+    return { ok: true };
+  }
+  toSchema() {
+    return { type: 'object', properties: { ok: { type: 'boolean' } } };
+  }
+}
+
+class EchoUseCase extends UseCase<EchoInput, EchoOutput> {
+  readonly input: EchoInput;
+  constructor(input: EchoInput) {
+    super();
+    this.input = input;
+  }
+  static fromJson(json: Record<string, unknown>) {
+    return new EchoUseCase(new EchoInput(json));
+  }
+  validate() {
+    return null;
+  }
+  async execute() {
+    return new EchoOutput();
+  }
+}
+
+const echoClasses = { inputClass: EchoInput, outputClass: EchoOutput };
+
+async function serveUseCases(
+  configure: (api: ModularApi) => void,
+  options: ModularApiOptions = {},
+) {
+  const api = new ModularApi({ logLevel: LogLevel.emergency, ...options });
+  configure(api);
+  const server = await api.serve({ port: 0 });
+  servers.push(server);
+  return server;
+}
+
+function post(server: Server, path: string, json: string) {
+  return request(server).post(path).set('Content-Type', 'application/json').send(json);
+}
+
+describe('per-use-case jsonBodyLimit', () => {
+  describe.each([
+    { jsonBodyLimit: '1mb', bytes: 1_048_576 },
+    { jsonBodyLimit: 204_800, bytes: 204_800 },
+  ])('use case with $jsonBodyLimit', ({ jsonBodyLimit, bytes }) => {
+    const configure = (api: ModularApi) => {
+      api.module('m', (m) => {
+        m.usecase('big', EchoUseCase.fromJson, { ...echoClasses, jsonBodyLimit });
+        m.usecase('plain', EchoUseCase.fromJson, echoClasses);
+      });
+      api.use((req, res, next) => {
+        if (req.path === '/echo') {
+          res.json(req.body);
+          return;
+        }
+        next();
+      });
+    };
+
+    it('accepts exactly its limit and rejects limit + 1 with 413', async () => {
+      const server = await serveUseCases(configure);
+      expect((await post(server, '/api/m/big', jsonOfSize(bytes))).status).toBe(200);
+      expectRejected(await post(server, '/api/m/big', jsonOfSize(bytes + 1)));
+    });
+
+    it('keeps the instance default for other use cases and use() routes', async () => {
+      const server = await serveUseCases(configure);
+      expect((await post(server, '/api/m/plain', jsonOfSize(defaultLimit))).status).toBe(200);
+      expectRejected(await post(server, '/api/m/plain', jsonOfSize(defaultLimit + 1)));
+      expect((await post(server, '/echo', jsonOfSize(defaultLimit))).status).toBe(200);
+      expectRejected(await post(server, '/echo', jsonOfSize(defaultLimit + 1)));
+    });
+  });
+
+  it('honours a limit smaller than the instance default', async () => {
+    const server = await serveUseCases(
+      (api) =>
+        api.module('m', (m) => {
+          m.usecase('small', EchoUseCase.fromJson, { ...echoClasses, jsonBodyLimit: 1024 });
+        }),
+      { jsonBodyLimit: '1mb' },
+    );
+    expect((await post(server, '/api/m/small', jsonOfSize(1024))).status).toBe(200);
+    expectRejected(await post(server, '/api/m/small', jsonOfSize(1025)));
+  });
+
+  it('does not share limits between instances with the same path', async () => {
+    const make = (jsonBodyLimit?: string) =>
+      serveUseCases((api) =>
+        api.module('m', (m) => {
+          m.usecase('x', EchoUseCase.fromJson, {
+            ...echoClasses,
+            ...(jsonBodyLimit === undefined ? {} : { jsonBodyLimit }),
+          });
+        }),
+      );
+    const large = await make('1mb');
+    const normal = await make();
+    const json = jsonOfSize(defaultLimit + 1);
+    expect((await post(large, '/api/m/x', json)).status).toBe(200);
+    expectRejected(await post(normal, '/api/m/x', json));
+    expect((await post(large, '/api/m/x', json)).status).toBe(200);
+  });
+
+  it('does not affect a GET use case', async () => {
+    const server = await serveUseCases((api) =>
+      api.module('m', (m) => {
+        m.usecase('g', EchoUseCase.fromJson, { ...echoClasses, method: 'GET', jsonBodyLimit: '1mb' });
+      }),
+    );
+    expect((await request(server).get('/api/m/g')).status).toBe(200);
+  });
+
+  it.each(['abc', '', -1, Number.NaN, Infinity])(
+    'throws a TypeError at registration for an invalid limit %j',
+    (jsonBodyLimit) => {
+      const api = new ModularApi({ logLevel: LogLevel.emergency });
+      expect(() =>
+        api.module('m', (m) => {
+          m.usecase('x', EchoUseCase.fromJson, { ...echoClasses, jsonBodyLimit });
+        }),
+      ).toThrow(TypeError);
+      expect(() =>
+        api.module('m', (m) => {
+          m.usecase('x', EchoUseCase.fromJson, { ...echoClasses, jsonBodyLimit });
+        }),
+      ).toThrow(/Invalid jsonBodyLimit for POST \/api\/m\/x/);
+    },
+  );
+
+  it('falls back to 100kb and warns once when the instance limit is invalid', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { server } = await serve({ jsonBodyLimit: 'abc' });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain(
+      "[modular_api] jsonBodyLimit 'abc' is not a valid size",
+    );
+    expect((await postJson(server, jsonOfSize(defaultLimit))).status).toBe(200);
+    expectRejected(await postJson(server, jsonOfSize(defaultLimit + 1)));
+    warn.mockRestore();
+  });
+
+  it('logs a warning with status, limit and length for a 413', async () => {
+    const logs: Array<Record<string, unknown>> = [];
+    const write = vi.spyOn(process.stdout, 'write').mockImplementation((chunk: string | Uint8Array) => {
+      for (const line of String(chunk).split('\n')) {
+        if (line.startsWith('{')) logs.push(JSON.parse(line) as Record<string, unknown>);
+      }
+      return true;
+    });
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const api = new ModularApi({ logLevel: LogLevel.info });
+    api.use((req, res) => res.json(req.body));
+    const server = await api.serve({ port: 0 });
+    servers.push(server);
+    const json = jsonOfSize(defaultLimit + 1);
+    expectRejected(await postJson(server, json));
+    write.mockRestore();
+    vi.restoreAllMocks();
+
+    const entry = logs.find((l) => l['msg'] === 'Request body too large');
+    expect(entry).toMatchObject({
+      level: 'warning',
+      fields: { status: 413, limit: defaultLimit, length: defaultLimit + 1 },
+    });
+  });
+
+  it('gives a non-canonical path variant the instance default', async () => {
+    const server = await serveUseCases((api) =>
+      api.module('m', (m) => {
+        m.usecase('big', EchoUseCase.fromJson, { ...echoClasses, jsonBodyLimit: '1mb' });
+      }),
+    );
+    expectRejected(await post(server, '/api/m/big/', jsonOfSize(defaultLimit + 1)));
   });
 });

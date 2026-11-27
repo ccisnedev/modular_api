@@ -28,6 +28,7 @@ from modular_api.core.registry import (
 )
 from modular_api.core.resolved_route import ResolvedRoute
 from modular_api.core.usecase import UseCase
+from modular_api.core._body_limit import resolve_body_limit
 from modular_api.core.usecase_handler import usecase_handler
 
 
@@ -95,7 +96,11 @@ class ModuleBuilder:
     so multiple registrations can be chained.
     """
 
-    def __init__(self, base_path: str, module_name: str) -> None:
+    def __init__(
+        self, base_path: str, module_name: str, json_body_limit: int | str | None = None
+    ) -> None:
+        # Instance-wide default handed down by ModularApi; a use case can override it.
+        self._json_body_limit = json_body_limit
         self._base_path = base_path
         self._module_name = module_name
         self._routes: list[Route] = []
@@ -111,6 +116,7 @@ class ModuleBuilder:
         method: str = "POST",
         summary: str | None = None,
         description: str | None = None,
+        json_body_limit: int | str | None = None,
     ) -> ModuleBuilder:
         """Register a use case as an HTTP endpoint on this module.
 
@@ -118,15 +124,21 @@ class ModuleBuilder:
         Convention: command, class name, and file name share the same root.
         Example: command ``'hello-world'`` → class ``HelloWorld`` → file ``hello_world.py``.
 
+        ``json_body_limit`` caps the JSON body of this use case, as bytes or a size string
+        (``'100kb'``, ``'2mb'``, ``'1.5MB'``; base 1024). It overrides the instance value given to
+        ``ModularApi``; when neither is set there is no limit. A body over the limit is rejected
+        with 413. Invalid or negative values raise ``ValueError`` here, at registration.
+
         Returns ``self`` for fluent chaining.
         """
+        limit = resolve_body_limit(json_body_limit, self._json_body_limit)
         clean_command = command.strip().lstrip("/")
         method_upper = method.upper()
         full_path = f"{self._normalize_base(self._base_path)}/{self._module_name}/{clean_command}"
 
         # Mount endpoint on internal route list
         self._routes.append(
-            Route(f"/{clean_command}", endpoint=usecase_handler(factory), methods=[method_upper]),
+            Route(f"/{clean_command}", endpoint=usecase_handler(factory, body_limit=limit), methods=[method_upper]),
         )
 
         # Capture schemas via a dummy factory call (fail-safe)

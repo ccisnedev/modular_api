@@ -38,5 +38,41 @@ export function bodyParserErrorHandler(
     return;
   }
 
+  bodyTooLargeErrorHandler(err, req, res, next);
+}
+
+/** Body-parser's oversized-body error (`type: 'entity.too.large'`, status 413). */
+function isEntityTooLarge(err: unknown): err is Error & {
+  type: string;
+  status?: number;
+  limit?: number;
+  length?: number;
+} {
+  return err instanceof Error && (err as { type?: string }).type === 'entity.too.large';
+}
+
+/**
+ * Express error-handling middleware for bodies over the JSON limit.
+ *
+ * body-parser reports `entity.too.large`; without this handler it reached the generic
+ * handler as a 500. It answers 413 with the same `{ error }` shape as every other error.
+ */
+function bodyTooLargeErrorHandler(
+  err: unknown,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  if (isEntityTooLarge(err)) {
+    const logger = res.locals[LOGGER_LOCALS_KEY] as ModularLogger | undefined;
+    logger?.warning('Request body too large', {
+      status: 413,
+      limit: err.limit,
+      length: err.length,
+    });
+    res.status(413).json({ error: 'Request body too large' });
+    return;
+  }
+
   next(err);
 }

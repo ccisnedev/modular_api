@@ -50,12 +50,14 @@
   "homepage": "https://github.com/ccisnedev/modular_api/tree/main/code/modular_api/ts#readme",
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
+    "bytes": "^3.1.2",
     "express": "^4.22.1",
     "graphql": "^16.11.0",
     "json5": "^2.2.3"
   },
   "devDependencies": {
     "@opentelemetry/sdk-trace-node": "^2.10.0",
+    "@types/bytes": "^3.1.7",
     "@types/express": "^5.0.6",
     "@types/node": "^22.19.11",
     "@types/supertest": "^6.0.3",
