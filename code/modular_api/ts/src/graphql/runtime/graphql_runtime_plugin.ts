@@ -42,6 +42,7 @@ import {
   SqlRelationBatchSelection,
   SqlSortDirection,
 } from '../read/sql_read_contract';
+import { PostgresReadCompiler } from '../read/postgres_read_compiler';
 import { SqlCatalogReadDispatcher, SqlServerReadCompiler } from '../read/sqlserver_read_compiler';
 import {
   GraphqlOptions,
@@ -178,7 +179,9 @@ export class GraphqlRuntimePlugin implements Plugin {
 
       const schema = buildSchema(sdl);
       const dispatcher = new SqlCatalogReadDispatcher({
-        compiler: new SqlServerReadCompiler(),
+        compiler:
+          this.options.readCompiler ??
+          (catalog.provider.engine === 'postgres' ? new PostgresReadCompiler() : new SqlServerReadCompiler()),
         executor: executor.value,
       });
 
@@ -1049,6 +1052,13 @@ function extractTotalCount(rowSet: RowSet): number {
   const value = rowSet.rows[0]?.totalCount;
   if (typeof value === 'number') {
     return value;
+  }
+  // PostgreSQL drivers (node-pg) return COUNT(*) bigint as a decimal string.
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+  if (typeof value === 'string' && /^\d+$/.test(value)) {
+    return Number(value);
   }
   throw new Error(`Expected totalCount to be numeric, got ${String(value)}.`);
 }

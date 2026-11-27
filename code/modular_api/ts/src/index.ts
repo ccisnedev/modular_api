@@ -188,3 +188,5 @@ export {
 } from './graphql/read/sql_read_contract';
 export type { ReadExecutor } from './graphql/read/sql_read_contract';
 export { SqlCatalogReadDispatcher, SqlServerReadCompiler } from './graphql/read/sqlserver_read_compiler';
+export type { SqlReadCompiler } from './graphql/read/sql_read_compiler';
+export { PostgresReadCompiler } from './graphql/read/postgres_read_compiler';
