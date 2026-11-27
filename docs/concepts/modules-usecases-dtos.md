@@ -191,6 +191,63 @@ api
 This produces `POST {basePath}/users/create`, `GET {basePath}/users/get`, etc., and
 each appears automatically in `/docs` and `/openapi.json`.
 
+## Request body size limit
+
+The maximum JSON body is part of a use case's input contract, so it is declared
+where the use case is registered (issue #43). An instance-wide value covers every
+use case that does not declare its own.
+
+```ts
+// TypeScript: size string ('2mb') or bytes
+const api = new ModularApi({ jsonBodyLimit: '100kb' }); // instance default
+api.module('firma', (m) => {
+  m.usecase('verificar', Verificar.fromJson, {
+    inputClass: VerificarInput,
+    outputClass: VerificarOutput,
+    jsonBodyLimit: '2mb', // only this use case
+  });
+});
+```
+
+```python
+# Python: size string or bytes
+api = ModularApi(json_body_limit="100kb")
+api.module("firma", lambda m: m.usecase("verificar", Verificar.from_json, json_body_limit="2mb"))
+```
+
+```dart
+// Dart: bytes
+final api = ModularApi(jsonBodyLimit: 100 * 1024);
+api.module('firma', (m) {
+  m.usecase('verificar', Verificar.fromJson,
+      inputExample: ..., outputExample: ..., jsonBodyLimit: 2 * 1024 * 1024);
+});
+```
+
+| | TypeScript | Python | Dart |
+|---|---|---|---|
+| Per use case | `jsonBodyLimit` | `json_body_limit` | `jsonBodyLimit` |
+| Per instance | `jsonBodyLimit` | `json_body_limit` | `jsonBodyLimit` |
+| Value | size string or bytes | size string or bytes | bytes (`int`) |
+| Default when neither is set | `'100kb'` | no limit | no limit |
+| Also applies to routes mounted with `use()` | yes (instance value) | no | no |
+
+- The effective limit is the use case's own, else the instance value, else the
+  default above. Size strings use base 1024 (`'1kb'` = 1,024 bytes), as in
+  Express.
+- A body over the limit is answered `413 {"error":"Request body too large"}`
+  and logged at warning level with `status`, `limit` and `length`. Exactly the
+  limit is accepted. The limit counts bytes, not characters.
+- Python and Dart refuse a `Content-Length` over the limit without reading the
+  body, and stop reading a chunked body as soon as it passes the limit.
+- An invalid value fails at registration: `TypeError` (TS), `ValueError`
+  (Python), `ArgumentError` for a negative value (Dart). In TypeScript an
+  invalid instance-level value logs a warning and falls back to `'100kb'`.
+- Python and Dart have no default for compatibility within 0.8.x: setting one
+  now would start rejecting bodies that are accepted today.
+- `jsonBodyLimit` does not cap file uploads (`multipart/form-data`); configure
+  that in your upload middleware (multer, for example).
+
 ## Related
 
 - [Request lifecycle](request-lifecycle.md) — where module routes sit in the pipeline
