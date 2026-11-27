@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:modular_api/src/graphql/catalog/graphql_catalog_builder.dart';
+import 'package:modular_api/src/graphql/read/sql_read_compiler.dart';
 import 'package:modular_api/src/graphql/read/sql_read_contract.dart';
 import 'package:modular_api/src/graphql/schema/graphql_schema_sdl_generator.dart';
 
@@ -37,6 +38,7 @@ final class GraphqlOptions {
     required this.catalogFactory,
     this.executor,
     this.executionCapabilityId,
+    this.readCompiler,
     this.introspectionEnabled = false,
     this.maxDepth = 8,
     this.maxComplexity = 500,
@@ -57,6 +59,10 @@ final class GraphqlOptions {
   final GraphqlCatalogFactory catalogFactory;
   final SqlReadExecutor? executor;
   final String? executionCapabilityId;
+
+  /// SQL dialect compiler for reads. When omitted, the catalog's engine decides:
+  /// `'postgres'` uses `PostgresReadCompiler`, anything else `SqlServerReadCompiler`.
+  final SqlReadCompiler? readCompiler;
   final bool introspectionEnabled;
   final int maxDepth;
   final int maxComplexity;

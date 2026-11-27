@@ -12,6 +12,7 @@ import 'package:leto_shelf/leto_shelf.dart';
 import 'package:modular_api/src/core/plugin.dart';
 import 'package:modular_api/src/graphql/catalog/graphql_catalog_builder.dart';
 import 'package:modular_api/src/graphql/read/sql_read_contract.dart';
+import 'package:modular_api/src/graphql/read/postgres_read_compiler.dart';
 import 'package:modular_api/src/graphql/read/sqlserver_read_compiler.dart';
 import 'package:modular_api/src/graphql/runtime/graphql_artifacts.dart';
 import 'package:modular_api/src/graphql/runtime/graphql_runtime_health.dart';
@@ -189,7 +190,10 @@ final class _GraphqlRuntimePlugin implements Plugin, ValidatingPlugin, ShutdownA
 
     if (_resolvedExecutor != null) {
       final dispatcher = SqlCatalogReadDispatcher(
-        compiler: const SqlServerReadCompiler(),
+        compiler: options.readCompiler ??
+            (preparedRuntime.catalog.provider.engine == 'postgres'
+                ? const PostgresReadCompiler()
+                : const SqlServerReadCompiler()),
         executor: _resolvedExecutor!,
       );
       _bindResolvers(
@@ -1144,6 +1148,16 @@ int _extractTotalCount(RowSet rowSet) {
   }
   if (value is num) {
     return value.toInt();
+  }
+  // Some PostgreSQL drivers return COUNT(*) (bigint) as BigInt or String.
+  if (value is BigInt) {
+    return value.toInt();
+  }
+  if (value is String) {
+    final parsed = int.tryParse(value.trim());
+    if (parsed != null) {
+      return parsed;
+    }
   }
   throw StateError('Expected totalCount to be numeric, got $value.');
 }
