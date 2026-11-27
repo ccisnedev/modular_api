@@ -8,3 +8,5 @@ docs/requisitions/
 # Overrides locales de Dart: rutas de la maquina, y un paquete publicado tiene que
 # resolver desde el registro.
 pubspec_overrides.yaml
+# Except where the override is deliberate and versioned: the plugin tests against the working-tree core.
+!code/modular_api_sqlserver/dart/pubspec_overrides.yaml
