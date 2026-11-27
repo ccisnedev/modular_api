@@ -167,10 +167,11 @@ jobs:
       - name: Check version parity
         run: python code/tests/version_parity.py
 
-  # Gate 2 of ADR-0006: a project is not released with a constraint that excludes a sibling's version.
-  # Only the projects whose version changes against the base branch are checked, so it bites on a
-  # Release PR and is a no-op elsewhere; a dependent left behind by a breaking release of its sibling is
-  # fine until it is released (ADR-0006 §6).
+  # Gate 2 of ADR-0006: a release may not leave an in-repo dependent behind. A project being released
+  # must not exclude a sibling's version, and its new version must not be excluded by any dependent's
+  # constraint, even a dependent that is not being released: widen it in a fix(deps) PR first so it is
+  # released in the same Release PR (ADR-0006 §6, amended 2026-11-27). Only the projects whose version
+  # changes against the base branch are checked, so it bites on a Release PR and is a no-op elsewhere.
   siblings:
     name: versions · sibling constraints
     if: github.event_name == 'pull_request'
@@ -191,3 +192,6 @@ jobs:
         env:
           BASE: ${{ github.base_ref }}
         run: python code/tests/sibling_constraints.py --base "origin/$BASE"
+
+      - name: Test the gate
+        run: python -m unittest discover -v -s code/tests -p "test_sibling_constraints.py"
