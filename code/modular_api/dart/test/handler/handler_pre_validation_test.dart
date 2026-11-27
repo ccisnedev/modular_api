@@ -268,8 +268,9 @@ void main() {
       handler = useCaseHttpHandler(StrictUseCase.fromJson);
     });
 
-    test('without inputExample, strict fromJson crashes yield 500', () async {
-      // Without pre-validation, wrong types cause TypeError in fromJson → 500
+    test('without inputExample, strict fromJson crashes yield 400', () async {
+      // Without pre-validation, wrong types cause TypeError in fromJson. That is a
+      // body with the wrong shape, a client error (#44): 400 without the details.
       final res = await handler(_postRequest({
         'name': 123, // wrong type → as String throws
         'age': 30,
@@ -278,8 +279,9 @@ void main() {
         'tags': ['dart'],
       }));
 
-      // 500 because fromJson crashes before validation can run
-      expect(res.statusCode, equals(500));
+      expect(res.statusCode, equals(400));
+      final body = jsonDecode(await res.readAsString());
+      expect(body, {'error': 'Invalid request body'});
     });
   });
 }

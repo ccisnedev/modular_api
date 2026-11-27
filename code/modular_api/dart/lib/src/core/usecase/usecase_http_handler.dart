@@ -31,8 +31,23 @@ Handler useCaseHttpHandler(
         validateJsonFields(data, preValidationFields);
       }
 
-      // 3. Build and validate the UseCase
-      final useCase = fromJson(data);
+      // 3. Build and validate the UseCase. fromJson only maps untrusted input into the
+      //    use case input, so a TypeError, FormatException or ArgumentError thrown there
+      //    means the body has the wrong shape: a client error.
+      final UseCase useCase;
+      try {
+        useCase = fromJson(data);
+      } on UseCaseException {
+        rethrow;
+      } on InputValidationException {
+        rethrow;
+      } on TypeError catch (e) {
+        throw _BadRequest('Invalid request body', e);
+      } on FormatException catch (e) {
+        throw _BadRequest('Invalid request body', e);
+      } on ArgumentError catch (e) {
+        throw _BadRequest('Invalid request body', e);
+      }
 
       // 3a. Post-validate for legacy path (no inputExample)
       if (preValidationFields == null) {
@@ -78,6 +93,18 @@ Handler useCaseHttpHandler(
         headers: jsonHeaders,
         body: jsonEncode({'error': e.message}),
       );
+    } on _BadRequest catch (e) {
+      // A client error: the cause goes to the log at warning level, never into the response.
+      final logger = req.context[loggerContextKey] as ModularLogger?;
+      logger?.warning(e.message, fields: {
+        'status': 400,
+        if (e.cause != null) 'error': '${e.cause.runtimeType}: ${e.cause}',
+      });
+      return Response(
+        400,
+        headers: jsonHeaders,
+        body: jsonEncode({'error': e.message}),
+      );
     } catch (e) {
       final logger = req.context[loggerContextKey] as ModularLogger?;
       logger?.error('Unexpected error in use case handler',
@@ -94,7 +121,23 @@ Handler useCaseHttpHandler(
 /// Extracts JSON directly from the body (POST/PATCH)
 Future<Map<String, dynamic>> _jsonFromBody(Request req) async {
   final payload = await req.readAsString();
-  return jsonDecode(payload) as Map<String, dynamic>;
+  final Object? decoded;
+  try {
+    decoded = jsonDecode(payload); // an empty body is a FormatException too
+  } on FormatException catch (e) {
+    throw _BadRequest('Invalid JSON in request body', e);
+  }
+  if (decoded is! Map<String, dynamic>) {
+    throw const _BadRequest('Request body must be a JSON object');
+  }
+  return decoded;
+}
+
+/// A body that cannot become the use case input; answered with 400.
+class _BadRequest implements Exception {
+  final String message;
+  final Object? cause;
+  const _BadRequest(this.message, [this.cause]);
 }
 
 /// Extracts JSON from path-params and query-params (GET)
