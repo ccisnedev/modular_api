@@ -55,6 +55,7 @@ from modular_api.core.plugin import (
     order_plugins,
 )
 from modular_api.core.registry import api_registry
+from modular_api.core.resolved_route import ResolvedRoute, route_resolver_middleware
 from modular_api.graphql.runtime import GraphqlOptions
 
 
@@ -93,6 +94,7 @@ class ModularApi:
 
         self._health_service = HealthService(version=version, release_id=self._release_id)
         self._module_routers: list[tuple[str, Router]] = []
+        self._resolved_routes: list[ResolvedRoute] = []
         self._custom_middlewares: list[type] = []
         self._plugins: list[Plugin] = []
 
@@ -141,6 +143,7 @@ class ModularApi:
         build(builder)
         mount_path = f"{self._normalize_base(self._base_path)}/{name}"
         self._module_routers.append((mount_path, builder.build_router()))
+        self._resolved_routes.extend(builder.resolved_routes)
         return self
 
     def use(self, middleware_factory: Any) -> ModularApi:
@@ -266,6 +269,10 @@ class ModularApi:
         # 4. preRouting middlewares (wrap custom + routes)
         for middleware in reversed(plugin_host.middlewares_for_slot("preRouting")):
             app.add_middleware(middleware.handler)
+
+        # 4a. Route resolution (#47): every plugin and custom middleware can read the use case
+        # that will run, so access control does not have to compare the raw path.
+        app.add_middleware(route_resolver_middleware(self._resolved_routes))
 
         # 4b. Error normalization middleware (wraps plugin middleware + routes)
         app.add_middleware(error_response_middleware())

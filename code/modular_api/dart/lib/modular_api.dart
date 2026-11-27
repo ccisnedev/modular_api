@@ -10,6 +10,8 @@ export 'package:shelf/shelf.dart' show Middleware, Handler, Request, Response;
 
 // Core
 export 'src/core/modular_api.dart' show ModularApi, ModuleBuilder;
+export 'src/core/resolved_route.dart'
+    show ResolvedRoute, resolvedRoute, resolvedRouteContextKey;
 export 'src/core/plugin.dart'
     show
         Capability,
