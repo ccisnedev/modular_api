@@ -28,6 +28,12 @@ export interface UseCaseOptions {
   inputClass: abstract new (...args: never[]) => Input;
   /** Output class for schema extraction. */
   outputClass: abstract new (...args: never[]) => Output;
+  /**
+   * Maximum JSON request body for this use case: a size string (`'2mb'`) or a number of bytes.
+   * Accepts the same values as `ModularApiOptions.jsonBodyLimit`. When omitted the use case uses
+   * the instance limit. A body over the limit is answered with 413.
+   */
+  jsonBodyLimit?: string | number;
 }
 
 /**
@@ -48,6 +54,8 @@ export class ModuleBuilder {
   private readonly router: Router;
   /** @internal — the use cases registered here, read by ModularApi's route resolver. */
   readonly _resolvedRoutes: ResolvedRoute[] = [];
+  /** @internal — `${METHOD} ${path}` -> per-use-case JSON body limit, read by ModularApi. */
+  readonly _bodyLimits = new Map<string, string | number>();
 
   constructor(
     private readonly basePath: string,
@@ -71,7 +79,7 @@ export class ModuleBuilder {
     factory: UseCaseFactory<I, O>,
     options: UseCaseOptions,
   ): this {
-    const { method = 'POST', summary, description, inputSchema, outputSchema, inputClass, outputClass } = options;
+    const { method = 'POST', summary, description, inputSchema, outputSchema, inputClass, outputClass, jsonBodyLimit } = options;
 
     const cleanCommand = command.trim().replace(/^\//g, '');
     const subPath = `/${cleanCommand}`;
@@ -89,6 +97,7 @@ export class ModuleBuilder {
 
     const path = `${this._normalizeBase(this.basePath)}/${this.moduleName}/${cleanCommand}`;
     this._resolvedRoutes.push({ module: this.moduleName, useCase: cleanCommand, method, path });
+    if (jsonBodyLimit !== undefined) this._bodyLimits.set(`${method} ${path}`, jsonBodyLimit);
 
     // Register in the global registry for OpenAPI generation
     apiRegistry.routes.push({

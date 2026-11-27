@@ -110,6 +110,10 @@ export class ModularApi {
   private readonly version: string;
   private readonly middlewares: RequestHandler[] = [];
   private readonly resolvedRoutes: ResolvedRoute[] = [];
+  /** `${METHOD} ${path}` -> JSON body limit declared by that use case (issue #43). Per instance. */
+  private readonly bodyLimits = new Map<string, string | number>();
+  /** One `express.json` parser per distinct limit, built on first use. */
+  private readonly jsonParsers = new Map<string | number, RequestHandler>();
   private readonly healthService: HealthService;
   private readonly plugins: Plugin[] = [];
 
@@ -203,6 +207,15 @@ export class ModularApi {
     return this;
   }
 
+  private jsonParserFor(limit: string | number): RequestHandler {
+    let parser = this.jsonParsers.get(limit);
+    if (parser === undefined) {
+      parser = express.json({ limit });
+      this.jsonParsers.set(limit, parser);
+    }
+    return parser;
+  }
+
   /**
    * Registers a group of use cases under a named module.
    * Returns `this` for method chaining.
@@ -221,6 +234,7 @@ export class ModularApi {
     build(builder);
     builder._mount();
     this.resolvedRoutes.push(...builder._resolvedRoutes);
+    for (const [key, limit] of builder._bodyLimits) this.bodyLimits.set(key, limit);
     return this;
   }
 
@@ -384,7 +398,11 @@ export class ModularApi {
       );
 
       // Body parsing AFTER loggingMiddleware — SyntaxErrors now have trace_id.
-      this.app.use(express.json({ limit: this.jsonBodyLimit }));
+      // The limit is picked per request: the use case's own, else the instance's (issue #43).
+      this.app.use((req, res, next) => {
+        const limit = this.bodyLimits.get(`${req.method.toUpperCase()} ${req.path}`);
+        this.jsonParserFor(limit ?? this.jsonBodyLimit)(req, res, next);
+      });
       this.app.use(bodyParserErrorHandler);
 
       // Route resolution: every plugin and user middleware can read the use case that will run,
