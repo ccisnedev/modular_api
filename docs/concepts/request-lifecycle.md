@@ -24,8 +24,9 @@ mirror the same slot semantics on Shelf and Starlette.
                   |
                   v
  +--------------------------------------+
- | 2. express.json + body parser error  |  JSON body parsing; SyntaxError
- |    handler                           |  responses carry the trace_id
+ | 2. express.json + body parser error  |  JSON body parsing with the limit of
+ |    handler                           |  the use case, else the instance;
+ |                                      |  400 / 413 carry the trace_id
  +--------------------------------------+
                   |
                   v
@@ -76,6 +77,13 @@ mirror the same slot semantics on Shelf and Starlette.
  | 8. unhandled request handler         |  structured JSON 404 / error
  +--------------------------------------+
 ```
+
+Notes on step 2 (since 0.8.1, issue #43): TypeScript parses every JSON body here,
+once, so middlewares registered with `api.use()` see `req.body`. The limit is the
+`jsonBodyLimit` of the use case whose exact method and path match the request,
+else the instance value. A body over it is answered 413. Python and Dart read the
+body inside the use case handler, so their limit applies to use cases only. See
+[Request body size limit](modules-usecases-dtos.md#request-body-size-limit).
 
 Notes on steps 2b and 3b (since 0.8.0, issue #47): the route resolver runs in the
 three SDKs (in Python and Dart right after error normalization, before

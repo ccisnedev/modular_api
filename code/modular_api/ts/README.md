@@ -58,8 +58,19 @@ await api.serve({ port: 8080 });
 
 Omitting the option or passing `undefined` keeps the default `'100kb'` (102,400
 bytes). The limit measures UTF-8 body bytes, applies only to bodies handled by the
-JSON parser, and is independent for each `ModularApi` instance. Oversized bodies
-keep the existing error response.
+JSON parser, and is independent for each `ModularApi` instance. A use case can
+declare its own limit, which overrides the instance value for that use case only:
+
+```ts
+m.usecase('verificar', Verificar.fromJson, {
+  inputClass: VerificarInput,
+  outputClass: VerificarOutput,
+  jsonBodyLimit: '2mb',
+});
+```
+
+Oversized bodies are answered `413 {"error":"Request body too large"}`. See
+[Request body size limit](https://github.com/ccisnedev/modular_api/blob/main/docs/concepts/modules-usecases-dtos.md#request-body-size-limit).
 
 ### Strict routing (since 0.8.0)
 
