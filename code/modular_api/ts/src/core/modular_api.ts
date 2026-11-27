@@ -20,6 +20,7 @@ import { bodyParserErrorHandler } from './body_parser_error_handler';
 import { unhandledRequestErrorHandler } from './unhandled_request_error_handler';
 import type { Counter, Gauge, Histogram } from './metrics/metric';
 import { buildRuntimePlugins, operationalRoutePaths } from './official_plugins';
+import { canonicalPathMiddleware, STRICT_ROUTER_OPTIONS, STRICT_ROUTING_DEPRECATION } from './canonical_path';
 import { orderPlugins, PluginHostError, RuntimePluginHost, type Plugin } from './plugin';
 import type { GraphqlOptions } from '../graphql/runtime/graphql_runtime_options';
 
@@ -65,6 +66,17 @@ export interface ModularApiOptions {
   servers?: Array<{ url: string; description?: string }>;
   /** GraphQL runtime integration. Disabled by default. */
   graphql?: GraphqlOptions;
+  /**
+   * Strict routing. Default: true.
+   *
+   * A use case is reachable only through its canonical path: a different case does not resolve,
+   * and repeated slashes or a trailing slash (except `/`) are answered 404 before any middleware
+   * registered with `use()` or a plugin runs.
+   *
+   * `false` restores the permissive routing of 0.7.x and logs a deprecation warning at startup.
+   * It lets path variants bypass a middleware that compares `req.path` exactly (issue #47).
+   */
+  strictRouting?: boolean;
 }
 
 /**
@@ -119,6 +131,9 @@ export class ModularApi {
   private readonly servers?: Array<{ url: string; description?: string }>;
   private readonly graphql?: GraphqlOptions;
 
+  // Routing
+  private readonly strictRouting: boolean;
+
   /** Public accessor for custom-metric registration. Undefined when metrics are disabled. */
   get metrics(): MetricsRegistrar | undefined {
     return this._metricsRegistrar;
@@ -147,6 +162,7 @@ export class ModularApi {
     // OpenAPI servers
     this.servers = options.servers;
     this.graphql = options.graphql;
+    this.strictRouting = options.strictRouting ?? true;
 
     if (this.metricsEnabled) {
       this.metricRegistry = new MetricRegistry();
@@ -169,7 +185,7 @@ export class ModularApi {
 
     this.app = express();
 
-    this.rootRouter = express.Router();
+    this.rootRouter = this.strictRouting ? express.Router(STRICT_ROUTER_OPTIONS) : express.Router();
   }
 
   /**
@@ -199,7 +215,7 @@ export class ModularApi {
    * ```
    */
   module(name: string, build: (m: ModuleBuilder) => void): this {
-    const builder = new ModuleBuilder(this.basePath, name, this.rootRouter);
+    const builder = new ModuleBuilder(this.basePath, name, this.rootRouter, this.strictRouting);
     build(builder);
     builder._mount();
     return this;
@@ -363,6 +379,14 @@ export class ModularApi {
             : { traceFieldFormatter: this.tracing.traceFieldFormatter }),
         }),
       );
+
+      // Non-canonical paths end here, logged and traced but before any user middleware or plugin
+      // can misread them (issue #47).
+      if (this.strictRouting) {
+        this.app.use(canonicalPathMiddleware);
+      } else {
+        console.warn(STRICT_ROUTING_DEPRECATION);
+      }
 
       // Body parsing AFTER loggingMiddleware — SyntaxErrors now have trace_id.
       this.app.use(express.json({ limit: this.jsonBodyLimit }));

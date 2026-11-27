@@ -61,6 +61,24 @@ bytes). The limit measures UTF-8 body bytes, applies only to bodies handled by t
 JSON parser, and is independent for each `ModularApi` instance. Oversized bodies
 keep the existing error response.
 
+### Strict routing (since 0.8.0)
+
+A use case is reachable only through its canonical path, as in the Dart and Python
+SDKs:
+
+- A different case (`/API/Payments/Execute`) does not resolve: 404.
+- Repeated slashes (`/api/payments//execute`) and a trailing slash
+  (`/api/payments/execute/`, except `/`) are answered `404 {"error":"Not found"}`
+  before any middleware registered with `use()` or a plugin runs.
+
+Before 0.8.0 Express resolved those variants to the use case, so a middleware that
+compared `req.path` exactly (an auth check, for example) could be bypassed (issue #47).
+
+**Migration:** clients must call the exact path shown in the OpenAPI document. If you
+need time to fix them, `new ModularApi({ strictRouting: false })` restores the 0.7.x
+behaviour and logs a deprecation warning at startup; the option will be removed in a
+future minor.
+
 ---
 
 ## Features

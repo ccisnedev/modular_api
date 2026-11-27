@@ -10,6 +10,7 @@ import { UseCase } from './usecase';
 import { useCaseHandler } from './usecase_handler';
 import { apiRegistry } from './registry';
 import { getFieldMetadata } from './schema/field';
+import { STRICT_ROUTER_OPTIONS } from './canonical_path';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -49,8 +50,9 @@ export class ModuleBuilder {
     private readonly basePath: string,
     private readonly moduleName: string,
     private readonly rootRouter: Router,
+    strictRouting = true,
   ) {
-    this.router = Router();
+    this.router = strictRouting ? Router(STRICT_ROUTER_OPTIONS) : Router();
   }
 
   /**
