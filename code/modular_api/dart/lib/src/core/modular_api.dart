@@ -156,6 +156,7 @@ class ModularApi {
       ...await buildRuntimePlugins(
         basePath: basePath,
         title: title,
+        version: version,
         port: port,
         healthService: _healthService,
         registeredPaths: apiRegistry.routes.map((route) => route.path).toList(),
