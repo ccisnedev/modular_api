@@ -148,8 +148,8 @@ void main() {
   });
 
   test('the resolved route is absent on a 404', () async {
-    expect(await send('POST', '/api/v1/payments/missing', token: 'secret'),
-        404);
+    expect(
+        await send('POST', '/api/v1/payments/missing', token: 'secret'), 404);
     expect(seen, [null]);
   });
 
