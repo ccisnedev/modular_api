@@ -69,7 +69,9 @@ SDKs:
 - A different case (`/API/Payments/Execute`) does not resolve: 404.
 - Repeated slashes (`/api/payments//execute`) and a trailing slash
   (`/api/payments/execute/`, except `/`) are answered `404 {"error":"Not found"}`
-  before any middleware registered with `use()` or a plugin runs.
+  right after the `preRouting` plugin slot, before any middleware registered with
+  `use()`, the `preHandler` slot and the routes. Like logging and tracing,
+  `preRouting` sees every request, so metrics count those 404s.
 
 Before 0.8.0 Express resolved those variants to the use case, so a middleware that
 compared `req.path` exactly (an auth check, for example) could be bypassed (issue #47).

@@ -383,14 +383,6 @@ export class ModularApi {
         }),
       );
 
-      // Non-canonical paths end here, logged and traced but before any user middleware or plugin
-      // can misread them (issue #47).
-      if (this.strictRouting) {
-        this.app.use(canonicalPathMiddleware);
-      } else {
-        console.warn(STRICT_ROUTING_DEPRECATION);
-      }
-
       // Body parsing AFTER loggingMiddleware — SyntaxErrors now have trace_id.
       this.app.use(express.json({ limit: this.jsonBodyLimit }));
       this.app.use(bodyParserErrorHandler);
@@ -400,6 +392,15 @@ export class ModularApi {
       this.app.use(routeResolverMiddleware(this.resolvedRoutes));
 
       pluginHost.applyMiddlewares('preRouting', this.app);
+
+      // Non-canonical paths end here (issue #47): after the preRouting slot, which sees every
+      // request like logging and tracing do, so metrics count them; before any middleware
+      // registered with use(), the preHandler slot and the routes.
+      if (this.strictRouting) {
+        this.app.use(canonicalPathMiddleware);
+      } else {
+        console.warn(STRICT_ROUTING_DEPRECATION);
+      }
 
       // Register middlewares before routes
       for (const mw of this.middlewares) {

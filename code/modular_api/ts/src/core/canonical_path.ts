@@ -1,6 +1,6 @@
 // ============================================================
 // core/canonical_path.ts
-// Rejects non-canonical paths before any user middleware runs (issue #47).
+// Rejects non-canonical paths before the middlewares registered with use() run (issue #47).
 // ============================================================
 
 import type { RequestHandler } from 'express';

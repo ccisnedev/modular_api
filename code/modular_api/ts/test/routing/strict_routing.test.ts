@@ -18,6 +18,8 @@ import {
   Output,
   UseCase,
   type ModularApiOptions,
+  type Plugin,
+  type PluginHost,
 } from '../../src';
 
 const executions = vi.fn();
@@ -81,9 +83,27 @@ afterEach(async () => {
   );
 });
 
-async function serve(options: ModularApiOptions = {}): Promise<Server> {
+type GuardSlot = 'use' | 'preRouting' | 'preHandler';
+
+/** Registers requireToken as a plugin middleware in the given slot. */
+function guardPlugin(slot: 'preRouting' | 'preHandler'): Plugin {
+  return {
+    manifest: {
+      id: `test.guard.${slot}`,
+      displayName: 'Guard',
+      version: '0.1.0',
+      hostApiVersion: '>=0.1.0 <0.2.0',
+    },
+    setup(host: PluginHost) {
+      host.registerMiddleware({ id: `test.guard.${slot}.mw`, slot, handler: requireToken });
+    },
+  };
+}
+
+async function serve(options: ModularApiOptions = {}, guard: GuardSlot = 'use'): Promise<Server> {
   const api = new ModularApi({ basePath: '/api/v1', logLevel: LogLevel.emergency, ...options });
-  api.use(requireToken);
+  if (guard === 'use') api.use(requireToken);
+  else api.plugin(guardPlugin(guard));
   api.module('payments', (m) => {
     m.usecase('execute', ExecutePayment.fromJson, { inputClass: PayInput, outputClass: PayOutput });
   });
@@ -125,16 +145,28 @@ describe('strict routing (issue #47)', () => {
     expect(executions).toHaveBeenCalledOnce();
   });
 
-  it.each(VARIANTS)('%s does not reach the use case without the token', async (path) => {
-    const server = await serve();
-    const response = await post(server, path);
+  describe.each<GuardSlot>(['use', 'preRouting', 'preHandler'])(
+    'guard registered in %s',
+    (guard) => {
+      it('protects the canonical path', async () => {
+        const server = await serve({}, guard);
+        expect((await post(server, CANONICAL)).status).toBe(401);
+        expect((await post(server, CANONICAL, 'secret')).status).toBe(200);
+        expect(executions).toHaveBeenCalledOnce();
+      });
 
-    expect([401, 404]).toContain(response.status);
-    expect(executions).not.toHaveBeenCalled();
-  });
+      it.each(VARIANTS)('%s does not reach the use case without the token', async (path) => {
+        const server = await serve({}, guard);
+        const response = await post(server, path);
+
+        expect([401, 404]).toContain(response.status);
+        expect(executions).not.toHaveBeenCalled();
+      });
+    },
+  );
 
   it.each([`${CANONICAL}/`, '/api/v1/payments//execute', `${CANONICAL}//`])(
-    '%s is answered 404 before any user middleware runs',
+    '%s is answered 404 before any middleware registered with use() runs',
     async (path) => {
       const server = await serve();
       const response = await post(server, path, 'secret');
