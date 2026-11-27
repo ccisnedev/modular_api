@@ -1,0 +1,6 @@
+# The example and the tests always run against the core in this working tree, not the one on pub.dev.
+# pub never ships this file to consumers; the range published in pubspec.yaml is guarded separately
+# by code/tests/sibling_constraints.py.
+dependency_overrides:
+  modular_api:
+    path: ../../modular_api/dart
