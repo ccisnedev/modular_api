@@ -99,14 +99,29 @@ export 'src/graphql/metadata/graphql_metadata_parser.dart'
         GraphqlMetadataSeverity,
         GraphqlObjectMetadata,
         GraphqlRelationMetadata;
+export 'src/graphql/read/postgres_read_compiler.dart' show PostgresReadCompiler;
+export 'src/graphql/read/sql_read_compiler.dart' show SqlReadCompiler;
+export 'src/graphql/read/sqlserver_read_compiler.dart' show SqlServerReadCompiler;
 export 'src/graphql/read/sql_read_contract.dart'
     show
         ReadExecutionContext,
         RowSet,
+        SqlCollectionSelection,
+        SqlCountSelection,
+        SqlFilterCondition,
+        SqlFilterGroup,
+        SqlFilterGroupKind,
+        SqlFilterNode,
+        SqlFilterOperator,
+        SqlItemSelection,
+        SqlOrderByClause,
+        SqlPage,
         SqlParameter,
         SqlReadCommand,
         SqlReadCommandPurpose,
-        SqlReadExecutor;
+        SqlReadExecutor,
+        SqlRelationBatchSelection,
+        SqlSortDirection;
 export 'src/graphql/runtime/graphql_runtime_options.dart'
     show
         GraphqlCatalogFactory,

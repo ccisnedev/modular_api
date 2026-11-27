@@ -1,9 +1,11 @@
 import 'package:modular_api/src/graphql/catalog/graphql_catalog_builder.dart';
+import 'package:modular_api/src/graphql/read/sql_read_compiler.dart';
 import 'package:modular_api/src/graphql/read/sql_read_contract.dart';
 
-final class SqlServerReadCompiler {
+final class SqlServerReadCompiler implements SqlReadCompiler {
   const SqlServerReadCompiler();
 
+  @override
   SqlReadCommand compileItem({
     required GraphqlCatalog catalog,
     required SqlItemSelection selection,
@@ -25,6 +27,7 @@ final class SqlServerReadCompiler {
     );
   }
 
+  @override
   SqlReadCommand compileCollection({
     required GraphqlCatalog catalog,
     required SqlCollectionSelection selection,
@@ -63,6 +66,7 @@ final class SqlServerReadCompiler {
     );
   }
 
+  @override
   SqlReadCommand compileCount({
     required GraphqlCatalog catalog,
     required SqlCountSelection selection,
@@ -89,6 +93,7 @@ final class SqlServerReadCompiler {
     );
   }
 
+  @override
   SqlReadCommand compileRelationBatch({
     required GraphqlCatalog catalog,
     required SqlRelationBatchSelection selection,
@@ -325,7 +330,7 @@ final class SqlCatalogReadDispatcher {
     required this.executor,
   });
 
-  final SqlServerReadCompiler compiler;
+  final SqlReadCompiler compiler;
   final SqlReadExecutor executor;
 
   Future<RowSet> readItem({
