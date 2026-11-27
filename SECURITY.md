@@ -29,7 +29,7 @@ Report them privately through GitHub:
 
 Please include as much of the following as you can:
 
-- Affected SDK(s) and version(s).
+- Affected package(s) and version(s).
 - The type of issue (for example authentication bypass, injection or information disclosure).
 - Steps to reproduce, ideally a minimal app or test.
 - The impact: what an attacker can achieve.
