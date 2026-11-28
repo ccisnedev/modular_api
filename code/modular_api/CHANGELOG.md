@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/ccisnedev/modular_api/compare/modular_api-v0.8.1...modular_api-v0.8.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* remove references to private projects from code comments, tests and docs ([#85](https://github.com/ccisnedev/modular_api/issues/85)) ([23e5acc](https://github.com/ccisnedev/modular_api/commit/23e5acc52f28aa657e5e618d2ff11d0518b3f36b))
+
 ## [0.8.1](https://github.com/ccisnedev/modular_api/compare/modular_api-v0.8.0...modular_api-v0.8.1) (2026-11-28)
 
 
