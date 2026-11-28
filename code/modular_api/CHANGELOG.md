@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.1](https://github.com/ccisnedev/modular_api/compare/modular_api-v0.8.0...modular_api-v0.8.1) (2026-11-28)
+
+
+### Features
+
+* opt-in JSON body limit for Dart use cases, per instance and per use case ([#43](https://github.com/ccisnedev/modular_api/issues/43)) ([#76](https://github.com/ccisnedev/modular_api/issues/76)) ([0c77be6](https://github.com/ccisnedev/modular_api/commit/0c77be67dcd8d69212b668e8b6db3f1cfff22b8b))
+* opt-in JSON body limit for Python use cases, per instance and per use case ([#43](https://github.com/ccisnedev/modular_api/issues/43)) ([#74](https://github.com/ccisnedev/modular_api/issues/74)) ([6417655](https://github.com/ccisnedev/modular_api/commit/64176559b9e528301b1ff494267c745ef11111fa))
+* per-use-case JSON body limit in TypeScript; oversized bodies answer 413 ([#43](https://github.com/ccisnedev/modular_api/issues/43)) ([#73](https://github.com/ccisnedev/modular_api/issues/73)) ([8f6ad66](https://github.com/ccisnedev/modular_api/commit/8f6ad668cf8a26153756c49692d8c95e8a365dc5))
+* PostgreSQL read compiler for the GraphQL runtime in Dart ([#16](https://github.com/ccisnedev/modular_api/issues/16)) ([#79](https://github.com/ccisnedev/modular_api/issues/79)) ([5848d72](https://github.com/ccisnedev/modular_api/commit/5848d721a871caefc1ba595bada00d7ed72365ca))
+* PostgreSQL read compiler for the GraphQL runtime in Python ([#16](https://github.com/ccisnedev/modular_api/issues/16)) ([#80](https://github.com/ccisnedev/modular_api/issues/80)) ([673723b](https://github.com/ccisnedev/modular_api/commit/673723b1178a0ee2b9e432debdc297b588a11a20))
+* PostgreSQL read compiler for the GraphQL runtime in TypeScript ([#16](https://github.com/ccisnedev/modular_api/issues/16)) ([#78](https://github.com/ccisnedev/modular_api/issues/78)) ([21fe9d6](https://github.com/ccisnedev/modular_api/commit/21fe9d68d33a57054ec1e6d3f1e70c6849a6fd20))
+
+
+### Bug Fixes
+
+* escape LIKE wildcards in the SQL Server GraphQL read compiler ([#81](https://github.com/ccisnedev/modular_api/issues/81)) ([#82](https://github.com/ccisnedev/modular_api/issues/82)) ([f76b504](https://github.com/ccisnedev/modular_api/commit/f76b50447fc8c4187ff582659f172c39a462f567))
+
 ## [0.8.0](https://github.com/ccisnedev/modular_api/compare/modular_api-v0.7.3...modular_api-v0.8.0) (2026-11-27)
 
 
