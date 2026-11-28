@@ -8,14 +8,14 @@ Se investiga si las ventajas clásicas de GraphQL sobre REST siguen siendo relev
 
 ¿Qué ventajas reales tiene GraphQL frente a REST para un framework de APIs, y siguen siendo ventajas cuando agentes de IA escriben más del 99 % del código (un agente puede crear un endpoint REST o caso de uso nuevo a costo casi cero)?
 
-Subpreguntas: (a) ventajas clásicas; (b) costos, en particular GraphQL autogenerado sobre tablas frente a casos de uso de dominio; (c) evidencia de industria 2023-2026; (d) ángulo de agentes de IA; (e) recomendación para un fundador individual.
+Subpreguntas: (a) ventajas clásicas; (b) costos, en particular GraphQL autogenerado sobre tablas frente a casos de uso de dominio; (c) evidencia de industria 2023-2026; (d) ángulo de agentes de IA; (e) recomendación para un proyecto mantenido por una sola persona.
 
 ## Scope and Constraints
 
-- Contexto: `modular_api` (Dart, TypeScript, Python), casos de uso REST con DTOs tipados y OpenAPI automático, más un runtime GraphQL opcional de solo lectura generado desde un catálogo (SQL Server y PostgreSQL), con límites de profundidad, complejidad y paginación e introspección desactivada por defecto. Hoy el runtime GraphQL tiene un solo consumidor, `tigre_regalon_2`, sin actividad desde junio de 2026 y fijado en la versión 0.4.8; el consumidor en producción (`socia`) no lo usa. Clientes empresariales del sector financiero en Perú.
+- Contexto: `modular_api` (Dart, TypeScript, Python), casos de uso REST con DTOs tipados y OpenAPI automático, más un runtime GraphQL opcional de solo lectura generado desde un catálogo (SQL Server y PostgreSQL), con límites de profundidad, complejidad y paginación e introspección desactivada por defecto. El runtime GraphQL es experimental y su uso actual es mínimo.
 - Dentro del alcance: ventajas y costos generales de GraphQL, evidencia 2023-2026, uso por agentes de IA, decisión de producto.
 - Fuera de alcance: rendimiento medido del runtime propio, benchmarks propios, revisión del código del repositorio, comparación detallada de librerías de servidor GraphQL, suscripciones y mutaciones (el runtime es de solo lectura).
-- Restricciones: investigación solo web, fecha de corte 2026-11-28. Las afirmaciones se atribuyen a la fuente; los hechos se separan de las interpretaciones. Los datos de la propia empresa del fundador no se enviaron a servicios externos.
+- Restricciones: investigación solo web, fecha de corte 2026-11-28. Las afirmaciones se atribuyen a la fuente; los hechos se separan de las interpretaciones.
 - Criterios de éxito de la investigación: cada conclusión con evidencia atribuida, sesgos de proveedor señalados, nivel de confianza por conclusión y criterios explícitos que cambiarían la decisión.
 
 ## Method (Staged Protocol)
@@ -28,7 +28,7 @@ Se siguió el protocolo en orden: Etapa 1 encuadre del problema; Etapa 2 descubr
 
 **Pregunta normalizada.** El valor de GraphQL como superficie de lectura en un framework de APIs, evaluado cuando (i) el costo de escribir y mantener un endpoint nuevo es casi cero y (ii) los consumidores pueden ser humanos (frontends) o agentes (MCP, tool use).
 
-**Racional declarado del fundador.** (1) GraphQL da orden y estructura; (2) el frontend puede evolucionar sus lecturas sin cambios permanentes en el backend. El punto (2) es la hipótesis bajo prueba.
+**Racional declarado del mantenedor.** (1) GraphQL da orden y estructura; (2) el frontend puede evolucionar sus lecturas sin cambios permanentes en el backend. El punto (2) es la hipótesis bajo prueba.
 
 **Hipótesis operativas.**
 - H1: la autonomía del frontend es la ventaja más dependiente del costo humano de escribir endpoints y se erosiona con agentes.
@@ -114,7 +114,7 @@ Sesgos señalados: Apollo, WunderGraph, ChilliCream y Hygraph venden infraestruc
 - Esquema tipado e introspección. Brandur contrasta la introspección nativa con OpenAPI, que es una descripción añadida que a menudo falta o es inexacta porque no está atada a la implementación [@brandur2018graphql]. Interpretación: ese argumento pierde fuerza en un framework como `modular_api`, donde el OpenAPI se genera desde los DTOs tipados del propio código.
 - Bessey valora que GraphQL es autodocumentado y con tipos, y propone para equipos que controlan sus clientes un REST con OpenAPI 3.0+ o un flujo schema-first con TypeSpec [@bessey2024over]. Condiciones que él enumera para esa alternativa: controlar todos los clientes, tres o menos clientes, lenguaje de cliente tipado estáticamente, y más de un lenguaje entre servidor y clientes [@bessey2024over].
 - Round trips y over/under-fetching. Brandur menciona recorrer el grafo en una sola petición y cita la expansión de objetos de Stripe como solución REST equivalente [@brandur2018graphql]. Bessey cuestiona que una sola consulta supere a peticiones paralelas con HTTP/2 [@bessey2024over].
-- Federación. WunderGraph (proveedor) afirma que el valor principal de GraphQL es habilitar federación y colaboración entre equipos, no rendimiento ni DX, y recomienda tRPC para monolitos de un equipo y REST para APIs públicas [@wundergraph2024wrong]. Netflix reporta GraphQL federado como estándar para más de 1000 ingenieros según resumen de InfoQ (leído solo vía búsqueda) [@infoqnetflix]. Interpretación: la federación es una ventaja organizacional de muchos equipos; no aplica a un fundador individual con un backend.
+- Federación. WunderGraph (proveedor) afirma que el valor principal de GraphQL es habilitar federación y colaboración entre equipos, no rendimiento ni DX, y recomienda tRPC para monolitos de un equipo y REST para APIs públicas [@wundergraph2024wrong]. Netflix reporta GraphQL federado como estándar para más de 1000 ingenieros según resumen de InfoQ (leído solo vía búsqueda) [@infoqnetflix]. Interpretación: la federación es una ventaja organizacional de muchos equipos; no aplica a un proyecto de una sola persona con un backend.
 
 **4.2 Costos**
 
@@ -130,7 +130,7 @@ Sesgos señalados: Apollo, WunderGraph, ChilliCream y Hygraph venden infraestruc
 **4.3 GraphQL autogenerado sobre tablas frente a casos de uso**
 
 - OWASP API3:2023 define como riesgo exponer propiedades sensibles de un objeto o permitir modificarlas, y aconseja evitar métodos genéricos tipo `to_json` y seleccionar explícitamente las propiedades a devolver [@owaspapi2023bopla]. Interpretación: un esquema derivado de tablas es el caso extremo de "devolver todo lo que el modelo tenga" salvo que un catálogo de metadatos lo restrinja, que es justamente lo que hace el archivo de metadatos de `modular_api`; la mitigación existe pero es una lista de permitidos que hay que mantener.
-- Hasura aplica permisos por tabla, rol y operación, con reglas de fila booleanas y de columna [@hasuradocs]. PostGraphile recomienda RLS en todas las tablas expuestas porque sin RLS el acceso es implícitamente abierto (leído vía búsqueda) [@postgraphilesec]. Interpretación: ambos mueven la autorización al nivel de datos; en SQL Server (cliente financiero) la política de filas equivalente exige diseño adicional que el runtime propio debería proveer.
+- Hasura aplica permisos por tabla, rol y operación, con reglas de fila booleanas y de columna [@hasuradocs]. PostGraphile recomienda RLS en todas las tablas expuestas porque sin RLS el acceso es implícitamente abierto (leído vía búsqueda) [@postgraphilesec]. Interpretación: ambos mueven la autorización al nivel de datos; en SQL Server, en entornos regulados, la política de filas equivalente exige diseño adicional que el runtime propio debería proveer.
 - No se encontró en esta investigación una fuente independiente y sólida que critique directamente "el esquema de BD como contrato de API". Es una inferencia a partir de OWASP API3 y del acoplamiento descrito por Bessey, no un hallazgo documentado (ver Limitations).
 - Reglas de negocio. Interpretación: un compilador a SQL de solo lectura no ejecuta invariantes de dominio; solo sirve para lecturas donde la regla se expresa como filtro o columna visible. Una lectura que requiere cálculo de dominio (saldo disponible, estado derivado) pertenece a un caso de uso.
 
@@ -176,22 +176,22 @@ Sesgos señalados: Apollo, WunderGraph, ChilliCream y Hygraph venden infraestruc
 | C5 | GraphQL sigue siendo minoría estable (aprox. 30 % de usuarios de Postman) sin señal de reemplazo de REST; su valor más defendido es la federación entre muchos equipos. | Media (Postman es muestra sesgada; federación solo por proveedor e InfoQ vía búsqueda) |
 | C6 | Para agentes, la mejor práctica documentada son herramientas estrechas por tarea; GraphQL puede ser su implementación (operaciones persistidas), pero el esquema libre con introspección cuesta contexto y amplía el riesgo. | Media-baja (única guía primaria es de Anthropic; el resto es de proveedores sin metodología) |
 | C7 | OpenAPI ya da a un agente un contrato suficiente si se filtra a las operaciones relevantes; el experimento de tokens a favor de GraphQL no controla ese filtrado. | Baja-media |
-| C8 | La demanda del runtime GraphQL es mínima: un consumidor (`tigre_regalon_2`) inactivo desde junio de 2026 y en 0.4.8, que usó GraphQL para dos o tres lecturas a costa de un catálogo escrito a mano, un traductor T-SQL→PostgreSQL y parches de tipos. Su costo de mantenimiento es hoy casi todo costo de oportunidad. | Alta (verificado en el repositorio del consumidor) |
+| C8 | La demanda actual del runtime GraphQL es mínima, y el uso observado se limitó a pocas lecturas a costa de un catálogo escrito a mano, una traducción T-SQL→PostgreSQL y ajustes de tipos. Su costo de mantenimiento es hoy casi todo costo de oportunidad. | Media (dato del mantenedor) |
 
-**Incertidumbres**: efecto real de agentes de IA sobre la economía de endpoints; comparación empírica independiente de GraphQL y OpenAPI para agentes; adopción de tRPC y RPC tipado; práctica de autorización por fila en SQL Server en el sector financiero peruano.
+**Incertidumbres**: efecto real de agentes de IA sobre la economía de endpoints; comparación empírica independiente de GraphQL y OpenAPI para agentes; adopción de tRPC y RPC tipado; práctica de autorización por fila en SQL Server en entornos regulados.
 
 ## Discussion
 
-> **Decisión del fundador (2026-11-28).** El runtime GraphQL no se congela ni se cierra: sigue como **experimental**, con trabajo eventual. Ya funciona como plugin, de modo que puede extraerse a un paquete aparte sin cambios en el core. Las recomendaciones de este informe se leen como criterios para priorizar ese trabajo, no como una decisión de abandono. Ver también `2026-11-graphql-community-ai-agents.md`.
+> **Decisión del mantenedor (2026-11-28).** El runtime GraphQL no se congela ni se cierra: sigue como **experimental**, con trabajo eventual. Ya funciona como plugin, de modo que puede extraerse a un paquete aparte sin cambios en el core. Las recomendaciones de este informe se leen como criterios para priorizar ese trabajo, no como una decisión de abandono. Ver también `2026-11-graphql-community-ai-agents.md`.
 
 
-**Sobre la autonomía del frontend.** El argumento clásico era que un cambio de lectura en el frontend no debe esperar un sprint de backend. Cuando un agente crea un caso de uso REST en minutos, la espera desaparece y el argumento se convierte en una discusión sobre calidad: cada endpoint nuevo es superficie que revisar, autorizar y mantener. Aquí GraphQL sí reduce el número de superficies, pero a cambio traslada el costo a un único punto grande (el motor de consultas) cuyos riesgos están bien documentados [@owaspgqlcheat; @graphqlorgsecurity]. Para un fundador individual con un solo consumidor que ya usa casos de uso y SQL escrito a mano, esa transferencia no se amortiza.
+**Sobre la autonomía del frontend.** El argumento clásico era que un cambio de lectura en el frontend no debe esperar un sprint de backend. Cuando un agente crea un caso de uso REST en minutos, la espera desaparece y el argumento se convierte en una discusión sobre calidad: cada endpoint nuevo es superficie que revisar, autorizar y mantener. Aquí GraphQL sí reduce el número de superficies, pero a cambio traslada el costo a un único punto grande (el motor de consultas) cuyos riesgos están bien documentados [@owaspgqlcheat; @graphqlorgsecurity]. Para un proyecto mantenido por una sola persona, cuyos usuarios ya trabajan con casos de uso y SQL escrito a mano, esa transferencia no se amortiza.
 
 **Sobre "orden y estructura".** Ese beneficio existe, pero `modular_api` ya lo obtiene con DTOs tipados de entrada y salida y OpenAPI automático. Es consistente con la salida que Bessey propone cuando se controlan los clientes [@bessey2024over].
 
 **Sobre agentes como consumidores.** Es el argumento nuevo y más interesante, pero también el peor respaldado. Los proveedores lo promueven [@wundergraph2026agents; @apollo2025schema; @chillicream2026]. La guía de ingeniería de Anthropic pide herramientas por tarea, con respuestas acotadas [@anthropic2025tools], y la forma en que Apollo sirve a agentes de manera responsable (operaciones predefinidas expuestas como herramientas) es en esencia un caso de uso nombrado con entradas tipadas [@apollo2025ops]. Eso es lo que `modular_api` ya produce. Un agente que usa el esquema libre añade riesgo de consultas costosas, y Postman muestra que la preocupación principal sobre agentes es el consumo excesivo [@postman2025]. Un posible beneficio diferencial de GraphQL sería la lectura exploratoria sobre datos relacionales que no se pueden prever; incluso ahí Thoughtworks ubica la práctica en "Assess" y enumera DoS y esquemas bien nombrados como condiciones [@thoughtworks2025radar].
 
-**Sobre autogeneración desde la base de datos.** El catálogo con archivo de metadatos que elige tablas, columnas y relaciones es la mitigación correcta frente a API3:2023 [@owaspapi2023bopla]. Aun así, el contrato público sigue siendo el modelo físico renombrado; cualquier cambio de esquema físico se vuelve cambio de contrato, y las reglas de dominio no se ejecutan. Para clientes financieros, esto pide autorización por fila y auditoría que el runtime debería demostrar antes de tener un consumidor real. Esta es una inferencia, no un hallazgo documentado.
+**Sobre autogeneración desde la base de datos.** El catálogo con archivo de metadatos que elige tablas, columnas y relaciones es la mitigación correcta frente a API3:2023 [@owaspapi2023bopla]. Aun así, el contrato público sigue siendo el modelo físico renombrado; cualquier cambio de esquema físico se vuelve cambio de contrato, y las reglas de dominio no se ejecutan. En entornos regulados, esto pide autorización por fila y auditoría que el runtime debería demostrar antes de tener un consumidor real. Esta es una inferencia, no un hallazgo documentado.
 
 **Costo de oportunidad.** Mantener dos compiladores SQL (SQL Server y PostgreSQL) y otras tres implementaciones de lenguaje (Dart, TypeScript, Python) de un runtime sin consumidores activos es el costo más concreto que la evidencia permite señalar, aunque con agentes el costo de escribir ese código sea bajo; el costo de verificarlo y de responder por su seguridad no lo es.
 
@@ -199,7 +199,7 @@ Sesgos señalados: Apollo, WunderGraph, ChilliCream y Hygraph venden infraestruc
 
 **Recomendación: congelar el runtime GraphQL en el core (sin inversión nueva) y preparar su extracción a un paquete opcional, sin eliminarlo todavía.**
 
-Justificación: (a) la ventaja que motivó GraphQL, la autonomía del frontend, está muy erosionada por agentes (C1); (b) lo que queda (tipado, introspección) ya lo cubre el OpenAPI generado (C2); (c) los costos de seguridad persisten (C3) y son especialmente delicados en el sector financiero; (d) su único consumidor está inactivo (C8); (e) eliminarlo descarta una opción barata de conservar y el trabajo ya hecho (incluido el compilador PostgreSQL recién añadido).
+Justificación: (a) la ventaja que motivó GraphQL, la autonomía del frontend, está muy erosionada por agentes (C1); (b) lo que queda (tipado, introspección) ya lo cubre el OpenAPI generado (C2); (c) los costos de seguridad persisten (C3) y son especialmente delicados en entornos regulados; (d) la demanda actual es mínima (C8); (e) eliminarlo descarta una opción barata de conservar y el trabajo ya hecho (incluido el compilador PostgreSQL recién añadido).
 
 Pasos concretos sugeridos:
 1. Congelar: sin nuevas funciones ni nuevos dialectos; solo correcciones de seguridad; mantener introspección apagada por defecto y los topes actuales.
@@ -209,7 +209,7 @@ Pasos concretos sugeridos:
 **Criterios que cambiarían la decisión**
 - A favor de volver a invertir (o mantener en el core): un consumidor real con muchas lecturas ad hoc sobre un modelo relacional estable, que cambie más rápido de lo que se pueden revisar nuevos casos de uso; o un cliente que exija una capa de consulta flexible sobre un modelo ya publicado; o varios equipos consumidores donde la federación o un grafo único valga la coordinación.
 - A favor de extraer: aparición de un segundo ecosistema de consumidores que quiera el runtime sin el resto del framework, o coste de CI/mantenimiento medible.
-- A favor de eliminar: 12 meses sin consumidor y una brecha de seguridad o de mantenimiento que no se justifique; o una auditoría del sector financiero que objete la superficie.
+- A favor de eliminar: 12 meses sin consumidor y una brecha de seguridad o de mantenimiento que no se justifique; o una auditoría que objete la superficie.
 - Evidencia externa que haría revisar la conclusión sobre agentes: un benchmark independiente, con tarea y tasa de éxito medidas, donde GraphQL con operaciones libres supere a herramientas por tarea o a OpenAPI filtrado.
 
 ## Limitations
@@ -221,7 +221,7 @@ Pasos concretos sugeridos:
 - Afirmaciones sobre "200 con errores" y semántica HTTP provienen del ensayo de Bessey y de conocimiento general, sin fuente primaria específica recuperada.
 - Casi toda la evidencia sobre agentes proviene de proveedores con interés comercial y sin metodología reproducible; ninguna mide éxito de tarea. El experimento de ChilliCream no declara modelo, tarea ni número de ejecuciones.
 - Postman usa una muestra autoseleccionada de sus usuarios; no representa a la industria.
-- Los efectos sobre el costo de mantenimiento en el repositorio propio no se midieron; la recomendación se basa en el contexto declarado por el fundador y en la revisión de sus dos repositorios consumidores (`socia`, que no usa GraphQL, y `tigre_regalon_2`, inactivo).
+- Los efectos sobre el costo de mantenimiento en el repositorio propio no se midieron; la recomendación se basa en el contexto declarado por el mantenedor.
 - La fecha de la investigación (2026-11-28) y el ritmo del tema implican que la guía de MCP y los productos citados pueden haber cambiado.
 
 ## References
