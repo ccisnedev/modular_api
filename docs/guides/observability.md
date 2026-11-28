@@ -313,7 +313,7 @@ provider.register();
 
 const api = new ModularApi({
   basePath: '/api',
-  title: 'socia-api',
+  title: 'orders-api',
   tracing: new TracingOptions({
     tracerProvider: provider,
     onShutdown: async () => provider.shutdown(),
@@ -325,7 +325,7 @@ const api = new ModularApi({
 import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart' as sdk;
 
 await sdk.OTel.initialize(
-  serviceName: 'socia-api',
+  serviceName: 'orders-api',
   endpoint: 'http://localhost:4318/v1/traces',
   // `spanProcessor` is SINGULAR, and the default exporter speaks gRPC. Targeting
   // an OTLP/HTTP Collector means passing the HTTP exporter explicitly.
@@ -338,7 +338,7 @@ await sdk.OTel.initialize(
 
 final api = ModularApi(
   basePath: '/api',
-  title: 'socia-api',
+  title: 'orders-api',
   tracing: TracingOptions(
     tracerProvider: sdk.OTel.tracerProvider(),
     onShutdown: () async => sdk.OTel.tracerProvider().shutdown(),
@@ -361,7 +361,7 @@ provider.add_span_processor(
 
 api = ModularApi(
     base_path="/api",
-    title="socia-api",
+    title="orders-api",
     tracing=TracingOptions(
         tracer_provider=provider,
         on_shutdown=provider.shutdown,
@@ -406,10 +406,10 @@ losing telemetry is bad, failing to stop is worse.
 | Span | Kind | Where it comes from |
 |---|---|---|
 | `POST /api/cuenta/detalle` | server | the host, outside every plugin middleware |
-| `POST get-cuenta-detalle` | client | `macss-modular-api-rest-client`, per outbound call |
+| `POST get-account-detail` | client | `macss-modular-api-rest-client`, per outbound call |
 | `SELECT cuenta` | client | `macss-modular-api-postgres`, per command |
-| `TRANSACTION socia` | client | `macss-modular-api-postgres`, per transaction |
-| `CONNECT socia` | client | `macss-modular-api-postgres`, per session acquisition |
+| `TRANSACTION orders` | client | `macss-modular-api-postgres`, per transaction |
+| `CONNECT orders` | client | `macss-modular-api-postgres`, per session acquisition |
 
 Operational routes — health, docs, openapi, metrics — produce **no span**. They
 are noise in a trace store, and the exclusion list is derived from the same
@@ -528,7 +528,7 @@ formatter you supply:
 tracing: new TracingOptions({
   tracerProvider: provider,
   traceFieldFormatter: ({ traceId, spanId }) => ({
-    'logging.googleapis.com/trace': `projects/socia-prod/traces/${traceId}`,
+    'logging.googleapis.com/trace': `projects/example-project/traces/${traceId}`,
     'logging.googleapis.com/spanId': spanId,
   }),
 })

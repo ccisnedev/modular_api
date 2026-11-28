@@ -31,7 +31,7 @@ en el schema OpenAPI. Cierra issue #8.
   - Python: `py/src/modular_api/core/usecase.py` — `_normalize_schema`
 - Fixtures: `tests/fixtures/hello_input_schema.json`, `hello_output_schema.json`
 - Related issue: GitHub issue #8
-- Descubierto implementando el webhook de Ligo en [cacsi-dev/tigre_regalon_2#7](https://github.com/cacsi-dev/tigre_regalon_2/issues/7)
+- Descubierto implementando un webhook en un proyecto consumidor
 - Assumptions:
   - `buildSchema` y `buildSchemaFromMetadata` ya emiten `{type: field.type}` — si `type='object'`, producen `{"type":"object"}` sin cambios
   - Pydantic con `dict[str, Any]` genera `{type: 'object', additionalProperties: true}`. `additionalProperties: true` es semánticamente equivalente a omitirlo en OpenAPI 3.0.3, pero Dart/TS no lo emiten → se stripea en Python para paridad

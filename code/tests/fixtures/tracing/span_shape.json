@@ -28,7 +28,7 @@
       ]
     },
     {
-      "name": "upstream impulsa",
+      "name": "upstream payments",
       "kind": "client",
       "parent": "POST /api/cuenta/detalle",
       "attributeKeys": []

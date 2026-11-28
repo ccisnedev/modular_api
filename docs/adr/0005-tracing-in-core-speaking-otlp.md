@@ -18,9 +18,9 @@ request-scoped structured logging (host-owned `loggingMiddleware`) and Prometheu
 (`MetricsPlugin`, opt-in via `metricsEnabled`). Distributed tracing is absent. The gap is not
 theoretical — it was hit head-on by the first consumer to need it.
 
-**Evidence from production (`socia-api`, Cloud Run, GCP project `sociacacsi`):**
+**Evidence from production (`orders-api`, Cloud Run, GCP project `example-project`):**
 
-1. `POST /api/cuenta/get-cuenta-detalle` shows recurring bursts of 8–20 s (peak 19.8 s), all with
+1. `POST /api/cuenta/get-account-detail` shows recurring bursts of 8–20 s (peak 19.8 s), all with
    `status: 200` — pure latency, no errors.
 2. The request log carries only the total (`jsonPayload.duration_ms`). The time cannot be
    attributed to a stage: cold start, SQL query, connection pool, or something not yet suspected.
@@ -155,8 +155,8 @@ by hand with no client library. It therefore falls on the owned side of the line
      OTLP/JSON in all three SDKs — rather than binding to the official TS and Python SDKs — is
      chosen deliberately, to keep one contract and make parity tests meaningful.
    - **Production is the final gate**, as the X4 experiment was for ADR-0004. The criterion is not
-     "spans appear in the backend"; it is that the 8–20 s bursts of `get-cuenta-detalle` become
-     **attributable to a concrete stage** (`socia` requirement REQ-2026-07-13-002, AC-3). Spans
+     "spans appear in the backend"; it is that the 8–20 s bursts of `get-account-detail` become
+     **attributable to a concrete stage** (a requirement of the consumer). Spans
      that arrive but leave the time unexplained mean the gate did not pass.
 
 10. **This amends the roadmap.** The roadmap stated that the architecture was complete and that
@@ -294,10 +294,10 @@ implementation across three languages for years.
   dividend of that decision.
 - **Three SDKs, three bindings to official APIs** (A4). Parity compares the spans our
   instrumentation produces, not a wire payload (G6 as redefined).
-- **The deployment owns the destination.** For `socia`, that means a Collector sidecar on Cloud
+- **The deployment owns the destination.** For the first consumer, that means a Collector sidecar on Cloud
   Run, in `code/infra`, alongside the existing Prometheus/GMP wiring. Two prerequisites will
   silently invalidate the final gate if missed: **Trace storage is currently disabled in the
-  `sociacacsi` project**, and the first deployment should sample at 100% — the daily burst is the
+  `example-project` project**, and the first deployment should sample at 100% — the daily burst is the
   event to capture, and partial sampling would likely miss it.
 - **The home-grown `trace_id` is superseded, not removed.** `X-Request-ID` remains the last
   propagation fallback and its original value is preserved as a separate log field, but the

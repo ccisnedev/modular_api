@@ -10,9 +10,9 @@ import 'package:test/test.dart';
 
 /// Tests for the outbound client span and header propagation.
 ///
-/// **This is the stage that satisfies G7 for `socia`.** Its
-/// `POST /api/cuenta/get-cuenta-detalle` performs no database work at all — it is an HTTP
-/// proxy to an upstream `impulsa` service (runbook D17). The client span is what will show
+/// **This is the stage that satisfies G7.** Its
+/// `POST /api/cuenta/get-account-detail` performs no database work at all — it is an HTTP
+/// proxy to an upstream `payments` service (runbook D17). The client span is what will show
 /// whether those 8–20 second bursts are spent in the outbound call or before it, which is
 /// the whole diagnostic the tracing work exists to produce.
 ///
@@ -21,7 +21,7 @@ import 'package:test/test.dart';
 /// - **Zero configuration.** Nothing is threaded into `ServiceClientConfig`. The parent is
 ///   the ambient server span and the tracer is the global provider, so a consumer who
 ///   enables tracing on `ModularApi` gets client spans without touching this package.
-/// - **`X-Request-ID` is forwarded whether or not tracing is on** (runbook D23). `impulsa`
+/// - **`X-Request-ID` is forwarded whether or not tracing is on** (runbook D23). `payments`
 ///   does not run modular_api, so trace context dies at that boundary — but if it logs the
 ///   request id it receives, log-level correlation survives a hop that traces cannot cross.
 void main() {
@@ -51,9 +51,9 @@ void main() {
     sentHeaders = <String, String>{};
     return HttpServiceClient(
       ServiceClientConfig(
-        serviceId: 'impulsa',
-        baseUrl: Uri.parse('https://impulsa.example/api'),
-        redactedSummary: 'impulsa.example',
+        serviceId: 'payments',
+        baseUrl: Uri.parse('https://payments.example/api'),
+        redactedSummary: 'payments.example',
         defaultHeaders: defaultHeaders,
       ),
       httpClient: MockClient((request) async {
@@ -66,7 +66,7 @@ void main() {
 
   Future<ServiceResult<ServiceResponse<Object?>>> call(
     HttpServiceClient client, {
-    String operationId = 'get-cuenta-detalle',
+    String operationId = 'get-account-detail',
   }) =>
       client.execute<Object?>(
         ServiceRequest(
@@ -80,7 +80,7 @@ void main() {
 
   group('with an active server span', () {
     Future<void> withinServerSpan(Future<void> Function() body) async {
-      final serverSpan = tracer.startSpan('POST /api/cuenta/get-cuenta-detalle',
+      final serverSpan = tracer.startSpan('POST /api/cuenta/get-account-detail',
           kind: SpanKind.server);
       await tracer.withSpanAsync(serverSpan, body);
       serverSpan.end();
@@ -89,14 +89,14 @@ void main() {
     test('emits a client span named by method and operation', () async {
       await withinServerSpan(() async => call(clientFor()));
 
-      expect(spans.spanNames, contains('POST get-cuenta-detalle'));
+      expect(spans.spanNames, contains('POST get-account-detail'));
     });
 
     test('the client span is kind=client and a child of the server span', () async {
       await withinServerSpan(() async => call(clientFor()));
 
-      final server = spans.findSpanByName('POST /api/cuenta/get-cuenta-detalle')!;
-      final client = spans.findSpanByName('POST get-cuenta-detalle')!;
+      final server = spans.findSpanByName('POST /api/cuenta/get-account-detail')!;
+      final client = spans.findSpanByName('POST get-account-detail')!;
 
       expect(client.kind, equals(SpanKind.client));
       expect(
@@ -114,10 +114,10 @@ void main() {
       // url.path is what the conventions ask for and what is safe to store.
       await withinServerSpan(() async => call(clientFor()));
 
-      final attributes = spans.findSpanByName('POST get-cuenta-detalle')!.attributes;
+      final attributes = spans.findSpanByName('POST get-account-detail')!.attributes;
 
-      expect(attributes.getString('server.address'), equals('impulsa.example'));
-      expect(attributes.getString('url.path'), contains('get-cuenta-detalle'));
+      expect(attributes.getString('server.address'), equals('payments.example'));
+      expect(attributes.getString('url.path'), contains('get-account-detail'));
       expect(attributes.getString('http.request.method'), equals('POST'));
     });
 
@@ -126,7 +126,7 @@ void main() {
       // server span, so a downstream hop attaches to the call rather than to its parent.
       await withinServerSpan(() async => call(clientFor()));
 
-      final client = spans.findSpanByName('POST get-cuenta-detalle')!;
+      final client = spans.findSpanByName('POST get-account-detail')!;
       final traceparent = sentHeaders['traceparent'];
 
       expect(traceparent, isNotNull);
@@ -137,7 +137,7 @@ void main() {
     test('a 500 from upstream sets the client span to error', () async {
       await withinServerSpan(() async => call(clientFor(status: 500)));
 
-      final client = spans.findSpanByName('POST get-cuenta-detalle')!;
+      final client = spans.findSpanByName('POST get-account-detail')!;
 
       expect(client.status, equals(SpanStatusCode.Error));
       expect(client.attributes.getInt('http.response.status_code'), equals(500));
@@ -150,32 +150,32 @@ void main() {
       await withinServerSpan(() async => call(clientFor(status: 404)));
 
       expect(
-        spans.findSpanByName('POST get-cuenta-detalle')!.status,
+        spans.findSpanByName('POST get-account-detail')!.status,
         equals(SpanStatusCode.Error),
       );
     });
 
     test('a transport failure ends the span with error and no status code', () async {
-      // The case that matters for the socia investigation: a call that never returns.
+      // The case that matters for the production latency investigation: a call that never returns.
       // There is no status code to record, and it is unambiguously an error.
       await withinServerSpan(
         () async => call(clientFor(throwError: http.ClientException('connection reset'))),
       );
 
-      final client = spans.findSpanByName('POST get-cuenta-detalle')!;
+      final client = spans.findSpanByName('POST get-account-detail')!;
 
       expect(client.status, equals(SpanStatusCode.Error));
       expect(client.attributes.getInt('http.response.status_code'), isNull);
     });
 
     test('the span duration is the outbound call, which is the G7 measurement', () async {
-      // What the whole tracing effort is for: separating "time spent calling impulsa" from
+      // What the whole tracing effort is for: separating "time spent calling payments" from
       // "time spent everywhere else". The assertion is only that the span is ended and
       // ordered inside its parent — the number itself is production's to report.
       await withinServerSpan(() async => call(clientFor()));
 
-      final server = spans.findSpanByName('POST /api/cuenta/get-cuenta-detalle')!;
-      final client = spans.findSpanByName('POST get-cuenta-detalle')!;
+      final server = spans.findSpanByName('POST /api/cuenta/get-account-detail')!;
+      final client = spans.findSpanByName('POST get-account-detail')!;
 
       expect(client.endTime, isNotNull);
       expect(
@@ -198,7 +198,7 @@ void main() {
     });
 
     test('it is forwarded even with tracing off', () async {
-      // The half of D23 that repairs D20: impulsa does not run modular_api, so trace
+      // The half of D23 that repairs D20: payments does not run modular_api, so trace
       // context dies there. If it logs the request id, log correlation still crosses the
       // boundary — and that must not depend on tracing being enabled.
       await call(clientFor(defaultHeaders: {requestIdHeader: 'order-42'}));

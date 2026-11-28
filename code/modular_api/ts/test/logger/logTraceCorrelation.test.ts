@@ -211,10 +211,10 @@ describe('the platform correlation field', () => {
   it('is emitted when the application supplies a formatter', async () => {
     const { app, captured } = appWith({
       tracing: options,
-      // What socia supplies: the GCP field, built from ids the framework resolved and a
+      // What the GCP app supplies: the GCP field, built from ids the framework resolved and a
       // project id only the application knows.
       traceFieldFormatter: (traceId, spanId) => ({
-        'logging.googleapis.com/trace': `projects/sociacacsi/traces/${traceId}`,
+        'logging.googleapis.com/trace': `projects/example-project/traces/${traceId}`,
         ...(spanId === undefined ? {} : { 'logging.googleapis.com/spanId': spanId }),
       }),
     });
@@ -223,7 +223,7 @@ describe('the platform correlation field', () => {
 
     const completed = lineWithMsg(captured.logs, 'request completed');
     expect(completed?.['logging.googleapis.com/trace']).toMatch(
-      /^projects\/sociacacsi\/traces\//,
+      /^projects\/example-project\/traces\//,
     );
     expect(completed?.['logging.googleapis.com/spanId']).toBeDefined();
   });

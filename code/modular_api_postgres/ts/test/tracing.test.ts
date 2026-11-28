@@ -55,7 +55,7 @@ const spanNames = () => exporter.getFinishedSpans().map((span) => span.name);
 
 const settings = DbConnectionSettings.fromEnvironment({
   MODULAR_API_POSTGRES_HOST: 'db.internal',
-  MODULAR_API_POSTGRES_DATABASE: 'socia',
+  MODULAR_API_POSTGRES_DATABASE: 'orders',
 });
 
 const selectUsers = new DbCommand({
@@ -111,7 +111,7 @@ describe('command spans', () => {
       clientFor().query(new DbCommand({ kind: DbCommandKind.query, text: 'SELECT 1' })),
     );
 
-    expect(spanNames()).toContain('SELECT socia');
+    expect(spanNames()).toContain('SELECT orders');
   });
 
   it('the span is kind=client and a child of the active server span', async () => {
@@ -131,7 +131,7 @@ describe('command spans', () => {
     const attributes = spanNamed('SELECT cuenta')?.attributes;
 
     expect(attributes?.['db.system.name']).toBe('postgresql');
-    expect(attributes?.['db.namespace']).toBe('socia');
+    expect(attributes?.['db.namespace']).toBe('orders');
     expect(attributes?.['db.operation.name']).toBe('SELECT');
     expect(attributes?.['db.query.summary']).toBe('SELECT cuenta');
     expect(attributes?.['server.address']).toBe('db.internal');
@@ -296,7 +296,7 @@ describe('transactions', () => {
       }),
     );
 
-    expect(spanNames()).toContain('TRANSACTION socia');
+    expect(spanNames()).toContain('TRANSACTION orders');
   });
 
   it('commands inside the body nest under the transaction span', async () => {
@@ -310,7 +310,7 @@ describe('transactions', () => {
       }),
     );
 
-    const transaction = spanNamed('TRANSACTION socia');
+    const transaction = spanNamed('TRANSACTION orders');
     const command = spanNamed('SELECT cuenta');
 
     expect(command?.parentSpanContext?.spanId).toBe(transaction?.spanContext().spanId);
@@ -331,7 +331,7 @@ describe('transactions', () => {
       ),
     );
 
-    const transaction = spanNamed('TRANSACTION socia');
+    const transaction = spanNamed('TRANSACTION orders');
 
     expect(transaction?.status.code).toBe(SpanStatusCode.ERROR);
     expect(transaction?.attributes['modular_api.db.failure_kind']).toBe('serialization');
@@ -345,13 +345,13 @@ describe('session acquisition (D28)', () => {
     // happened.
     await withinServerSpan(() => clientFor().query(selectUsers));
 
-    expect(spanNames()).toContain('CONNECT socia');
+    expect(spanNames()).toContain('CONNECT orders');
   });
 
   it('the acquisition span precedes the command span', async () => {
     await withinServerSpan(() => clientFor().query(selectUsers));
 
-    const connect = spanNamed('CONNECT socia');
+    const connect = spanNamed('CONNECT orders');
     const command = spanNamed('SELECT cuenta');
 
     expect(connect?.startTime[0]).toBeLessThanOrEqual(command?.startTime[0] ?? 0);
@@ -370,7 +370,7 @@ describe('session acquisition (D28)', () => {
       }).query(selectUsers),
     );
 
-    expect(spanNamed('CONNECT socia')?.status.code).toBe(SpanStatusCode.ERROR);
+    expect(spanNamed('CONNECT orders')?.status.code).toBe(SpanStatusCode.ERROR);
     expect(spanNames()).not.toContain('SELECT cuenta');
   });
 });
@@ -410,7 +410,7 @@ describe('without tracing configured (G3)', () => {
     const client = clientFor();
 
     expect(client.describe().engineId).toBe('postgres');
-    expect(client.settings.database).toBe('socia');
+    expect(client.settings.database).toBe('orders');
   });
 });
 

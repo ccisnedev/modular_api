@@ -1,8 +1,8 @@
 """Python mirror of ``test/tracing_test.dart``.
 
-**This is the stage that satisfies G7 for socia.** Its
-``POST /api/cuenta/get-cuenta-detalle`` performs no database work at all — it is an HTTP
-proxy to an upstream ``impulsa`` service (runbook D17) — so the client span is what shows
+**This is the stage that satisfies G7.** Its
+``POST /api/cuenta/get-account-detail`` performs no database work at all — it is an HTTP
+proxy to an upstream ``payments`` service (runbook D17) — so the client span is what shows
 whether those 8–20 second bursts are spent in the outbound call or before it.
 
 The propagator is set here, in the test, standing in for whatever the host configures
@@ -138,9 +138,9 @@ def _client(
 ) -> HttpServiceClient:
     client = HttpServiceClient(
         ServiceClientConfig(
-            service_id="impulsa",
-            base_url="https://impulsa.example/api",
-            redacted_summary="impulsa.example",
+            service_id="payments",
+            base_url="https://payments.example/api",
+            redacted_summary="payments.example",
             default_headers=default_headers or {},
         )
     )
@@ -151,7 +151,7 @@ def _client(
     return client
 
 
-def _call(client: HttpServiceClient, operation_id: str = "get-cuenta-detalle"):  # noqa: ANN201
+def _call(client: HttpServiceClient, operation_id: str = "get-account-detail"):  # noqa: ANN201
     return client.execute(
         ServiceRequest(
             operation_id=operation_id,
@@ -165,7 +165,7 @@ def _call(client: HttpServiceClient, operation_id: str = "get-cuenta-detalle"): 
 
 def _within_server_span(body) -> None:  # noqa: ANN001
     server_span = _tracer.start_span(
-        "POST /api/cuenta/get-cuenta-detalle", kind=SpanKind.SERVER
+        "POST /api/cuenta/get-account-detail", kind=SpanKind.SERVER
     )
     with trace.use_span(server_span, end_on_exit=True):
         body()
@@ -177,14 +177,14 @@ def _within_server_span(body) -> None:  # noqa: ANN001
 def test_emits_a_client_span_named_by_method_and_operation() -> None:
     _within_server_span(lambda: _call(_client()))
 
-    assert _span_named("POST get-cuenta-detalle") is not None
+    assert _span_named("POST get-account-detail") is not None
 
 
 def test_the_client_span_is_kind_client_and_a_child_of_the_server_span() -> None:
     _within_server_span(lambda: _call(_client()))
 
-    server = _require_span("POST /api/cuenta/get-cuenta-detalle")
-    client = _require_span("POST get-cuenta-detalle")
+    server = _require_span("POST /api/cuenta/get-account-detail")
+    client = _require_span("POST get-account-detail")
 
     assert client.kind is SpanKind.CLIENT
     assert _context(client).trace_id == _context(server).trace_id
@@ -196,10 +196,10 @@ def test_records_the_upstream_host_and_path_not_the_full_url() -> None:
     # what the conventions ask for and what is safe to store.
     _within_server_span(lambda: _call(_client()))
 
-    attributes = _attributes(_require_span("POST get-cuenta-detalle"))
+    attributes = _attributes(_require_span("POST get-account-detail"))
 
-    assert attributes["server.address"] == "impulsa.example"
-    assert "get-cuenta-detalle" in str(attributes["url.path"])
+    assert attributes["server.address"] == "payments.example"
+    assert "get-account-detail" in str(attributes["url.path"])
     assert attributes["http.request.method"] == "POST"
 
 
@@ -208,7 +208,7 @@ def test_injects_traceparent_derived_from_the_client_span() -> None:
     # span, so a downstream hop attaches to the call rather than to its parent.
     _within_server_span(lambda: _call(_client()))
 
-    client = _require_span("POST get-cuenta-detalle")
+    client = _require_span("POST get-account-detail")
     traceparent = _sent.get("traceparent")
 
     assert traceparent is not None
@@ -218,11 +218,11 @@ def test_injects_traceparent_derived_from_the_client_span() -> None:
 
 def test_a_500_from_upstream_sets_the_client_span_to_error() -> None:
     error = urllib.error.HTTPError(
-        "https://impulsa.example/api", 500, "boom", Message(), io.BytesIO(b"")
+        "https://payments.example/api", 500, "boom", Message(), io.BytesIO(b"")
     )
     _within_server_span(lambda: _call(_client(raises=error)))
 
-    client = _require_span("POST get-cuenta-detalle")
+    client = _require_span("POST get-account-detail")
 
     assert client.status.status_code is StatusCode.ERROR
     assert _attributes(client)["http.response.status_code"] == 500
@@ -232,31 +232,31 @@ def test_a_404_from_upstream_also_sets_error_unlike_a_server_span() -> None:
     # On a server span a 4xx is the caller's mistake. Here it means OUR outbound call failed,
     # which is a different thing and worth distinguishing in a waterfall.
     error = urllib.error.HTTPError(
-        "https://impulsa.example/api", 404, "missing", Message(), io.BytesIO(b"")
+        "https://payments.example/api", 404, "missing", Message(), io.BytesIO(b"")
     )
     _within_server_span(lambda: _call(_client(raises=error)))
 
-    assert _require_span("POST get-cuenta-detalle").status.status_code is StatusCode.ERROR
+    assert _require_span("POST get-account-detail").status.status_code is StatusCode.ERROR
 
 
 def test_a_transport_failure_ends_the_span_with_error_and_no_status_code() -> None:
-    # The case that matters for the socia investigation: a call that never returns.
+    # The case that matters for the production latency investigation: a call that never returns.
     _within_server_span(
         lambda: _call(_client(raises=urllib.error.URLError("connection reset")))
     )
 
-    client = _require_span("POST get-cuenta-detalle")
+    client = _require_span("POST get-account-detail")
 
     assert client.status.status_code is StatusCode.ERROR
     assert "http.response.status_code" not in _attributes(client)
 
 
 def test_the_span_is_ended_which_is_the_g7_measurement() -> None:
-    # What the whole effort is for: separating "time spent calling impulsa" from "time spent
+    # What the whole effort is for: separating "time spent calling payments" from "time spent
     # everywhere else". The number itself is production's to report.
     _within_server_span(lambda: _call(_client()))
 
-    assert _require_span("POST get-cuenta-detalle").end_time is not None
+    assert _require_span("POST get-account-detail").end_time is not None
 
 
 # --- X-Request-ID forwarding (D23) ------------------------------------------
@@ -271,7 +271,7 @@ def test_an_inbound_request_id_is_forwarded_on_the_outbound_call() -> None:
 
 
 def test_it_is_forwarded_even_with_tracing_off() -> None:
-    # The half of D23 that repairs D20: impulsa does not run modular_api, so trace context
+    # The half of D23 that repairs D20: payments does not run modular_api, so trace context
     # dies there. If it logs the request id, log correlation still crosses the boundary — and
     # that must not depend on tracing being enabled.
     _call(_client(default_headers={REQUEST_ID_HEADER: "order-42"}))

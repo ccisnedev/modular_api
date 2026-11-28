@@ -303,7 +303,7 @@ final class _TracedSessionProvider<S> implements DbSessionProvider<S> {
   ///
   /// Without it, time spent waiting for a connection lands in no span at all — an unattributed
   /// gap that reads as nothing having happened rather than as queueing for the pool. Pool
-  /// exhaustion is a live hypothesis for `socia`, so this is the number that confirms or kills it.
+  /// exhaustion is a suspect in production, so this is the number that confirms or kills it.
   @override
   Future<DbResult<DbSessionLease<S>>> acquire() async {
     final span = _startDbSpan(

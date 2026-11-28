@@ -17,12 +17,12 @@ import 'propagation_policy.dart';
 ///
 /// ```dart
 /// await OTel.initialize(
-///   serviceName: 'socia-api',
+///   serviceName: 'orders-api',
 ///   spanProcessor: BatchSpanProcessor(OtlpHttpSpanExporter(...)),
 /// );
 ///
 /// final api = ModularApi(
-///   title: 'socia-api',
+///   title: 'orders-api',
 ///   tracing: TracingOptions(tracerProvider: OTel.tracerProvider()),
 /// );
 /// ```

@@ -277,7 +277,7 @@ class HttpServiceClient:
             )
         except urllib.error.URLError as error:
             # No response at all: a timeout, a refused connection, a DNS failure. The case
-            # that matters most for the socia burst, and unambiguously an error.
+            # that matters most for the production latency bursts, and unambiguously an error.
             if tracing is not None:
                 tracing.complete(error=error)
             reason = error.reason
@@ -305,7 +305,7 @@ class HttpServiceClient:
                 )
         except (TimeoutError, socket.timeout) as error:
             # No response at all: a timeout, a refused connection, a DNS failure. The case
-            # that matters most for the socia burst, and unambiguously an error.
+            # that matters most for the production latency bursts, and unambiguously an error.
             if tracing is not None:
                 tracing.complete(error=error)
             result = ServiceResult[ServiceResponse[T]].from_failure(
@@ -320,7 +320,7 @@ class HttpServiceClient:
             )
         except Exception as error:  # noqa: BLE001
             # No response at all: a timeout, a refused connection, a DNS failure. The case
-            # that matters most for the socia burst, and unambiguously an error.
+            # that matters most for the production latency bursts, and unambiguously an error.
             if tracing is not None:
                 tracing.complete(error=error)
             result = ServiceResult[ServiceResponse[T]].from_failure(

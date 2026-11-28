@@ -226,11 +226,11 @@ void main() {
               logLevel: LogLevel.debug,
               serviceName: 'modular_api-test',
               sink: sink,
-              // What socia supplies: the GCP field, built from ids the framework
+              // What the GCP app supplies: the GCP field, built from ids the framework
               // resolved and a project id only the application knows.
               traceFieldFormatter: (traceId, spanId) => {
                 'logging.googleapis.com/trace':
-                    'projects/sociacacsi/traces/$traceId',
+                    'projects/example-project/traces/$traceId',
                 if (spanId != null) 'logging.googleapis.com/spanId': spanId,
               },
             ),
@@ -249,7 +249,7 @@ void main() {
       final completed = logs.firstWhere((log) => log['msg'] == 'request completed');
       expect(
         completed['logging.googleapis.com/trace'] as String,
-        startsWith('projects/sociacacsi/traces/'),
+        startsWith('projects/example-project/traces/'),
       );
       expect(completed['logging.googleapis.com/spanId'], isNotNull);
     });

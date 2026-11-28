@@ -10,9 +10,9 @@ import { HttpServiceClient, ServiceClientConfig, ServiceRequest } from '../src/r
 /**
  * TypeScript mirror of `test/tracing_test.dart`.
  *
- * **This is the stage that satisfies G7 for `socia`.** Its
- * `POST /api/cuenta/get-cuenta-detalle` performs no database work at all — it is an HTTP
- * proxy to an upstream `impulsa` service (runbook D17) — so the client span is what shows
+ * **This is the stage that satisfies G7.** Its
+ * `POST /api/cuenta/get-account-detail` performs no database work at all — it is an HTTP
+ * proxy to an upstream `payments` service (runbook D17) — so the client span is what shows
  * whether those 8–20 second bursts are spent in the outbound call or before it.
  *
  * Note the propagator source: `@opentelemetry/core` is imported **in the test only**, to
@@ -48,9 +48,9 @@ function clientFor({
   sentHeaders = {};
   return new HttpServiceClient(
     new ServiceClientConfig({
-      serviceId: 'impulsa',
-      baseUrl: 'https://impulsa.example/api',
-      redactedSummary: 'impulsa.example',
+      serviceId: 'payments',
+      baseUrl: 'https://payments.example/api',
+      redactedSummary: 'payments.example',
       defaultHeaders,
     }),
     {
@@ -66,7 +66,7 @@ function clientFor({
   );
 }
 
-const call = (client: HttpServiceClient, operationId = 'get-cuenta-detalle') =>
+const call = (client: HttpServiceClient, operationId = 'get-account-detail') =>
   client.execute(
     new ServiceRequest({
       operationId,
@@ -78,7 +78,7 @@ const call = (client: HttpServiceClient, operationId = 'get-cuenta-detalle') =>
   );
 
 async function withinServerSpan(body: () => Promise<unknown>): Promise<void> {
-  const serverSpan = tracer.startSpan('POST /api/cuenta/get-cuenta-detalle', {
+  const serverSpan = tracer.startSpan('POST /api/cuenta/get-account-detail', {
     kind: SpanKind.SERVER,
   });
   await otelContext.with(trace.setSpan(otelContext.active(), serverSpan), body);
@@ -89,14 +89,14 @@ describe('with an active server span', () => {
   it('emits a client span named by method and operation', async () => {
     await withinServerSpan(() => call(clientFor()));
 
-    expect(spanNamed('POST get-cuenta-detalle')).toBeDefined();
+    expect(spanNamed('POST get-account-detail')).toBeDefined();
   });
 
   it('the client span is kind=client and a child of the server span', async () => {
     await withinServerSpan(() => call(clientFor()));
 
-    const server = spanNamed('POST /api/cuenta/get-cuenta-detalle');
-    const client = spanNamed('POST get-cuenta-detalle');
+    const server = spanNamed('POST /api/cuenta/get-account-detail');
+    const client = spanNamed('POST get-account-detail');
 
     expect(client?.kind).toBe(SpanKind.CLIENT);
     expect(client?.spanContext().traceId).toBe(server?.spanContext().traceId);
@@ -108,10 +108,10 @@ describe('with an active server span', () => {
     // is what the conventions ask for and what is safe to store.
     await withinServerSpan(() => call(clientFor()));
 
-    const attributes = spanNamed('POST get-cuenta-detalle')?.attributes;
+    const attributes = spanNamed('POST get-account-detail')?.attributes;
 
-    expect(attributes?.['server.address']).toBe('impulsa.example');
-    expect(attributes?.['url.path']).toContain('get-cuenta-detalle');
+    expect(attributes?.['server.address']).toBe('payments.example');
+    expect(attributes?.['url.path']).toContain('get-account-detail');
     expect(attributes?.['http.request.method']).toBe('POST');
   });
 
@@ -120,7 +120,7 @@ describe('with an active server span', () => {
     // span, so a downstream hop attaches to the call rather than to its parent.
     await withinServerSpan(() => call(clientFor()));
 
-    const client = spanNamed('POST get-cuenta-detalle');
+    const client = spanNamed('POST get-account-detail');
 
     expect(sentHeaders['traceparent']).toBeDefined();
     expect(sentHeaders['traceparent']).toContain(client?.spanContext().traceId);
@@ -130,7 +130,7 @@ describe('with an active server span', () => {
   it('a 500 from upstream sets the client span to error', async () => {
     await withinServerSpan(() => call(clientFor({ status: 500 })));
 
-    const client = spanNamed('POST get-cuenta-detalle');
+    const client = spanNamed('POST get-account-detail');
 
     expect(client?.status.code).toBe(SpanStatusCode.ERROR);
     expect(client?.attributes['http.response.status_code']).toBe(500);
@@ -141,25 +141,25 @@ describe('with an active server span', () => {
     // failed, which is a different thing and worth distinguishing in a waterfall.
     await withinServerSpan(() => call(clientFor({ status: 404 })));
 
-    expect(spanNamed('POST get-cuenta-detalle')?.status.code).toBe(SpanStatusCode.ERROR);
+    expect(spanNamed('POST get-account-detail')?.status.code).toBe(SpanStatusCode.ERROR);
   });
 
   it('a transport failure ends the span with error and no status code', async () => {
-    // The case that matters for the socia investigation: a call that never returns.
+    // The case that matters for the production latency investigation: a call that never returns.
     await withinServerSpan(() => call(clientFor({ throwError: new Error('connection reset') })));
 
-    const client = spanNamed('POST get-cuenta-detalle');
+    const client = spanNamed('POST get-account-detail');
 
     expect(client?.status.code).toBe(SpanStatusCode.ERROR);
     expect(client?.attributes['http.response.status_code']).toBeUndefined();
   });
 
   it('the span is ended, which is the G7 measurement', async () => {
-    // What the whole effort is for: separating "time spent calling impulsa" from "time
+    // What the whole effort is for: separating "time spent calling payments" from "time
     // spent everywhere else". The number itself is production's to report.
     await withinServerSpan(() => call(clientFor()));
 
-    expect(spanNamed('POST get-cuenta-detalle')?.endTime).toBeDefined();
+    expect(spanNamed('POST get-account-detail')?.endTime).toBeDefined();
   });
 });
 
@@ -173,7 +173,7 @@ describe('X-Request-ID forwarding (D23)', () => {
   });
 
   it('it is forwarded even with tracing off', async () => {
-    // The half of D23 that repairs D20: impulsa does not run modular_api, so trace context
+    // The half of D23 that repairs D20: payments does not run modular_api, so trace context
     // dies there. If it logs the request id, log correlation still crosses the boundary —
     // and that must not depend on tracing being enabled.
     await call(clientFor({ defaultHeaders: { [REQUEST_ID_HEADER]: 'order-42' } }));

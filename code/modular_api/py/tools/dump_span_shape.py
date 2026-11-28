@@ -74,7 +74,7 @@ class Detalle(UseCase[DetalleInput, DetalleOutput]):
 
     async def execute(self) -> DetalleOutput:
         trace.get_tracer("span-shape").start_span(
-            "upstream impulsa", kind=SpanKind.CLIENT
+            "upstream payments", kind=SpanKind.CLIENT
         ).end()
         return DetalleOutput(echo=self.input.dni)
 
