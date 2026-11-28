@@ -31,6 +31,13 @@ from modular_api.graphql.read.sql_read_contract import (
 )
 
 
+def _escape_like(value: object) -> object:
+    """Escape backslash, percent, underscore and open bracket so a LIKE operand matches literally (paired with ESCAPE)."""
+    if not isinstance(value, str):
+        return value
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_").replace("[", "\\[")
+
+
 def sequence_operand(value: object) -> tuple[Any, ...]:
     """The operand of an ``IN`` condition, or empty when it is not a sequence.
 
@@ -272,11 +279,11 @@ class SqlServerReadCompiler:
                 raise ValueError(f"isNull expects a boolean for {condition.field}.")
             return f"{column_ref} IS NULL" if condition.value else f"{column_ref} IS NOT NULL"
         if condition.operator is SqlFilterOperator.CONTAINS:
-            return f"{column_ref} LIKE '%' + @{parameters.add(condition.value, type_=field.type)} + '%'"
+            return f"{column_ref} LIKE '%' + @{parameters.add(_escape_like(condition.value), type_=field.type)} + '%' ESCAPE '\\'"
         if condition.operator is SqlFilterOperator.STARTS_WITH:
-            return f"{column_ref} LIKE @{parameters.add(condition.value, type_=field.type)} + '%'"
+            return f"{column_ref} LIKE @{parameters.add(_escape_like(condition.value), type_=field.type)} + '%' ESCAPE '\\'"
         if condition.operator is SqlFilterOperator.ENDS_WITH:
-            return f"{column_ref} LIKE '%' + @{parameters.add(condition.value, type_=field.type)}"
+            return f"{column_ref} LIKE '%' + @{parameters.add(_escape_like(condition.value), type_=field.type)} ESCAPE '\\'"
         raise ValueError(f"Unsupported filter operator {condition.operator}.")
 
     def _build_order_by(

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
+
 from modular_api.graphql import (
     GraphqlCatalog,
     GraphqlCatalogBuild,
@@ -177,6 +179,64 @@ def test_eq_null_and_ne_null_are_rejected_in_favor_of_is_null() -> None:
         pass
     else:
         raise AssertionError("Expected ne null to fail")
+
+
+def _like_command(operator: SqlFilterOperator, value: object) -> SqlReadCommand:
+    return SqlServerReadCompiler().compile_collection(
+        catalog=_catalog(),
+        selection=SqlCollectionSelection(
+            object_id="sales.Customer",
+            projected_fields=("customerId",),
+            filter=SqlFilterCondition(field="customerCode", operator=operator, value=value),
+        ),
+    )
+
+
+def _values(command: SqlReadCommand) -> list[object]:
+    return [parameter.value for parameter in command.parameters]
+
+
+def test_like_operators_emit_escape_clause() -> None:
+    contains = _like_command(SqlFilterOperator.CONTAINS, "AC")
+    assert "WHERE [CustomerCode] LIKE '%' + @p0 + '%' ESCAPE '\\'" in contains.sql
+    assert _values(contains) == ["AC"]
+
+    starts = _like_command(SqlFilterOperator.STARTS_WITH, "AC")
+    assert "WHERE [CustomerCode] LIKE @p0 + '%' ESCAPE '\\'" in starts.sql
+    assert _values(starts) == ["AC"]
+
+    ends = _like_command(SqlFilterOperator.ENDS_WITH, "AC")
+    assert "WHERE [CustomerCode] LIKE '%' + @p0 ESCAPE '\\'" in ends.sql
+    assert _values(ends) == ["AC"]
+
+
+@pytest.mark.parametrize(
+    ("raw", "escaped"),
+    [
+        ("50%", "50\\%"),
+        ("a_b", "a\\_b"),
+        ("[A]", "\\[A]"),
+        ("c:\\dir", "c:\\\\dir"),
+        ("50%_[a]\\b", "50\\%\\_\\[a]\\\\b"),
+    ],
+)
+@pytest.mark.parametrize(
+    "operator",
+    [SqlFilterOperator.CONTAINS, SqlFilterOperator.STARTS_WITH, SqlFilterOperator.ENDS_WITH],
+)
+def test_like_operators_escape_wildcards_in_the_bound_value(
+    operator: SqlFilterOperator, raw: str, escaped: str
+) -> None:
+    assert _values(_like_command(operator, raw)) == [escaped]
+
+
+def test_like_operators_keep_null_and_leave_non_strings_untouched() -> None:
+    assert _values(_like_command(SqlFilterOperator.CONTAINS, None)) == [None]
+    assert _values(_like_command(SqlFilterOperator.CONTAINS, 12.5)) == [12.5]
+
+
+def test_non_like_string_values_are_not_escaped() -> None:
+    assert _values(_like_command(SqlFilterOperator.EQ, "50%_[a]\\")) == ["50%_[a]\\"]
 
 
 def test_executes_only_provider_compiled_commands_through_read_executor() -> None:

@@ -122,6 +122,53 @@ describe('SqlServerReadCompiler', () => {
     expect(command.parameters.map((parameter) => parameter.value)).toEqual([1, 2]);
   });
 
+  describe('LIKE wildcard escaping', () => {
+    const likeCommand = (operator: SqlFilterOperator, value: unknown): SqlReadCommand =>
+      compiler.compileCollection({
+        catalog: catalogFixture(),
+        selection: new SqlCollectionSelection({
+          objectId: 'sales.Customer',
+          projectedFields: ['customerId'],
+          filter: new SqlFilterCondition({ field: 'customerCode', operator, value }),
+        }),
+      });
+
+    it('emits ESCAPE for contains, startsWith and endsWith', () => {
+      const contains = likeCommand(SqlFilterOperator.Contains, 'AC');
+      expect(contains.sql).toContain(`WHERE [CustomerCode] LIKE '%' + @p0 + '%' ESCAPE '\\'`);
+      expect(contains.parameters.map((p) => p.value)).toEqual(['AC']);
+
+      const starts = likeCommand(SqlFilterOperator.StartsWith, 'AC');
+      expect(starts.sql).toContain(`WHERE [CustomerCode] LIKE @p0 + '%' ESCAPE '\\'`);
+      expect(starts.parameters.map((p) => p.value)).toEqual(['AC']);
+
+      const ends = likeCommand(SqlFilterOperator.EndsWith, 'AC');
+      expect(ends.sql).toContain(`WHERE [CustomerCode] LIKE '%' + @p0 ESCAPE '\\'`);
+      expect(ends.parameters.map((p) => p.value)).toEqual(['AC']);
+    });
+
+    it.each([
+      ['50%', '50\\%'],
+      ['a_b', 'a\\_b'],
+      ['[A]', '\\[A]'],
+      ['c:\\dir', 'c:\\\\dir'],
+      ['50%_[a]\\b', '50\\%\\_\\[a]\\\\b'],
+    ])('escapes %j as %j in the bound value', (raw, escaped) => {
+      for (const operator of [SqlFilterOperator.Contains, SqlFilterOperator.StartsWith, SqlFilterOperator.EndsWith]) {
+        expect(likeCommand(operator, raw).parameters[0]?.value).toBe(escaped);
+      }
+    });
+
+    it('keeps null as null and stringifies non-string values', () => {
+      expect(likeCommand(SqlFilterOperator.Contains, null).parameters[0]?.value).toBeNull();
+      expect(likeCommand(SqlFilterOperator.Contains, 12.5).parameters[0]?.value).toBe('12.5');
+    });
+
+    it('does not escape non-LIKE string values', () => {
+      expect(likeCommand(SqlFilterOperator.Eq, '50%_[a]\\').parameters[0]?.value).toBe('50%_[a]\\');
+    });
+  });
+
   it('eq null and ne null are rejected in favor of isNull', () => {
     expect(() =>
       compiler.compileCollection({
