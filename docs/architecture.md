@@ -694,6 +694,14 @@ Default method is `POST`.
 
 > GraphQL runtime support exists as an optional plugin. The CQRS profile remains
 > optional and is active only when that plugin is configured.
+>
+> **Status: experimental.** The GraphQL runtime is not a stable surface yet: its
+> API may change in a minor release, and new capabilities land only when a
+> consumer needs them. REST use cases are the recommended way to expose reads and
+> writes. Because it is a plugin, it can move to its own package without changes
+> to the core. The reasoning, and what would change it, is in
+> [GraphQL vs REST with AI agents](research/2026-11-graphql-vs-rest-with-ai-agents.md)
+> and [GraphQL in the community, agent era](research/2026-11-graphql-community-ai-agents.md).
 
 If the official GraphQL plugin is enabled, the architecture supports an
 optional separation between reads and writes:
