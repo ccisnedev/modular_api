@@ -104,6 +104,9 @@ architecture.
   broader cross-language plugin and GraphQL compatibility tests.
 - **Document the optional CQRS profile** (REST commands + GraphQL queries) and keep REST-only APIs
   a first-class supported mode in examples and docs.
+- **GraphQL runtime stays experimental.** REST use cases remain the recommended surface. The
+  runtime gets new work when a real consumer needs it; the decision criteria are in
+  `docs/research/2026-11-graphql-vs-rest-with-ai-agents.md`.
 
 ---
 
