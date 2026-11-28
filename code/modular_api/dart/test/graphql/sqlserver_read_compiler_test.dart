@@ -102,6 +102,67 @@ void main() {
       expect(command.parameters.map((parameter) => parameter.value).toList(growable: false), equals(const <Object?>[1, 2]));
     });
 
+    group('LIKE wildcard escaping', () {
+      SqlReadCommand likeCommand(SqlFilterOperator operator, Object? value) {
+        return compiler.compileCollection(
+          catalog: _catalog(),
+          selection: SqlCollectionSelection(
+            objectId: 'sales.Customer',
+            projectedFields: const <String>['customerId'],
+            filter: SqlFilterCondition(
+              field: 'customerCode',
+              operator: operator,
+              value: value,
+            ),
+          ),
+        );
+      }
+
+      Object? firstValue(SqlReadCommand command) => command.parameters.first.value;
+
+      test('emits ESCAPE for contains, startsWith and endsWith', () {
+        final containsCmd = likeCommand(SqlFilterOperator.contains, 'AC');
+        expect(containsCmd.sql, contains(r"WHERE [CustomerCode] LIKE '%' + @p0 + '%' ESCAPE '\'"));
+        expect(firstValue(containsCmd), 'AC');
+
+        final starts = likeCommand(SqlFilterOperator.startsWith, 'AC');
+        expect(starts.sql, contains(r"WHERE [CustomerCode] LIKE @p0 + '%' ESCAPE '\'"));
+        expect(firstValue(starts), 'AC');
+
+        final ends = likeCommand(SqlFilterOperator.endsWith, 'AC');
+        expect(ends.sql, contains(r"WHERE [CustomerCode] LIKE '%' + @p0 ESCAPE '\'"));
+        expect(firstValue(ends), 'AC');
+      });
+
+      test('escapes backslash, percent, underscore and open bracket in the bound value', () {
+        const cases = <String, String>{
+          '50%': r'50\%',
+          'a_b': r'a\_b',
+          '[A]': r'\[A]',
+          r'c:\dir': r'c:\\dir',
+          r'50%_[a]\b': r'50\%\_\[a]\\b',
+        };
+        for (final operator in const <SqlFilterOperator>[
+          SqlFilterOperator.contains,
+          SqlFilterOperator.startsWith,
+          SqlFilterOperator.endsWith,
+        ]) {
+          cases.forEach((raw, escaped) {
+            expect(firstValue(likeCommand(operator, raw)), escaped, reason: '$operator $raw');
+          });
+        }
+      });
+
+      test('keeps null as null and stringifies non-string values', () {
+        expect(firstValue(likeCommand(SqlFilterOperator.contains, null)), isNull);
+        expect(firstValue(likeCommand(SqlFilterOperator.contains, 12.5)), '12.5');
+      });
+
+      test('does not escape non-LIKE string values', () {
+        expect(firstValue(likeCommand(SqlFilterOperator.eq, r'50%_[a]\')), r'50%_[a]\');
+      });
+    });
+
     test('eq null and ne null are rejected in favor of isNull', () {
       expect(
         () => compiler.compileCollection(

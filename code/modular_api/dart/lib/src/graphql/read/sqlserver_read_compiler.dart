@@ -240,11 +240,11 @@ final class SqlServerReadCompiler implements SqlReadCompiler {
         }
         return value ? '$columnRef IS NULL' : '$columnRef IS NOT NULL';
       case SqlFilterOperator.contains:
-        return "$columnRef LIKE '%' + @${parameters.add(condition.value, type: field.type)} + '%'";
+        return "$columnRef LIKE '%' + @${parameters.add(_escapeLike(condition.value), type: field.type)} + '%' ESCAPE '\\'";
       case SqlFilterOperator.startsWith:
-        return "$columnRef LIKE @${parameters.add(condition.value, type: field.type)} + '%'";
+        return "$columnRef LIKE @${parameters.add(_escapeLike(condition.value), type: field.type)} + '%' ESCAPE '\\'";
       case SqlFilterOperator.endsWith:
-        return "$columnRef LIKE '%' + @${parameters.add(condition.value, type: field.type)}";
+        return "$columnRef LIKE '%' + @${parameters.add(_escapeLike(condition.value), type: field.type)} ESCAPE '\\'";
     }
   }
 
@@ -321,6 +321,20 @@ final class SqlServerReadCompiler implements SqlReadCompiler {
         'Unknown source column $column for ${object.id}.',
       ),
     );
+  }
+
+  /// Escapes LIKE metacharacters so the value matches literally. Pairs with
+  /// `ESCAPE '\'` in the generated SQL.
+  Object? _escapeLike(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    return value
+        .toString()
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_')
+        .replaceAll('[', r'\[');
   }
 }
 

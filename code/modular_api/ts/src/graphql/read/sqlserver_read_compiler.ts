@@ -243,11 +243,11 @@ export class SqlServerReadCompiler implements SqlReadCompiler {
         }
         return condition.value ? `${columnRef} IS NULL` : `${columnRef} IS NOT NULL`;
       case SqlFilterOperator.Contains:
-        return `${columnRef} LIKE '%' + @${parameters.add(condition.value, field.type)} + '%'`;
+        return `${columnRef} LIKE '%' + @${parameters.add(escapeLikeValue(condition.value), field.type)} + '%' ESCAPE '\\'`;
       case SqlFilterOperator.StartsWith:
-        return `${columnRef} LIKE @${parameters.add(condition.value, field.type)} + '%'`;
+        return `${columnRef} LIKE @${parameters.add(escapeLikeValue(condition.value), field.type)} + '%' ESCAPE '\\'`;
       case SqlFilterOperator.EndsWith:
-        return `${columnRef} LIKE '%' + @${parameters.add(condition.value, field.type)}`;
+        return `${columnRef} LIKE '%' + @${parameters.add(escapeLikeValue(condition.value), field.type)} ESCAPE '\\'`;
     }
   }
 
@@ -358,6 +358,14 @@ export class SqlCatalogReadDispatcher {
     const command = this.compiler.compileRelationBatch({ catalog: options.catalog, selection: options.selection });
     return this.executor.execute(command, options.context);
   }
+}
+
+/** Escapes `\`, `%`, `_` and `[` so the value is matched literally by `LIKE ... ESCAPE '\'`. */
+function escapeLikeValue(value: unknown): unknown {
+  if (value == null) {
+    return value;
+  }
+  return String(value).replace(/[\\%_[]/g, (character) => `\\${character}`);
 }
 
 class SqlParameterBuilder {
