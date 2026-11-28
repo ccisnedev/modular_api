@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/ccisnedev/modular_api/compare/modular_api_rest_client-v0.7.2...modular_api_rest_client-v0.7.3) (2026-11-28)
+
+
+### Bug Fixes
+
+* remove references to private projects from code comments, tests and docs ([#85](https://github.com/ccisnedev/modular_api/issues/85)) ([23e5acc](https://github.com/ccisnedev/modular_api/commit/23e5acc52f28aa657e5e618d2ff11d0518b3f36b))
+
 ## [0.7.2](https://github.com/ccisnedev/modular_api/compare/modular_api_rest_client-v0.7.1...modular_api_rest_client-v0.7.2) (2026-11-26)
 
 
