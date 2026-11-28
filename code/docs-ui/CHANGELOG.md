@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.2](https://github.com/ccisnedev/modular_api/compare/docs-ui-v0.1.1...docs-ui-v0.1.2) (2026-11-28)
+
+
+### Features
+
+* graphql plugin release train and complementary package publishing ([267ff38](https://github.com/ccisnedev/modular_api/commit/267ff3877fe96089d4e43145216c111f2e028b58))
+
 ## 0.1.1 — 2026-03-14
 
 ### Fixed
