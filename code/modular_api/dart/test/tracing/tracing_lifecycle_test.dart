@@ -174,8 +174,8 @@ void main() {
 
     test('the instrumentation name can be overridden', () {
       expect(
-        options(instrumentationName: 'socia-api').instrumentationName,
-        equals('socia-api'),
+        options(instrumentationName: 'orders-api').instrumentationName,
+        equals('orders-api'),
       );
     });
   });

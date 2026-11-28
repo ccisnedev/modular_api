@@ -54,7 +54,7 @@ void main() {
   Future<Response> send(
     Handler handler, {
     String method = 'GET',
-    String path = '/api/cuenta/get-cuenta-detalle',
+    String path = '/api/cuenta/get-account-detail',
     Map<String, String> headers = const <String, String>{},
   }) async =>
       handler(
@@ -68,7 +68,7 @@ void main() {
     test('is emitted for a request, named by method and route', () async {
       await send(pipelineFor(okHandler()));
 
-      final span = spans.findSpanByName('GET /api/cuenta/get-cuenta-detalle');
+      final span = spans.findSpanByName('GET /api/cuenta/get-account-detail');
       expect(span, isNotNull);
     });
 
@@ -76,7 +76,7 @@ void main() {
       await send(pipelineFor(okHandler()));
 
       expect(
-        spans.findSpanByName('GET /api/cuenta/get-cuenta-detalle')!.kind,
+        spans.findSpanByName('GET /api/cuenta/get-account-detail')!.kind,
         equals(SpanKind.server),
       );
     });
@@ -85,12 +85,12 @@ void main() {
       await send(pipelineFor(okHandler()));
 
       final attributes =
-          spans.findSpanByName('GET /api/cuenta/get-cuenta-detalle')!.attributes;
+          spans.findSpanByName('GET /api/cuenta/get-account-detail')!.attributes;
 
       expect(attributes.getString('http.request.method'), equals('GET'));
       expect(
         attributes.getString('url.path'),
-        equals('/api/cuenta/get-cuenta-detalle'),
+        equals('/api/cuenta/get-account-detail'),
       );
       expect(attributes.getInt('http.response.status_code'), equals(200));
     });
@@ -105,7 +105,7 @@ void main() {
 
       expect(
         spans
-            .findSpanByName('GET /api/cuenta/get-cuenta-detalle')!
+            .findSpanByName('GET /api/cuenta/get-account-detail')!
             .attributes
             .getString('http.request.header.x-request-id'),
         equals('order-42'),
@@ -117,7 +117,7 @@ void main() {
 
       expect(
         spans
-            .findSpanByName('GET /api/cuenta/get-cuenta-detalle')!
+            .findSpanByName('GET /api/cuenta/get-account-detail')!
             .attributes
             .getString('http.request.header.x-request-id'),
         isNull,
@@ -136,7 +136,7 @@ void main() {
         },
       );
 
-      final span = spans.findSpanByName('GET /api/cuenta/get-cuenta-detalle')!;
+      final span = spans.findSpanByName('GET /api/cuenta/get-account-detail')!;
 
       expect(span.spanContext.traceId.hexString, equals(traceIdHex));
       expect(span.spanContext.parentSpanId?.hexString, equals(parentSpanIdHex));
@@ -145,7 +145,7 @@ void main() {
     test('is a root span when no trace header arrives', () async {
       await send(pipelineFor(okHandler()));
 
-      final span = spans.findSpanByName('GET /api/cuenta/get-cuenta-detalle')!;
+      final span = spans.findSpanByName('GET /api/cuenta/get-account-detail')!;
 
       expect(span.spanContext.traceId.hexString, isNot(equals(traceIdHex)));
       // A root span reports an all-zero parent rather than a null one, which is the
@@ -160,7 +160,7 @@ void main() {
       await send(pipelineFor(okHandler(503)));
 
       expect(
-        spans.findSpanByName('GET /api/cuenta/get-cuenta-detalle')!.status,
+        spans.findSpanByName('GET /api/cuenta/get-account-detail')!.status,
         equals(SpanStatusCode.Error),
       );
     });
@@ -171,7 +171,7 @@ void main() {
       await send(pipelineFor(okHandler(404)));
 
       expect(
-        spans.findSpanByName('GET /api/cuenta/get-cuenta-detalle')!.status,
+        spans.findSpanByName('GET /api/cuenta/get-account-detail')!.status,
         isNot(equals(SpanStatusCode.Error)),
       );
     });
@@ -184,7 +184,7 @@ void main() {
 
       await expectLater(send(handler), throwsA(isA<StateError>()));
 
-      final span = spans.findSpanByName('GET /api/cuenta/get-cuenta-detalle');
+      final span = spans.findSpanByName('GET /api/cuenta/get-account-detail');
       expect(span, isNotNull);
       expect(span!.status, equals(SpanStatusCode.Error));
     });
@@ -204,7 +204,7 @@ void main() {
 
       await send(pipelineFor(okHandler(), inner: [pluginMiddleware]));
 
-      final span = spans.findSpanByName('GET /api/cuenta/get-cuenta-detalle')!;
+      final span = spans.findSpanByName('GET /api/cuenta/get-account-detail')!;
 
       expect(observedInsidePlugin, isNotNull);
       expect(
@@ -231,7 +231,7 @@ void main() {
 
       await send(handler);
 
-      final parent = spans.findSpanByName('GET /api/cuenta/get-cuenta-detalle')!;
+      final parent = spans.findSpanByName('GET /api/cuenta/get-account-detail')!;
       final child = spans.findSpanByName('downstream.work')!;
 
       expect(child.spanContext.traceId.hexString,

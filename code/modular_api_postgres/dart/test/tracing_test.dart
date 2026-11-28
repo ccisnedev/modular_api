@@ -16,7 +16,7 @@ import 'package:test/test.dart';
 /// That is also why enabling tracing here is `traceDbClient(client)` rather than an options flag
 /// on `DbClient`: the contract is the seam, so the seam is where instrumentation goes.
 ///
-/// **The SQL text is off by default** (D9). `socia` is preparing an external security audit and
+/// **The SQL text is off by default** (D9). A consumer is preparing an external security audit and
 /// SQL can carry personal data. The attribute is `db.query.text` — `db.statement` is deprecated,
 /// which is a correction this stage made after checking the semantic conventions package itself.
 void main() {
@@ -35,7 +35,7 @@ void main() {
   final settings = DbConnectionSettings.fromEnvironment(
     environment: const {
       'MODULAR_API_POSTGRES_HOST': 'db.internal',
-      'MODULAR_API_POSTGRES_DATABASE': 'socia',
+      'MODULAR_API_POSTGRES_DATABASE': 'orders',
     },
   );
 
@@ -87,7 +87,7 @@ void main() {
         ),
       );
 
-      expect(spans.spanNames, contains('SELECT socia'));
+      expect(spans.spanNames, contains('SELECT orders'));
     });
 
     test('the span is kind=client and a child of the active server span', () async {
@@ -113,7 +113,7 @@ void main() {
       final attributes = spans.findSpanByName('SELECT cuenta')!.attributes;
 
       expect(attributes.getString('db.system.name'), equals('postgresql'));
-      expect(attributes.getString('db.namespace'), equals('socia'));
+      expect(attributes.getString('db.namespace'), equals('orders'));
       expect(attributes.getString('db.operation.name'), equals('SELECT'));
       expect(attributes.getString('db.query.summary'), equals('SELECT cuenta'));
       expect(attributes.getString('server.address'), equals('db.internal'));
@@ -302,7 +302,7 @@ void main() {
         }),
       );
 
-      expect(spans.spanNames, contains('TRANSACTION socia'));
+      expect(spans.spanNames, contains('TRANSACTION orders'));
     });
 
     test('commands inside the body nest under the transaction span', () async {
@@ -316,7 +316,7 @@ void main() {
         }),
       );
 
-      final transaction = spans.findSpanByName('TRANSACTION socia')!;
+      final transaction = spans.findSpanByName('TRANSACTION orders')!;
       final command = spans.findSpanByName('SELECT cuenta')!;
 
       expect(
@@ -340,7 +340,7 @@ void main() {
         ),
       );
 
-      final transaction = spans.findSpanByName('TRANSACTION socia')!;
+      final transaction = spans.findSpanByName('TRANSACTION orders')!;
 
       expect(transaction.status, equals(SpanStatusCode.Error));
       expect(
@@ -357,13 +357,13 @@ void main() {
       // nothing having happened.
       await withinServerSpan(() async => clientFor().query(selectUsers));
 
-      expect(spans.spanNames, contains('CONNECT socia'));
+      expect(spans.spanNames, contains('CONNECT orders'));
     });
 
     test('the acquisition span precedes the command span', () async {
       await withinServerSpan(() async => clientFor().query(selectUsers));
 
-      final connect = spans.findSpanByName('CONNECT socia')!;
+      final connect = spans.findSpanByName('CONNECT orders')!;
       final command = spans.findSpanByName('SELECT cuenta')!;
 
       expect(connect.endTime!.isAfter(command.startTime), isFalse);
@@ -390,7 +390,7 @@ void main() {
 
       await withinServerSpan(() async => client.query(selectUsers));
 
-      expect(spans.findSpanByName('CONNECT socia')!.status, equals(SpanStatusCode.Error));
+      expect(spans.findSpanByName('CONNECT orders')!.status, equals(SpanStatusCode.Error));
       expect(spans.spanNames, isNot(contains('SELECT cuenta')));
     });
   });
@@ -430,7 +430,7 @@ void main() {
       final client = clientFor();
 
       expect(client.describe().engineId, equals('postgres'));
-      expect(client.settings.database, equals('socia'));
+      expect(client.settings.database, equals('orders'));
     });
   });
 }

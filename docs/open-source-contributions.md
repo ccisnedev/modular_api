@@ -78,7 +78,7 @@ dependency and ships no server instrumentation, so that gap is real.
 | **Confidence** | Medium — the code is certain, the eventual home is not |
 | **Blocked on** | Nothing. This one is independent of dartastic's donation timeline, which makes it the safest to act on. |
 
-**How we found it.** Cloud Run injects `X-Cloud-Trace-Context` alongside `traceparent`, and `socia`'s
+**How we found it.** Cloud Run injects `X-Cloud-Trace-Context` alongside `traceparent`, and a consumer's
 latency investigation needs the legacy header honoured to link our server span to the platform's request
 span. No propagator for it exists in any Dart package — verified on pub.dev on 2026-07-30, including
 `dartastic_opentelemetry`, `opentelemetry`, `comon_otel` and `purple_otel_dio`.
@@ -116,7 +116,7 @@ first is decisive given that donation is the stated goal:
    giving it away a project.
 2. **modular_api does not depend on it, so there is no coupling to pay for.** After the architectural
    correction, core's default propagator chain is W3C only and the Cloud Trace propagator is supplied by
-   the *application*. `socia` depends on this package; the framework does not. Nothing about keeping them
+   the *application*. The application depends on this package; the framework does not. Nothing about keeping them
    together would have been convenient anyway.
 3. **Provenance is auditable.** If OpenTelemetry accepts a donation they need clear licence and
    authorship history. A repository containing only this package is trivial to audit; a monorepo's
@@ -125,13 +125,13 @@ first is decisive given that donation is the stated goal:
    — `modular_api`, `cli_router`, `service_client` and the rest are each their own repo. A new sibling is
    the existing pattern, not a new one.
 
-**Location:** `macss/opentelemetry_propagator_gcp`, sibling to `modular_api`. During development `socia`
+**Location:** `macss/opentelemetry_propagator_gcp`, sibling to `modular_api`. During development the consuming application
 points at it with a `path:` override, the same mechanism Stage 14 of the tracing runbook already uses for
 the framework itself; the override is removed when the package is published.
 
 **Sequencing.** It must exist before the runbook's Stage 3, because Stage 3 composes the default
 propagator chain and needs to know what that chain does *not* include. It must be published before or
-alongside `0.7.0`, so `socia`'s dogfood runs against a published version rather than a local path.
+alongside `0.7.0`, so the consumer's dogfood runs against a published version rather than a local path.
 
 ---
 

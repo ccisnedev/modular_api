@@ -169,7 +169,7 @@ class _DetalleUseCase implements UseCase<_DetalleInput, _DetalleOutput> {
   Future<_DetalleOutput> execute() async {
     final span = OTelAPI.tracerProvider()
         .getTracer('span-shape')
-        .startSpan('upstream impulsa', kind: SpanKind.client);
+        .startSpan('upstream payments', kind: SpanKind.client);
     span.end();
     return _DetalleOutput(echo: input.dni);
   }

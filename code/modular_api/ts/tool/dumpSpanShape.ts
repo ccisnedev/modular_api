@@ -66,7 +66,7 @@ class Detalle implements UseCase<DetalleInput, DetalleOutput> {
   }
 
   async execute(): Promise<DetalleOutput> {
-    trace.getTracer('span-shape').startSpan('upstream impulsa', { kind: SpanKind.CLIENT }).end();
+    trace.getTracer('span-shape').startSpan('upstream payments', { kind: SpanKind.CLIENT }).end();
 
     const output = new DetalleOutput();
     output.echo = this.input.dni;

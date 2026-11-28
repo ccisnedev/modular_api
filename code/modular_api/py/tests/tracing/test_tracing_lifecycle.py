@@ -100,7 +100,7 @@ def test_the_instrumentation_name_defaults_to_modular_api() -> None:
 
 def test_the_instrumentation_name_can_be_overridden() -> None:
     options = TracingOptions(
-        tracer_provider=_provider, instrumentation_name="socia-api"
+        tracer_provider=_provider, instrumentation_name="orders-api"
     )
 
-    assert options.instrumentation_name == "socia-api"
+    assert options.instrumentation_name == "orders-api"

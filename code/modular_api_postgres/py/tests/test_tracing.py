@@ -55,7 +55,7 @@ _T = TypeVar("_T")
 _SETTINGS = DbConnectionSettings.from_environment(
     environment={
         "MODULAR_API_POSTGRES_HOST": "db.internal",
-        "MODULAR_API_POSTGRES_DATABASE": "socia",
+        "MODULAR_API_POSTGRES_DATABASE": "orders",
     }
 )
 
@@ -130,7 +130,7 @@ def test_an_unlabelled_command_falls_back_to_operation_and_namespace() -> None:
         lambda: _client().query(DbCommand(kind=DbCommandKind.QUERY, text="SELECT 1"))
     )
 
-    assert "SELECT socia" in _span_names()
+    assert "SELECT orders" in _span_names()
 
 
 def test_the_span_is_kind_client_and_a_child_of_the_active_server_span() -> None:
@@ -154,7 +154,7 @@ def test_records_the_stable_database_attributes() -> None:
     attributes = span.attributes or {}
 
     assert attributes["db.system.name"] == "postgresql"
-    assert attributes["db.namespace"] == "socia"
+    assert attributes["db.namespace"] == "orders"
     assert attributes["db.operation.name"] == "SELECT"
     assert attributes["db.query.summary"] == "SELECT cuenta"
     assert attributes["server.address"] == "db.internal"
@@ -341,7 +341,7 @@ def _transaction_body(context: DbTransactionContext[str]) -> DbResult[int]:
 def test_a_transaction_span_wraps_the_body() -> None:
     _within_server_span(lambda: _client().transaction(_transaction_body))
 
-    assert "TRANSACTION socia" in _span_names()
+    assert "TRANSACTION orders" in _span_names()
 
 
 def test_commands_inside_the_body_nest_under_the_transaction_span() -> None:
@@ -350,7 +350,7 @@ def test_commands_inside_the_body_nest_under_the_transaction_span() -> None:
     # issued through the transaction context as well.
     _within_server_span(lambda: _client().transaction(_transaction_body))
 
-    transaction = _span_named("TRANSACTION socia")
+    transaction = _span_named("TRANSACTION orders")
     command = _span_named("SELECT cuenta")
 
     assert transaction is not None and command is not None
@@ -372,7 +372,7 @@ def test_a_failed_transaction_sets_error_status_on_the_transaction_span() -> Non
 
     _within_server_span(lambda: _client().transaction(failing))
 
-    transaction = _span_named("TRANSACTION socia")
+    transaction = _span_named("TRANSACTION orders")
     assert transaction is not None
     assert transaction.status.status_code is StatusCode.ERROR
     assert (transaction.attributes or {})["modular_api.db.failure_kind"] == "serialization"
@@ -387,13 +387,13 @@ def test_acquiring_a_session_produces_its_own_span() -> None:
     # happened.
     _within_server_span(lambda: _client().query(_SELECT_USERS))
 
-    assert "CONNECT socia" in _span_names()
+    assert "CONNECT orders" in _span_names()
 
 
 def test_the_acquisition_span_precedes_the_command_span() -> None:
     _within_server_span(lambda: _client().query(_SELECT_USERS))
 
-    connect = _span_named("CONNECT socia")
+    connect = _span_named("CONNECT orders")
     command = _span_named("SELECT cuenta")
 
     assert connect is not None and command is not None
@@ -414,7 +414,7 @@ def test_a_failed_acquisition_is_an_error_and_no_command_span_follows() -> None:
         ).query(_SELECT_USERS)
     )
 
-    connect = _span_named("CONNECT socia")
+    connect = _span_named("CONNECT orders")
     assert connect is not None
     assert connect.status.status_code is StatusCode.ERROR
     assert "SELECT cuenta" not in _span_names()
@@ -457,7 +457,7 @@ def test_wrapping_preserves_the_provider_description_and_settings() -> None:
     client = _client()
 
     assert client.describe().engine_id == "postgres"
-    assert client.settings.database == "socia"
+    assert client.settings.database == "orders"
 
 
 # --- fakes ------------------------------------------------------------------

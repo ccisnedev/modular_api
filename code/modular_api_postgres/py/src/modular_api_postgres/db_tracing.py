@@ -326,8 +326,8 @@ class _TracedSessionProvider(Generic[S]):
 
         Without it, time spent waiting for a connection lands in no span at all — an unattributed
         gap that reads as nothing having happened rather than as queueing for the pool. Pool
-        exhaustion is a live hypothesis for ``socia``, so this is the number that confirms or kills
-        it.
+        exhaustion is a live hypothesis in production, so this is the number that confirms or
+        kills it.
         """
         span = _start_db_span(self._tracer, target=self._target, operation="CONNECT")
         result = self._inner.acquire()

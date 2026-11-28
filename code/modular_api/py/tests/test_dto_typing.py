@@ -45,10 +45,10 @@ class _ProbeOutput(Output):
 
 
 def test_input_from_json_returns_the_subclass() -> None:
-    parsed = _ProbeInput.from_json({"name": "socia"})
+    parsed = _ProbeInput.from_json({"name": "orders"})
 
     assert_type(parsed, _ProbeInput)
-    assert parsed.name == "socia"
+    assert parsed.name == "orders"
     assert isinstance(parsed, _ProbeInput)
 
 

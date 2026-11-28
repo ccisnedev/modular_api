@@ -389,7 +389,7 @@ export class HttpServiceClient implements ServiceClient {
       );
     } catch (error) {
       // No response at all: a timeout, an aborted request, a refused connection. The case
-      // that matters most for the socia burst, and unambiguously an error.
+      // that matters most for the production latency bursts, and unambiguously an error.
       tracing.complete({ error });
       if (controller.signal.aborted || isAbortError(error)) {
         return ServiceResult.failure(

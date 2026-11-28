@@ -213,17 +213,17 @@ def test_the_platform_field_is_absent_by_default() -> None:
 def test_the_platform_field_is_emitted_when_a_formatter_is_supplied() -> None:
     logs = _logs_for(
         tracing=_options,
-        # What socia supplies: the GCP field, built from ids the framework resolved and a
+        # What the GCP app supplies: the GCP field, built from ids the framework resolved and a
         # project id only the application knows.
         trace_field_formatter=lambda trace_id, span_id: {
-            "logging.googleapis.com/trace": f"projects/sociacacsi/traces/{trace_id}",
+            "logging.googleapis.com/trace": f"projects/example-project/traces/{trace_id}",
             **({} if span_id is None else {"logging.googleapis.com/spanId": span_id}),
         },
     )
 
     completed = _line(logs, "request completed")
     assert str(completed["logging.googleapis.com/trace"]).startswith(
-        "projects/sociacacsi/traces/"
+        "projects/example-project/traces/"
     )
     assert completed["logging.googleapis.com/spanId"] is not None
 

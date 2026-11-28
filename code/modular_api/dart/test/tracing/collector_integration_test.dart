@@ -31,7 +31,7 @@ import 'package:test/test.dart';
 /// **The three-package hierarchy is not asserted here**, though the runbook first planned it.
 /// Core cannot dev-depend on `modular_api_rest_client` and `modular_api_postgres` by path
 /// without making itself unpublishable, and simulating their spans with hand-built ones would
-/// prove only that the SDK nests spans. That assertion belongs to Stage 14, where `socia`
+/// prove only that the SDK nests spans. That assertion belongs to Stage 14, where a consumer
 /// exercises all three packages in a real deployment.
 void main() {
   /// Where the Collector's `file` exporter writes, as seen from this test's working directory.
@@ -262,7 +262,7 @@ void main() {
     );
 
     final server = spans.firstWhere((span) => span['name'] == 'POST /api/cuenta/detalle');
-    final nested = spans.firstWhere((span) => span['name'] == 'upstream impulsa');
+    final nested = spans.firstWhere((span) => span['name'] == 'upstream payments');
 
     expect(nested['traceId'], equals(server['traceId']));
     expect(nested['parentSpanId'], equals(server['spanId']));
@@ -340,7 +340,7 @@ class _DetalleOutput extends Output {
       };
 }
 
-/// Stands in for `socia`'s `get-cuenta-detalle`, which is an HTTP proxy with no database work.
+/// Stands in for a consumer's `get-account-detail`, which is an HTTP proxy with no database work.
 ///
 /// The nested span is created with the plain OTel API and no argument threaded in, which is the
 /// point: the handler reaches the server span through ambient context alone. That is the same
@@ -365,7 +365,7 @@ class _DetalleUseCase implements UseCase<_DetalleInput, _DetalleOutput> {
   Future<_DetalleOutput> execute() async {
     final span = OTelAPI.tracerProvider()
         .getTracer('collector-integration-test')
-        .startSpan('upstream impulsa', kind: SpanKind.client);
+        .startSpan('upstream payments', kind: SpanKind.client);
     await Future<void>.delayed(const Duration(milliseconds: 5));
     span.end();
 

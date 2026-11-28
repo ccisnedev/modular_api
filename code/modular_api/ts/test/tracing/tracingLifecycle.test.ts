@@ -86,8 +86,8 @@ describe('configuration', () => {
 
   it('the instrumentation name can be overridden', () => {
     expect(
-      new TracingOptions({ tracerProvider: provider, instrumentationName: 'socia-api' })
+      new TracingOptions({ tracerProvider: provider, instrumentationName: 'orders-api' })
         .instrumentationName,
-    ).toBe('socia-api');
+    ).toBe('orders-api');
   });
 });
